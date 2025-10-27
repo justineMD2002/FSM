@@ -1,23 +1,23 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import ConfirmationModal from '@/components/ConfirmationModal';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: signOut
-        }
-      ]
-    );
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    signOut();
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   // Get initials for avatar
@@ -27,7 +27,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 px-6 pt-6 pb-20">
+    <>
+      <ScrollView className="flex-1 px-6 pt-6 pb-20">
         {/* Avatar Section */}
         <View className="bg-white rounded-2xl p-6 shadow-md mb-4 items-center">
           <View
@@ -96,5 +97,17 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <ConfirmationModal
+        visible={showLogoutModal}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        confirmStyle="destructive"
+        onConfirm={confirmLogout}
+        onCancel={cancelLogout}
+      />
+    </>
   );
 }
