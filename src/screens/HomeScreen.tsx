@@ -1,29 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   return (
-    <View className="flex-1 bg-slate-50">
-      <View className="pt-12 pb-6 px-6 rounded-b-3xl shadow-lg" style={{ backgroundColor: '#1a338f' }}>
-        <View className="flex-row justify-between items-center">
-          <View>
-            <Text className="text-white text-2xl font-bold">FSM Dashboard</Text>
-            <Text className="text-white/80 text-sm mt-1">{user?.email}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={signOut}
-            className="bg-white/20 px-4 py-2 rounded-xl"
-            activeOpacity={0.8}
-          >
-            <Text className="text-white font-semibold text-sm">Sign Out</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView className="flex-1 px-6 pt-6">
+    <ScrollView className="flex-1 px-6 pt-6 pb-20">
         <View className="bg-white rounded-2xl p-6 shadow-md mb-4">
           <Text className="text-2xl font-bold text-slate-800 mb-2">
             Welcome back!
@@ -58,6 +41,5 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
-    </View>
   );
 }

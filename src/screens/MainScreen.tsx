@@ -1,0 +1,42 @@
+import React, { useState } from 'react';
+import { View } from 'react-native';
+import HomeScreen from './HomeScreen';
+import JobsScreen from './JobsScreen';
+import ProfileScreen from './ProfileScreen';
+import Header from '@/components/Header';
+import FooterNav from '@/components/FooterNav';
+import { Tab } from '@/enums';
+
+interface TabConfig {
+  title: string;
+  screen: React.ReactNode;
+}
+
+export default function MainScreen() {
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
+
+  const tabConfig: Record<Tab, TabConfig> = {
+    [Tab.HOME]: {
+      title: 'FSM Dashboard',
+      screen: <HomeScreen />,
+    },
+    [Tab.JOBS]: {
+      title: 'Jobs',
+      screen: <JobsScreen />,
+    },
+    [Tab.PROFILE]: {
+      title: 'Profile',
+      screen: <ProfileScreen />,
+    },
+  };
+
+  const currentTab = tabConfig[activeTab];
+
+  return (
+    <View className="flex-1 bg-slate-50">
+      <Header title={currentTab.title} />
+      {currentTab.screen}
+      <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />
+    </View>
+  );
+}

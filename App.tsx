@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import LoginScreen from '@/screens/LoginScreen';
-import HomeScreen from '@/screens/HomeScreen';
+import MainScreen from '@/screens/MainScreen';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -18,7 +18,7 @@ function AppContent() {
 
   return (
     <>
-      {user ? <HomeScreen /> : <LoginScreen />}
+      {user ? <MainScreen /> : <LoginScreen />}
       <StatusBar style="auto" />
     </>
   );
