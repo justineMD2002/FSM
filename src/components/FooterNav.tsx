@@ -1,0 +1,45 @@
+import React from 'react';
+import { View, TouchableOpacity, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Tab } from '@/enums';
+
+interface FooterNavProps {
+  activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
+}
+
+export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
+  const tabs = [
+    { id: Tab.HOME, label: 'Home', icon: 'home' as const },
+    { id: Tab.JOBS, label: 'Jobs', icon: 'briefcase' as const },
+    { id: Tab.PROFILE, label: 'Profile', icon: 'person' as const },
+  ];
+
+  return (
+    <View className="bg-white border-t border-slate-200 shadow-lg">
+      <View className="flex-row justify-around items-center px-4 py-2 pb-4">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              onPress={() => onTabChange(tab.id)}
+              className="flex-1 items-center"
+              activeOpacity={0.7}
+            >
+              <View className={`items-center justify-center w-11 h-11 rounded-full ${
+                isActive ? '' : ''
+              }`} style={isActive ? { backgroundColor: '#1a338f' } : {}}>
+                <Ionicons
+                  name={tab.icon}
+                  size={22}
+                  color={isActive ? '#ffffff' : '#64748b'}
+                />
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
