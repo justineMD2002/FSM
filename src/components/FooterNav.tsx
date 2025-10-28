@@ -11,13 +11,13 @@ interface FooterNavProps {
 export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
   const tabs = [
     { id: Tab.HOME, label: 'Home', icon: 'briefcase' as const },
-    { id: Tab.JOBS, label: 'Jobs', icon: 'list' as const },
+    { id: Tab.JOBS, label: 'Jobs', icon: 'people-outline' as const },
     { id: Tab.PROFILE, label: 'Profile', icon: 'person' as const },
   ];
 
   return (
     <View className="bg-white border-t border-slate-200 shadow-lg">
-      <View className="flex-row justify-around items-center px-4 py-2 pb-4">
+      <View className="flex-row justify-around items-center px-4 py-4 pb-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
