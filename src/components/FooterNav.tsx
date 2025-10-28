@@ -10,8 +10,8 @@ interface FooterNavProps {
 
 export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
   const tabs = [
-    { id: Tab.HOME, label: 'Home', icon: 'home' as const },
-    { id: Tab.JOBS, label: 'Jobs', icon: 'briefcase' as const },
+    { id: Tab.HOME, label: 'Home', icon: 'briefcase' as const },
+    { id: Tab.JOBS, label: 'Jobs', icon: 'list' as const },
     { id: Tab.PROFILE, label: 'Profile', icon: 'person' as const },
   ];
 
@@ -27,13 +27,11 @@ export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
               className="flex-1 items-center"
               activeOpacity={0.7}
             >
-              <View className={`items-center justify-center w-11 h-11 rounded-full ${
-                isActive ? '' : ''
-              }`} style={isActive ? { backgroundColor: '#1a338f' } : {}}>
+              <View className="items-center justify-center">
                 <Ionicons
                   name={tab.icon}
-                  size={22}
-                  color={isActive ? '#ffffff' : '#64748b'}
+                  size={24}
+                  color={isActive ? '#0092ce' : '#64748b'}
                 />
               </View>
             </TouchableOpacity>
