@@ -59,80 +59,86 @@ export default function ProfileScreen() {
         </Text>
 
         {/* Last Clockout Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-md mb-4">
-          <Text className="text-slate-500 text-sm mb-1">Last Clock Out</Text>
-          <Text className="text-slate-800 text-lg font-semibold">--:--</Text>
+        <View className="bg-white rounded-2xl p-5 shadow-md mb-4 flex-row items-center">
+          <Ionicons name="time-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
+          <View className="flex-1">
+            <Text className="text-slate-500 text-sm">Last Clock Out: <Text className="text-slate-800 font-semibold">--:--</Text></Text>
+          </View>
         </View>
 
         {/* Running Time Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-md mb-4">
-          <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
-          <Text className="text-slate-800 text-lg font-semibold">00:00:00</Text>
+        <View className="bg-white rounded-2xl p-5 shadow-md mb-4 flex-row items-center">
+          <Ionicons name="stopwatch-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
+          <View className="flex-1">
+            <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
+            <Text className="text-slate-800 text-lg font-semibold text-[#0092ce]">00:00:00</Text>
+          </View>
         </View>
 
         {/* Clock In/Out Button */}
         <TouchableOpacity
-          className="rounded-xl py-4 shadow-md mb-6"
+          className="rounded-lg py-4 shadow-md mb-6 flex-row items-center justify-center"
           style={{ backgroundColor: isClockedIn ? '#ef4444' : '#0092ce' }}
           onPress={handleClockToggle}
           activeOpacity={0.8}
         >
+          <Ionicons name={isClockedIn ? 'log-out-outline' : 'log-in-outline'} size={20} color="#ffffff" style={{ marginRight: 8 }} />
           <Text className="text-white text-center font-bold text-base">
             {isClockedIn ? 'Clock Out' : 'Clock In'}
           </Text>
         </TouchableOpacity>
 
         {/* Settings Section */}
-        <View className="bg-white rounded-2xl shadow-md mb-4">
-          {/* Edit Profile */}
-          <TouchableOpacity
-            className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="person-outline" size={20} color="#64748b" />
-              <Text className="text-slate-800 text-base ml-3">Edit Profile</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#64748b" />
-          </TouchableOpacity>
+        <Text className="text-xl font-bold text-slate-800 mb-4">Settings</Text>
 
-          {/* About */}
-          <TouchableOpacity
-            className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="information-circle-outline" size={20} color="#64748b" />
-              <Text className="text-slate-800 text-base ml-3">About</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#64748b" />
-          </TouchableOpacity>
+        {/* Edit Profile */}
+        <TouchableOpacity
+          className="flex-row items-center justify-between bg-white px-5 py-4 mb-2 rounded-lg shadow-sm"
+          activeOpacity={0.7}
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="person-outline" size={20} color="#64748b" />
+            <Text className="text-slate-800 text-base ml-3">Edit Profile</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#64748b" />
+        </TouchableOpacity>
 
-          {/* Privacy Policy */}
-          <TouchableOpacity
-            className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="shield-checkmark-outline" size={20} color="#64748b" />
-              <Text className="text-slate-800 text-base ml-3">Privacy Policy</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#64748b" />
-          </TouchableOpacity>
+        {/* About */}
+        <TouchableOpacity
+          className="flex-row items-center justify-between bg-white px-5 py-4 mb-2 rounded-lg shadow-sm"
+          activeOpacity={0.7}
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="information-circle-outline" size={20} color="#64748b" />
+            <Text className="text-slate-800 text-base ml-3">About</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#64748b" />
+        </TouchableOpacity>
 
-          {/* Logout */}
-          <TouchableOpacity
-            className="flex-row items-center justify-between px-5 py-4"
-            onPress={handleLogout}
-            activeOpacity={0.7}
-          >
-            <View className="flex-row items-center">
-              <Ionicons name="log-out-outline" size={20} color="#ef4444" />
-              <Text className="text-red-600 text-base ml-3">Logout</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ef4444" />
-          </TouchableOpacity>
-        </View>
+        {/* Privacy Policy */}
+        <TouchableOpacity
+          className="flex-row items-center justify-between bg-white px-5 py-4 mb-2 rounded-lg shadow-sm"
+          activeOpacity={0.7}
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="shield-checkmark-outline" size={20} color="#64748b" />
+            <Text className="text-slate-800 text-base ml-3">Privacy Policy</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#64748b" />
+        </TouchableOpacity>
+
+        {/* Logout */}
+        <TouchableOpacity
+          className="flex-row items-center justify-between bg-white px-5 py-4 mb-4 rounded-lg shadow-sm"
+          onPress={handleLogout}
+          activeOpacity={0.7}
+        >
+          <View className="flex-row items-center">
+            <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+            <Text className="text-red-600 text-base ml-3">Logout</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#ef4444" />
+        </TouchableOpacity>
       </ScrollView>
 
       <ConfirmationModal
