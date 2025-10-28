@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
@@ -77,12 +77,17 @@ export default function LoginScreen() {
     >
       <View className="flex-1 justify-center px-8">
         {/* Header Section */}
-        <View className="mb-12">
-          <Text className="text-4xl font-bold text-slate-800 text-center mb-3">
-            Welcome Back
+        <View className="mb-10 items-center">
+          <Image
+            source={require('../../assets/SAS-LOGO.png')}
+            style={{ width: 250, height: 130, marginBottom: 10 }}
+            resizeMode="contain"
+          />
+          <Text className="text-base font-semibold text-slate-500 text-center mb-2">
+            Streamline Your Field Service Operations
           </Text>
-          <Text className="text-lg text-slate-500 text-center">
-            Sign in to continue to FSM
+          <Text className="text-2xl font-bold text-slate-800 text-center">
+            Log in
           </Text>
         </View>
 
@@ -90,29 +95,37 @@ export default function LoginScreen() {
         <View>
           {/* Email Input */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">
-              Email
-            </Text>
-            <TextInput
-              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-slate-800 text-base"
-              placeholder="Enter your email"
-              placeholderTextColor="#94a3b8"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!loading}
-            />
+            <View className="relative flex-row items-center">
+              <Ionicons
+                name="mail-outline"
+                size={20}
+                color="#64748b"
+                style={{ position: 'absolute', left: 16, zIndex: 1 }}
+              />
+              <TextInput
+                className="bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 text-slate-800 text-base flex-1"
+                placeholder="Enter your email"
+                placeholderTextColor="#94a3b8"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={!loading}
+              />
+            </View>
           </View>
 
           {/* Password Input with Eye Icon */}
           <View className="mb-4">
-            <Text className="text-sm font-medium text-slate-700 mb-2">
-              Password
-            </Text>
-            <View className="relative">
+            <View className="relative flex-row items-center">
+              <Ionicons
+                name="lock-closed-outline"
+                size={20}
+                color="#64748b"
+                style={{ position: 'absolute', left: 16, zIndex: 1 }}
+              />
               <TextInput
-                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 pr-12 text-slate-800 text-base"
+                className="bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-12 py-3.5 text-slate-800 text-base flex-1"
                 placeholder="Enter your password"
                 placeholderTextColor="#94a3b8"
                 value={password}
@@ -121,7 +134,7 @@ export default function LoginScreen() {
                 editable={!loading}
               />
               <TouchableOpacity
-                className="absolute right-4 top-3.5"
+                style={{ position: 'absolute', right: 16 }}
                 onPress={() => setShowPassword(!showPassword)}
                 activeOpacity={0.7}
               >
@@ -155,7 +168,7 @@ export default function LoginScreen() {
           {/* Sign In Button */}
           <TouchableOpacity
             className={`rounded-xl py-4 shadow-md ${loading ? 'opacity-70' : ''}`}
-            style={{ backgroundColor: '#1a338f' }}
+            style={{ backgroundColor: '#0092ce' }}
             onPress={handleLogin}
             disabled={loading}
             activeOpacity={0.8}
@@ -168,12 +181,19 @@ export default function LoginScreen() {
               </Text>
             )}
           </TouchableOpacity>
+
+          {/* Technical Support */}
+          <Text className="text-slate-500 text-center mt-6 text-sm">
+            Need technical support? Contact IT
+          </Text>
         </View>
 
         {/* Footer */}
-        <Text className="text-slate-400 text-center mt-12 text-sm">
-          Field Service Management
-        </Text>
+        <View className="items-center mt-8">
+          <Text className="text-slate-400 text-center text-xs">
+            Version 1.2.8.2
+          </Text>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
