@@ -59,19 +59,23 @@ export default function ProfileScreen() {
         </Text>
 
         {/* Last Clockout Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-md mb-4 flex-row items-center">
-          <Ionicons name="time-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
-          <View className="flex-1">
-            <Text className="text-slate-500 text-sm">Last Clock Out: <Text className="text-slate-800 font-semibold">--:--</Text></Text>
+        <View className="items-center mb-4">
+          <View className="bg-white rounded-2xl p-4 shadow-md flex-row items-center" style={{ width: '85%' }}>
+            <Ionicons name="time-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
+            <View className="flex-1">
+              <Text className="text-slate-500 text-sm font-semibold">Last Clock Out: <Text className="text-slate-800 font-semibold">--:--</Text></Text>
+            </View>
           </View>
         </View>
 
         {/* Running Time Card */}
-        <View className="bg-white rounded-2xl p-5 shadow-md mb-4 flex-row items-center">
-          <Ionicons name="stopwatch-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
-          <View className="flex-1">
-            <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
-            <Text className="text-slate-800 text-lg font-semibold text-[#0092ce]">00:00:00</Text>
+        <View className="items-center mb-4">
+          <View className="bg-white rounded-2xl p-4 shadow-md flex-row items-center" style={{ width: '85%' }}>
+            <Ionicons name="stopwatch-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
+            <View className="flex-1">
+              <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
+              <Text className="text-slate-800 text-lg font-semibold text-[#0092ce]">00:00:00</Text>
+            </View>
           </View>
         </View>
 
