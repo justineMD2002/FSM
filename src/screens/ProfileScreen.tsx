@@ -3,10 +3,12 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import SuccessModal from '@/components/SuccessModal';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClockedIn, setIsClockedIn] = useState(false);
 
   const handleLogout = () => {
@@ -23,7 +25,18 @@ export default function ProfileScreen() {
   };
 
   const handleClockToggle = () => {
-    setIsClockedIn(!isClockedIn);
+    if (!isClockedIn) {
+      // Clocking in - show success modal
+      setIsClockedIn(true);
+      setShowSuccessModal(true);
+    } else {
+      // Clocking out - just toggle state
+      setIsClockedIn(false);
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
   };
 
   // Get initials for avatar
@@ -154,6 +167,14 @@ export default function ProfileScreen() {
         confirmStyle="destructive"
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
+      />
+
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Clock In Successful"
+        message="You have been clocked in and can now start accepting jobs."
+        buttonText="Okay"
+        onClose={handleSuccessModalClose}
       />
     </>
   );

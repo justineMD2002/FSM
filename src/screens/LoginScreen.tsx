@@ -184,7 +184,8 @@ export default function LoginScreen() {
 
           {/* Technical Support */}
           <Text className="text-slate-500 text-center mt-6 text-sm">
-            Need technical support? Contact IT
+            Need technical support? {' '}
+            <Text className="text-[#0092ce]">Contact IT</Text>
           </Text>
         </View>
 
