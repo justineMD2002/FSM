@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isClockedIn, setIsClockedIn] = useState(false);
 
   const handleLogout = () => {
     setShowLogoutModal(true);
@@ -20,6 +22,10 @@ export default function ProfileScreen() {
     setShowLogoutModal(false);
   };
 
+  const handleClockToggle = () => {
+    setIsClockedIn(!isClockedIn);
+  };
+
   // Get initials for avatar
   const getInitials = () => {
     const email = user?.email || '';
@@ -28,72 +34,103 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <ScrollView className="flex-1 px-6 pt-6 pb-20">
-        {/* Avatar Section */}
-        <View className="bg-white rounded-2xl p-6 shadow-md mb-4 items-center">
+      <ScrollView
+        className="flex-1 px-6 pb-20 bg-white"
+        style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}
+      >
+        {/* Avatar */}
+        <View className="items-center mb-3">
           <View
-            className="w-24 h-24 rounded-full items-center justify-center mb-4"
-            style={{ backgroundColor: '#1a338f' }}
+            className="w-24 h-24 rounded-full items-center justify-center"
+            style={{ backgroundColor: '#0092ce' }}
           >
             <Text className="text-white text-3xl font-bold">{getInitials()}</Text>
           </View>
-          <Text className="text-xl font-bold text-slate-800">{user?.email?.split('@')[0]}</Text>
-          <Text className="text-slate-500 text-sm mt-1">{user?.email}</Text>
         </View>
 
-        {/* Profile Details */}
-        <View className="bg-white rounded-2xl p-6 shadow-md mb-4">
-          <Text className="text-lg font-bold text-slate-800 mb-4">
-            Account Information
-          </Text>
+        {/* Name */}
+        <Text className="text-2xl font-bold text-slate-800 text-center mb-1">
+          {user?.email?.split('@')[0]}
+        </Text>
 
-          <View className="mb-4">
-            <Text className="text-slate-500 text-sm mb-1">Email Address</Text>
-            <Text className="text-slate-800 text-base">{user?.email}</Text>
-          </View>
+        {/* Email */}
+        <Text className="text-slate-500 text-base text-center mb-6">
+          {user?.email}
+        </Text>
 
-          <View className="mb-4">
-            <Text className="text-slate-500 text-sm mb-1">Name</Text>
-            <Text className="text-slate-800 text-base">{user?.email?.split('@')[0] || 'Not set'}</Text>
-          </View>
-
-          <View className="mb-4">
-            <Text className="text-slate-500 text-sm mb-1">Contact Number</Text>
-            <Text className="text-slate-800 text-base">Not set</Text>
-          </View>
-
-          <View>
-            <Text className="text-slate-500 text-sm mb-1">User ID</Text>
-            <Text className="text-slate-800 text-xs font-mono">{user?.id}</Text>
-          </View>
+        {/* Last Clockout Card */}
+        <View className="bg-white rounded-2xl p-5 shadow-md mb-4">
+          <Text className="text-slate-500 text-sm mb-1">Last Clock Out</Text>
+          <Text className="text-slate-800 text-lg font-semibold">--:--</Text>
         </View>
 
-        {/* Account Actions */}
-        <View className="bg-white rounded-2xl p-6 shadow-md mb-4">
-          <Text className="text-lg font-bold text-slate-800 mb-4">
-            Account Actions
+        {/* Running Time Card */}
+        <View className="bg-white rounded-2xl p-5 shadow-md mb-4">
+          <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
+          <Text className="text-slate-800 text-lg font-semibold">00:00:00</Text>
+        </View>
+
+        {/* Clock In/Out Button */}
+        <TouchableOpacity
+          className="rounded-xl py-4 shadow-md mb-6"
+          style={{ backgroundColor: isClockedIn ? '#ef4444' : '#0092ce' }}
+          onPress={handleClockToggle}
+          activeOpacity={0.8}
+        >
+          <Text className="text-white text-center font-bold text-base">
+            {isClockedIn ? 'Clock Out' : 'Clock In'}
           </Text>
+        </TouchableOpacity>
 
+        {/* Settings Section */}
+        <View className="bg-white rounded-2xl shadow-md mb-4">
+          {/* Edit Profile */}
           <TouchableOpacity
-            className="bg-slate-100 rounded-xl px-4 py-4 mb-3"
+            className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
             activeOpacity={0.7}
           >
-            <Text className="text-slate-800 font-semibold text-base">Edit Profile</Text>
+            <View className="flex-row items-center">
+              <Ionicons name="person-outline" size={20} color="#64748b" />
+              <Text className="text-slate-800 text-base ml-3">Edit Profile</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#64748b" />
           </TouchableOpacity>
 
+          {/* About */}
           <TouchableOpacity
-            className="bg-slate-100 rounded-xl px-4 py-4 mb-3"
+            className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
             activeOpacity={0.7}
           >
-            <Text className="text-slate-800 font-semibold text-base">Change Password</Text>
+            <View className="flex-row items-center">
+              <Ionicons name="information-circle-outline" size={20} color="#64748b" />
+              <Text className="text-slate-800 text-base ml-3">About</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#64748b" />
           </TouchableOpacity>
 
+          {/* Privacy Policy */}
           <TouchableOpacity
-            className="bg-red-50 rounded-xl px-4 py-4 border border-red-200"
+            className="flex-row items-center justify-between px-5 py-4 border-b border-slate-100"
+            activeOpacity={0.7}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="shield-checkmark-outline" size={20} color="#64748b" />
+              <Text className="text-slate-800 text-base ml-3">Privacy Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#64748b" />
+          </TouchableOpacity>
+
+          {/* Logout */}
+          <TouchableOpacity
+            className="flex-row items-center justify-between px-5 py-4"
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <Text className="text-red-600 font-semibold text-base text-center">Logout</Text>
+            <View className="flex-row items-center">
+              <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+              <Text className="text-red-600 text-base ml-3">Logout</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#ef4444" />
           </TouchableOpacity>
         </View>
       </ScrollView>
