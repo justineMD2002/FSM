@@ -4,12 +4,14 @@ import HomeScreen from './HomeScreen';
 import JobsScreen from './JobsScreen';
 import ProfileScreen from './ProfileScreen';
 import Header from '@/components/Header';
+import DashboardHeader from '@/components/DashboardHeader';
 import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
 
 interface TabConfig {
   title: string;
   screen: React.ReactNode;
+  useCustomHeader?: boolean;
 }
 
 export default function MainScreen() {
@@ -19,6 +21,7 @@ export default function MainScreen() {
     [Tab.HOME]: {
       title: 'FSM Dashboard',
       screen: <HomeScreen />,
+      useCustomHeader: true,
     },
     [Tab.JOBS]: {
       title: 'Jobs',
@@ -34,7 +37,7 @@ export default function MainScreen() {
 
   return (
     <View className="flex-1 bg-slate-50">
-      <Header title={currentTab.title} />
+      {currentTab.useCustomHeader ? <DashboardHeader /> : <Header title={currentTab.title} />}
       {currentTab.screen}
       <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />
     </View>
