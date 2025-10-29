@@ -82,8 +82,11 @@ export default function HomeScreen() {
       className="flex-1 bg-white"
       style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}
     >
+      {/* Divider between header and tabs */}
+      <View className="border-t border-slate-200" />
+
       {/* Tabs */}
-      <View className="flex-row border-b border-slate-200 px-6">
+      <View className="flex-row bg-white border-b border-slate-200 px-6">
         <TouchableOpacity
           className="flex-1 py-4 items-center"
           onPress={() => setActiveTab('history')}
@@ -120,7 +123,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Search Bar */}
-      <View className="px-6 pt-4 pb-2">
+      <View className="px-6 pt-4 pb-2 bg-white">
         <View className="flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
           <Ionicons name="search-outline" size={20} color="#64748b" />
           <TextInput
@@ -136,6 +139,7 @@ export default function HomeScreen() {
       {/* Tab Content */}
       <ScrollView
         className="flex-1 px-6 pb-20"
+        style={{ backgroundColor: '#f5f5f5' }}
         refreshControl={
           activeTab === 'current' ? (
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
