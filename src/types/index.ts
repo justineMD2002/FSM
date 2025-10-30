@@ -1,9 +1,18 @@
-// Define your TypeScript types and interfaces here
-
 export interface User {
   id: string;
   email: string;
   created_at: string;
 }
 
-// Add more types as needed
+export interface Job {
+  id: string;
+  jobName: string;
+  jobCode: string;
+  date: string;
+  time: string;
+  buildingName: string;
+  address: string;
+  notes: string;
+  providerName: string;
+  status: 'COMPLETED' | 'CANCELLED' | 'ONGOING';
+}
