@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-type TabType = 'history' | 'current';
+type TabType = 'HISTORY' | 'CURRENT';
 
 interface Job {
   id: string;
@@ -14,7 +14,7 @@ interface Job {
   address: string;
   notes: string;
   providerName: string;
-  status: 'completed' | 'cancelled';
+  status: 'COMPLETED' | 'CANCELLED';
 }
 
 // Mock data for demonstration
@@ -29,7 +29,7 @@ const mockHistoryJobs: Job[] = [
     address: '123 Main St, City, State 12345',
     notes: 'Regular maintenance check',
     providerName: 'John Doe',
-    status: 'completed'
+    status: 'COMPLETED'
   },
   {
     id: '2',
@@ -41,7 +41,7 @@ const mockHistoryJobs: Job[] = [
     address: '456 Oak Ave, City, State 12345',
     notes: 'Fix lighting issue in lobby',
     providerName: 'Jane Smith',
-    status: 'cancelled'
+    status: 'CANCELLED'
   },
   {
     id: '3',
@@ -53,12 +53,12 @@ const mockHistoryJobs: Job[] = [
     address: '789 Pine Rd, City, State 12345',
     notes: 'Quarterly inspection',
     providerName: 'Mike Johnson',
-    status: 'completed'
+    status: 'COMPLETED'
   }
 ];
 
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('history');
+  const [activeTab, setActiveTab] = useState<TabType>('HISTORY');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -89,34 +89,34 @@ export default function HomeScreen() {
       <View className="flex-row bg-white border-b border-slate-200 px-6">
         <TouchableOpacity
           className="flex-1 py-4 items-center"
-          onPress={() => setActiveTab('history')}
+          onPress={() => setActiveTab('HISTORY')}
           activeOpacity={0.7}
         >
           <Text
             className={`text-base font-semibold ${
-              activeTab === 'history' ? 'text-[#0092ce]' : 'text-slate-500'
+              activeTab === 'HISTORY' ? 'text-[#0092ce]' : 'text-slate-500'
             }`}
           >
             History
           </Text>
-          {activeTab === 'history' && (
+          {activeTab === 'HISTORY' && (
             <View className="absolute bottom-0 w-full h-1" style={{ backgroundColor: '#0092ce' }} />
           )}
         </TouchableOpacity>
 
         <TouchableOpacity
           className="flex-1 py-4 items-center"
-          onPress={() => setActiveTab('current')}
+          onPress={() => setActiveTab('CURRENT')}
           activeOpacity={0.7}
         >
           <Text
             className={`text-base font-semibold ${
-              activeTab === 'current' ? 'text-[#0092ce]' : 'text-slate-500'
+              activeTab === 'CURRENT' ? 'text-[#0092ce]' : 'text-slate-500'
             }`}
           >
             Current Jobs
           </Text>
-          {activeTab === 'current' && (
+          {activeTab === 'CURRENT' && (
             <View className="absolute bottom-0 w-full h-1" style={{ backgroundColor: '#0092ce' }} />
           )}
         </TouchableOpacity>
@@ -141,12 +141,12 @@ export default function HomeScreen() {
         className="flex-1 px-6 pb-20"
         style={{ backgroundColor: '#f5f5f5' }}
         refreshControl={
-          activeTab === 'current' ? (
+          activeTab === 'CURRENT' ? (
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           ) : undefined
         }
       >
-        {activeTab === 'history' ? (
+        {activeTab === 'HISTORY' ? (
           // History Tab
           <View className="mt-4">
             {filteredJobs.length > 0 ? (
@@ -158,7 +158,7 @@ export default function HomeScreen() {
                       <View
                         className="w-1"
                         style={{
-                          backgroundColor: job.status === 'completed' ? '#22c55e' : '#ef4444'
+                          backgroundColor: job.status === 'COMPLETED' ? '#22c55e' : '#ef4444'
                         }}
                       />
                       <View className="flex-1 p-4">
@@ -174,13 +174,13 @@ export default function HomeScreen() {
                               <View
                                 className="px-3 py-1 rounded-full"
                                 style={{
-                                  backgroundColor: job.status === 'completed' ? '#dcfce7' : '#fee2e2'
+                                  backgroundColor: job.status === 'COMPLETED' ? '#dcfce7' : '#fee2e2'
                                 }}
                               >
                                 <Text
                                   className="text-xs font-semibold"
                                   style={{
-                                    color: job.status === 'completed' ? '#16a34a' : '#dc2626'
+                                    color: job.status === 'COMPLETED' ? '#16a34a' : '#dc2626'
                                   }}
                                 >
                                   {job.status.charAt(0).toUpperCase() + job.status.slice(1)}

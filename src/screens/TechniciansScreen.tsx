@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 
-export default function JobsScreen() {
+export default function Technicians() {
   return (
     <ScrollView
       className="flex-1 px-6 pb-20 bg-white"
@@ -9,10 +9,10 @@ export default function JobsScreen() {
     >
         <View className="bg-white rounded-2xl p-6 shadow-md mb-4">
           <Text className="text-xl font-bold text-slate-800 mb-2">
-            No Jobs Available
+            No Technicians Available
           </Text>
           <Text className="text-slate-600 text-base">
-            You currently have no assigned jobs. Check back later for new assignments.
+            You currently have no techncians. Check back later for new techncians.
           </Text>
         </View>
       </ScrollView>

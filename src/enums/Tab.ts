@@ -1,5 +1,5 @@
 export enum Tab {
   HOME = 'HOME',
-  JOBS = 'JOBS',
+  TECHNICIANS = 'TECHNICIANS',
   PROFILE = 'PROFILE',
 }
