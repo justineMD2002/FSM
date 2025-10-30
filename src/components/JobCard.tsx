@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
-export const JobCard = ({ job }: { job: Job }) => {
+export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) => {
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
     COMPLETED: { bg: '#dcfce7', text: '#16a34a', border: '#22c55e' },
     CANCELLED: { bg: '#fee2e2', text: '#dc2626', border: '#ef4444' },
@@ -69,7 +69,7 @@ export const JobCard = ({ job }: { job: Job }) => {
             <TouchableOpacity
               className="flex-row items-center bg-[#0092ce] px-4 py-2 rounded-full"
               activeOpacity={0.8}
-              onPress={() => console.log('View details for', job.jobName)}
+              onPress={onPress}
             >
               <Text className="text-white font-medium mr-2">View Job Details</Text>
               <Ionicons name="arrow-forward-outline" size={16} color="#fff" />

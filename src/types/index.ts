@@ -10,7 +10,7 @@ export interface Job {
   jobCode: string;
   date: string;
   time: string;
-  buildingName: string;
+  customer: string;
   address: string;
   notes: string;
   providerName: string;
