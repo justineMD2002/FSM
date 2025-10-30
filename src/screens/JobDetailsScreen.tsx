@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import SuccessModal from '@/components/SuccessModal';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -25,6 +27,8 @@ const tabs: TabConfig[] = [
 
 export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps) {
   const [activeTab, setActiveTab] = useState<TabType>('Details');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
@@ -38,6 +42,22 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
   };
 
   const statusColor = getStatusColor(job.status);
+
+  const handleStartJob = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmStart = () => {
+    setShowConfirmModal(false);
+    setShowSuccessModal(true);
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    setActiveTab('Navigate');
+  };
+
+  const isJobPending = job.status === 'PENDING';
 
   return (
     <View className="flex-1 bg-slate-50">
@@ -289,14 +309,40 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
 
             {/* Start Job Button */}
             <TouchableOpacity
-              className="bg-[#0092ce] rounded-xl py-4 items-center justify-center flex-row mt-2 mb-6"
-              activeOpacity={0.8}
+              className={`rounded-xl py-4 items-center justify-center flex-row mt-2 mb-6 ${
+                isJobPending ? 'bg-[#0092ce]' : 'bg-slate-300'
+              }`}
+              activeOpacity={isJobPending ? 0.8 : 1}
+              onPress={isJobPending ? handleStartJob : undefined}
+              disabled={!isJobPending}
             >
-              <Ionicons name="play-circle-outline" size={24} color="#fff" />
-              <Text className="text-white font-semibold text-lg ml-2">Start Job</Text>
+              <Ionicons name="play-circle-outline" size={24} color={isJobPending ? '#fff' : '#94a3b8'} />
+              <Text className={`font-semibold text-lg ml-2 ${isJobPending ? 'text-white' : 'text-slate-500'}`}>
+                Start Job
+              </Text>
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          visible={showConfirmModal}
+          title="Start Job"
+          message="Are you sure you want to start this job?"
+          confirmText="Start"
+          cancelText="Cancel"
+          onConfirm={handleConfirmStart}
+          onCancel={() => setShowConfirmModal(false)}
+        />
+
+        {/* Success Modal */}
+        <SuccessModal
+          visible={showSuccessModal}
+          title="Job Started"
+          message="You can now proceed to Navigation screen"
+          buttonText="OK"
+          onClose={handleSuccessClose}
+        />
 
         {activeTab === 'Navigate' && (
           <View className="bg-white rounded-xl p-6 items-center justify-center" style={{ minHeight: 200 }}>
