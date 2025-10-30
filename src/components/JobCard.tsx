@@ -6,7 +6,7 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
     COMPLETED: { bg: '#dcfce7', text: '#16a34a', border: '#22c55e' },
     CANCELLED: { bg: '#fee2e2', text: '#dc2626', border: '#ef4444' },
-    ONGOING: { bg: '#dbeafe', text: '#1d4ed8', border: '#3b82f6' }
+    PENDING: { bg: '#dbeafe', text: '#1d4ed8', border: '#3b82f6' }
   };
 
   const colors = statusColors[job.status];
@@ -45,7 +45,7 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
 
             <View className="flex-row items-center mt-2">
               <Ionicons name="business-outline" size={16} color="#64748b" />
-              <Text className="text-sm text-slate-600 ml-2">{job.buildingName}</Text>
+              <Text className="text-sm text-slate-600 ml-2">{job.customer}</Text>
             </View>
 
             <View className="flex-row items-start mt-2">

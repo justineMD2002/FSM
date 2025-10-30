@@ -28,7 +28,7 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
-      case 'ONGOING':
+      case 'PENDING':
         return '#0092ce';
       case 'COMPLETED':
         return '#22c55e';
