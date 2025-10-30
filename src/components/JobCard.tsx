@@ -1,4 +1,4 @@
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
@@ -64,6 +64,16 @@ export const JobCard = ({ job }: { job: Job }) => {
               <Ionicons name="person-outline" size={16} color="#64748b" />
               <Text className="text-sm text-slate-600 ml-2">{job.providerName}</Text>
             </View>
+          </View>
+          <View className="mt-4 flex-row justify-end">
+            <TouchableOpacity
+              className="flex-row items-center bg-[#0092ce] px-4 py-2 rounded-full"
+              activeOpacity={0.8}
+              onPress={() => console.log('View details for', job.jobName)}
+            >
+              <Text className="text-white font-medium mr-2">View Job Details</Text>
+              <Ionicons name="arrow-forward-outline" size={16} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
       </View>
