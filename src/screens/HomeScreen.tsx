@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } f
 import { Ionicons } from '@expo/vector-icons';
 import { mockHistoryJobs, mockCurrentJobs } from '@/data/JobsMockData';
 import { JobCard } from '@/components/JobCard';
+import JobDetailsScreen from './JobDetailsScreen';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 type TabType = 'HISTORY' | 'CURRENT';
 
@@ -11,6 +13,7 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('HISTORY');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const { selectedJob, setSelectedJob } = useNavigation();
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -24,6 +27,11 @@ export default function HomeScreen() {
     job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.buildingName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Show JobDetailsScreen if a job is selected
+  if (selectedJob) {
+    return <JobDetailsScreen job={selectedJob} onBack={() => setSelectedJob(null)} />;
+  }
 
   return (
     <View className="flex-1 bg-white" style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}>
@@ -69,7 +77,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => <JobCard key={job.id} job={job} />)
+          filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} />)
         ) : (
           <View className="items-center justify-center py-20">
             <Ionicons

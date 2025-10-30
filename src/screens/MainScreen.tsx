@@ -7,6 +7,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
 import Technicians from './TechniciansScreen';
+import { NavigationProvider } from '@/contexts/NavigationContext';
 
 interface TabConfig {
   title: string;
@@ -36,10 +37,12 @@ export default function MainScreen() {
   const currentTab = tabConfig[activeTab];
 
   return (
-    <View className="flex-1 bg-slate-50">
-      {currentTab.useCustomHeader ? <DashboardHeader /> : <Header title={currentTab.title} />}
-      {currentTab.screen}
-      <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />
-    </View>
+    <NavigationProvider>
+      <View className="flex-1 bg-slate-50">
+        {currentTab.useCustomHeader ? <DashboardHeader /> : <Header title={currentTab.title} />}
+        {currentTab.screen}
+        <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />
+      </View>
+    </NavigationProvider>
   );
 }

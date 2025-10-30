@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 export default function DashboardHeader() {
   const { user } = useAuth();
+  const { selectedJob, setSelectedJob } = useNavigation();
 
   // Get initials for avatar
   const getInitials = () => {
@@ -12,6 +14,31 @@ export default function DashboardHeader() {
     return email.substring(0, 2).toUpperCase();
   };
 
+  // If a job is selected, render the Job Details header
+  if (selectedJob) {
+    return (
+      <View className="bg-white border-b border-slate-200" style={{ zIndex: 1 }}>
+        <View className="px-3 pt-7 pb-4">
+          <View className="flex-row items-center justify-between">
+            {/* Left: Back button and Job Details text */}
+            <View className="flex-row items-center">
+              <TouchableOpacity onPress={() => setSelectedJob(null)} className="mr-3">
+                <Ionicons name="arrow-back" size={24} color="#334155" />
+              </TouchableOpacity>
+              <Text className="text-black text-xl font-semibold">Job Details</Text>
+            </View>
+
+            {/* Right: Info Icon */}
+            <View className="flex-row items-center">
+              <Ionicons name="information-circle" size={26} color="#0092ce" />
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Default dashboard header
   return (
     <View className="bg-white border-b border-slate-200" style={{ zIndex: 1 }}>
       <View className="px-3 pt-7 pb-4">
