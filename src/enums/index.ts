@@ -1,1 +1,5 @@
-export { Tab } from './Tab';
+export enum Tab {
+  HOME = 'HOME',
+  TECHNICIANS = 'TECHNICIANS',
+  PROFILE = 'PROFILE',
+}
