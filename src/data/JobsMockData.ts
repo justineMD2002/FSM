@@ -38,6 +38,6 @@ export const mockCurrentJobs: Job[] = [
     address: '222 Elm St, City, State 12345',
     notes: 'Check pressure levels',
     providerName: 'Sarah Connor',
-    status: 'ONGOING'
+    status: 'PENDING'
   }
 ];

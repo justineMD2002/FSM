@@ -14,5 +14,5 @@ export interface Job {
   address: string;
   notes: string;
   providerName: string;
-  status: 'COMPLETED' | 'CANCELLED' | 'ONGOING';
+  status: 'COMPLETED' | 'CANCELLED' | 'PENDING';
 }
