@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import HomeScreen from './HomeScreen';
-import JobsScreen from './JobsScreen';
 import ProfileScreen from './ProfileScreen';
 import Header from '@/components/Header';
 import DashboardHeader from '@/components/DashboardHeader';
 import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
+import Technicians from './TechniciansScreen';
 
 interface TabConfig {
   title: string;
@@ -23,9 +23,9 @@ export default function MainScreen() {
       screen: <HomeScreen />,
       useCustomHeader: true,
     },
-    [Tab.JOBS]: {
-      title: 'Jobs',
-      screen: <JobsScreen />,
+    [Tab.TECHNICIANS]: {
+      title: 'Technicicans',
+      screen: <Technicians />,
     },
     [Tab.PROFILE]: {
       title: 'Profile',
