@@ -49,7 +49,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Search */}
-      <View className="px-6 pt-4 pb-2 bg-white">
+      <View className="px-6 pt-4 bg-white">
         <View className="flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
           <Ionicons name="search-outline" size={20} color="#64748b" />
           <TextInput
