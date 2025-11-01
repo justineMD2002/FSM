@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from '@react-google-maps/api';
 import { GOOGLE_MAPS_API_KEY, DEFAULT_MAP_CENTER } from '@/constants/config';
@@ -18,6 +18,9 @@ const containerStyle = {
   height: '100%',
 };
 
+// Debounce delay for route recalculation (in milliseconds)
+const ROUTE_UPDATE_DELAY = 5000; // 5 seconds
+
 export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
   const [destination, setDestination] = useState<Coordinates | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
@@ -25,6 +28,9 @@ export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+
+  const watchIdRef = useRef<number | null>(null);
+  const routeUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Geocode the address to get coordinates
   const geocodeAddress = useCallback(async (addr: string) => {
@@ -46,7 +52,7 @@ export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
     }
   }, []);
 
-  // Get user's current location
+  // Get user's current location (one-time)
   const getCurrentLocation = useCallback(() => {
     return new Promise<Coordinates>((resolve, reject) => {
       if (navigator.geolocation) {
@@ -116,6 +122,60 @@ export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
 
     initializeMap();
   }, [address, isHistoryJob, isGoogleMapsLoaded, geocodeAddress, getCurrentLocation, getDirections]);
+
+  // Continuously track user location for current jobs
+  useEffect(() => {
+    // Only track location for current jobs (not history jobs) and after map is loaded
+    if (isHistoryJob || !isGoogleMapsLoaded || !destination) return;
+
+    if (!navigator.geolocation) {
+      console.error('Geolocation not supported');
+      return;
+    }
+
+    // Start watching user's position
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const newLocation: Coordinates = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        // Update current location marker
+        setCurrentLocation(newLocation);
+
+        // Debounce route updates to avoid too many API calls
+        if (routeUpdateTimerRef.current) {
+          clearTimeout(routeUpdateTimerRef.current);
+        }
+
+        routeUpdateTimerRef.current = setTimeout(() => {
+          // Recalculate route with new location
+          getDirections(newLocation, destination);
+        }, ROUTE_UPDATE_DELAY);
+      },
+      (error) => {
+        console.error('Location tracking error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000,
+      }
+    );
+
+    // Cleanup function: stop watching location when component unmounts
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      if (routeUpdateTimerRef.current) {
+        clearTimeout(routeUpdateTimerRef.current);
+        routeUpdateTimerRef.current = null;
+      }
+    };
+  }, [isHistoryJob, isGoogleMapsLoaded, destination, getDirections]);
 
   const handleGoogleMapsLoad = useCallback(() => {
     setIsGoogleMapsLoaded(true);
