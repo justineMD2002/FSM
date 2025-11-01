@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -33,6 +33,14 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
   const [activeTab, setActiveTab] = useState<TabType>('Details');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showJobStatusModal, setShowJobStatusModal] = useState(false);
+
+  // Show modal if job is completed or cancelled
+  useEffect(() => {
+    if (job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+      setShowJobStatusModal(true);
+    }
+  }, [job.status]);
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
@@ -165,6 +173,39 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
         buttonText="OK"
         onClose={handleSuccessClose}
       />
+
+      {/* Job Status Modal (Completed/Cancelled) */}
+      <Modal
+        visible={showJobStatusModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowJobStatusModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <View className="items-center mb-4">
+              <Ionicons
+                name={job.status === 'COMPLETED' ? "checkmark-circle" : "close-circle"}
+                size={64}
+                color={job.status === 'COMPLETED' ? "#22c55e" : "#ef4444"}
+              />
+            </View>
+            <Text className="text-2xl font-bold text-slate-800 mb-4 text-center">
+              Job {job.status === 'COMPLETED' ? 'Completed' : 'Cancelled'}
+            </Text>
+            <Text className="text-base text-slate-600 mb-6 text-center">
+              This job has been {job.status === 'COMPLETED' ? 'completed' : 'cancelled'} and cannot be modified.
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => setShowJobStatusModal(false)}
+              className="bg-[#0092ce] rounded-xl py-3 items-center"
+            >
+              <Text className="text-white font-semibold text-base">OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
