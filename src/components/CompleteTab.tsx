@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Platform, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SignatureScreen from 'react-native-signature-canvas';
 import SignatureCanvas from 'react-signature-canvas';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import SuccessModal from '@/components/SuccessModal';
 
 interface ChecklistItem {
   id: string;
@@ -37,6 +39,11 @@ export default function CompleteTab({
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const signatureRef = useRef<any>(null);
   const isWeb = Platform.OS === 'web';
+
+  // Modal states
+  const [showSignatureSavedModal, setShowSignatureSavedModal] = useState(false);
+  const [showCompleteJobModal, setShowCompleteJobModal] = useState(false);
+  const [showCongratulationsModal, setShowCongratulationsModal] = useState(false);
 
   // Mock checklist items
   const [checklistItems] = useState<ChecklistItem[]>([
@@ -77,6 +84,7 @@ export default function CompleteTab({
     setSignature(signatureData);
     setSignatureDate(new Date());
     setShowSignaturePad(false);
+    setShowSignatureSavedModal(true);
   };
 
   const handleSignatureClear = () => {
@@ -94,6 +102,7 @@ export default function CompleteTab({
         setSignature(signatureData);
         setSignatureDate(new Date());
         setShowSignaturePad(false);
+        setShowSignatureSavedModal(true);
       }
     }
   };
@@ -105,8 +114,12 @@ export default function CompleteTab({
   };
 
   const handleCompleteJob = () => {
-    // TODO: Implement job completion logic
-    console.log('Job completed');
+    setShowCompleteJobModal(true);
+  };
+
+  const handleConfirmComplete = () => {
+    setShowCompleteJobModal(false);
+    setShowCongratulationsModal(true);
   };
 
   const style = `.m-signature-pad {
@@ -296,6 +309,106 @@ export default function CompleteTab({
         <Ionicons name="checkmark-done-circle" size={24} color="#fff" />
         <Text className="text-white font-semibold text-lg ml-2">Complete Job</Text>
       </TouchableOpacity>
+
+      {/* Signature Saved Modal */}
+      <SuccessModal
+        visible={showSignatureSavedModal}
+        title="Success"
+        message="Signature saved successfully"
+        buttonText="OK"
+        onClose={() => setShowSignatureSavedModal(false)}
+      />
+
+      {/* Complete Job Confirmation Modal */}
+      <Modal
+        visible={showCompleteJobModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCompleteJobModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <Text className="text-2xl font-bold text-slate-800 mb-4">Complete Job</Text>
+            <Text className="text-base text-slate-600 mb-4">
+              Are you sure you want to complete this job?
+            </Text>
+
+            <Text className="text-sm font-semibold text-slate-700 mb-2">Please note:</Text>
+            <View className="mb-6">
+              <View className="flex-row items-start mb-2">
+                <Text className="text-slate-600 mr-2">•</Text>
+                <Text className="text-sm text-slate-600 flex-1">This action cannot be undone</Text>
+              </View>
+              <View className="flex-row items-start mb-2">
+                <Text className="text-slate-600 mr-2">•</Text>
+                <Text className="text-sm text-slate-600 flex-1">You won't be able to edit job after completion</Text>
+              </View>
+              <View className="flex-row items-start">
+                <Text className="text-slate-600 mr-2">•</Text>
+                <Text className="text-sm text-slate-600 flex-1">All data will be finalized</Text>
+              </View>
+            </View>
+
+            <View className="flex-row space-x-3">
+              <TouchableOpacity
+                onPress={() => setShowCompleteJobModal(false)}
+                className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
+              >
+                <Text className="text-slate-700 font-semibold">Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleConfirmComplete}
+                className="flex-1 bg-[#22c55e] rounded-xl py-3 items-center"
+              >
+                <Text className="text-white font-semibold">Complete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Congratulations Modal */}
+      <Modal
+        visible={showCongratulationsModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCongratulationsModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <View className="items-center mb-4">
+              <Ionicons name="checkmark-circle" size={64} color="#22c55e" />
+            </View>
+            <Text className="text-2xl font-bold text-slate-800 mb-4 text-center">Congratulations!</Text>
+            <Text className="text-base text-slate-600 mb-4 text-center">
+              Job has been successfully completed.
+            </Text>
+
+            <Text className="text-sm font-semibold text-slate-700 mb-2">Important:</Text>
+            <View className="mb-6">
+              <View className="flex-row items-start mb-2">
+                <Text className="text-slate-600 mr-2">•</Text>
+                <Text className="text-sm text-slate-600 flex-1">All job details are now finalized</Text>
+              </View>
+              <View className="flex-row items-start mb-2">
+                <Text className="text-slate-600 mr-2">•</Text>
+                <Text className="text-sm text-slate-600 flex-1">You can view this job in your completed jobs history</Text>
+              </View>
+              <View className="flex-row items-start">
+                <Text className="text-slate-600 mr-2">•</Text>
+                <Text className="text-sm text-slate-600 flex-1">A confirmation email will be sent to all relevant parties</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setShowCongratulationsModal(false)}
+              className="bg-[#0092ce] rounded-xl py-3 items-center"
+            >
+              <Text className="text-white font-semibold text-base">OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
