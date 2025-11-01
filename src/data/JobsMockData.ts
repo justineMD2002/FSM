@@ -8,7 +8,7 @@ export const mockHistoryJobs: Job[] = [
     date: '2025-10-28',
     time: '09:00 AM',
     customer: 'PANASONIC ASIA PACIFIC PTE LTD',
-    address: '123 Main St, City, State 12345',
+    address: 'Panasonic Service Center, North Reclamation Area, Cebu City, Cebu, Philippines',
     notes: 'Regular maintenance check',
     providerName: 'John Doe',
     status: 'COMPLETED'
@@ -20,7 +20,7 @@ export const mockHistoryJobs: Job[] = [
     date: '2025-10-27',
     time: '02:00 PM',
     customer: 'Building B',
-    address: '456 Oak Ave, City, State 12345',
+    address: 'IT Park, Lahug, Cebu City, Cebu, Philippines',
     notes: 'Fix lighting issue in lobby',
     providerName: 'Jane Smith',
     status: 'CANCELLED'
@@ -35,7 +35,7 @@ export const mockCurrentJobs: Job[] = [
     date: '2025-10-30',
     time: '01:00 PM',
     customer: 'Building D',
-    address: '222 Elm St, City, State 12345',
+    address: 'SM Seaside City Cebu, South Road Properties, Cebu City, Cebu, Philippines',
     notes: 'Check pressure levels',
     providerName: 'Sarah Connor',
     status: 'PENDING'

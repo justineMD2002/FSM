@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
+import JobMapView from '@/components/JobMapView';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -58,6 +59,7 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
   };
 
   const isJobPending = job.status === 'PENDING';
+  const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
 
   return (
     <View className="flex-1 bg-slate-50">
@@ -99,7 +101,13 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-4 py-4">
+      {activeTab === 'Navigate' ? (
+        // Map view takes full height without ScrollView
+        <View className="flex-1">
+          <JobMapView address={job.address} isHistoryJob={isHistoryJob} />
+        </View>
+      ) : (
+        <ScrollView className="flex-1 px-4 py-4">
         {activeTab === 'Details' && (
           <View>
             {/* Job Details Card */}
@@ -324,33 +332,6 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
           </View>
         )}
 
-        {/* Confirmation Modal */}
-        <ConfirmationModal
-          visible={showConfirmModal}
-          title="Start Job"
-          message="Are you sure you want to start this job?"
-          confirmText="Start"
-          cancelText="Cancel"
-          onConfirm={handleConfirmStart}
-          onCancel={() => setShowConfirmModal(false)}
-        />
-
-        {/* Success Modal */}
-        <SuccessModal
-          visible={showSuccessModal}
-          title="Job Started"
-          message="You can now proceed to Navigation screen"
-          buttonText="OK"
-          onClose={handleSuccessClose}
-        />
-
-        {activeTab === 'Navigate' && (
-          <View className="bg-white rounded-xl p-6 items-center justify-center" style={{ minHeight: 200 }}>
-            <Ionicons name="navigate-outline" size={48} color="#cbd5e1" />
-            <Text className="text-slate-500 mt-4 text-center">Navigation view coming soon</Text>
-          </View>
-        )}
-
         {activeTab === 'Service' && (
           <View className="bg-white rounded-xl p-6 items-center justify-center" style={{ minHeight: 200 }}>
             <Ionicons name="build-outline" size={48} color="#cbd5e1" />
@@ -365,6 +346,27 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
           </View>
         )}
       </ScrollView>
+      )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        visible={showConfirmModal}
+        title="Start Job"
+        message="Are you sure you want to start this job?"
+        confirmText="Start"
+        cancelText="Cancel"
+        onConfirm={handleConfirmStart}
+        onCancel={() => setShowConfirmModal(false)}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        visible={showSuccessModal}
+        title="Job Started"
+        message="You can now proceed to Navigation screen"
+        buttonText="OK"
+        onClose={handleSuccessClose}
+      />
     </View>
   );
 }
