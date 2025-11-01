@@ -34,9 +34,10 @@ interface ServiceImage {
 
 interface ServiceTabProps {
   onSubmit: () => void;
+  isHistoryJob: boolean;
 }
 
-export default function ServiceTab({ onSubmit }: ServiceTabProps) {
+export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) {
   // Service tab states
   const [tasks, setTasks] = useState<Task[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
@@ -155,12 +156,14 @@ export default function ServiceTab({ onSubmit }: ServiceTabProps) {
             <Ionicons name="clipboard-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Tasks</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => setShowTaskForm(!showTaskForm)}
-            className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-          </TouchableOpacity>
+          {!isHistoryJob && (
+            <TouchableOpacity
+              onPress={() => setShowTaskForm(!showTaskForm)}
+              className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Task Form */}
@@ -241,12 +244,14 @@ export default function ServiceTab({ onSubmit }: ServiceTabProps) {
             <Ionicons name="flag-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Follow Ups</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => setShowFollowUpForm(!showFollowUpForm)}
-            className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-          </TouchableOpacity>
+          {!isHistoryJob && (
+            <TouchableOpacity
+              onPress={() => setShowFollowUpForm(!showFollowUpForm)}
+              className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Follow-up Form */}
@@ -420,12 +425,14 @@ export default function ServiceTab({ onSubmit }: ServiceTabProps) {
             <Ionicons name="camera-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Images</Text>
           </View>
-          <TouchableOpacity
-            onPress={() => setShowImageModal(true)}
-            className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-          </TouchableOpacity>
+          {!isHistoryJob && (
+            <TouchableOpacity
+              onPress={() => setShowImageModal(true)}
+              className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Image List */}
@@ -467,13 +474,15 @@ export default function ServiceTab({ onSubmit }: ServiceTabProps) {
       </View>
 
       {/* Submit Button */}
-      <TouchableOpacity
-        onPress={onSubmit}
-        className="bg-[#0092ce] rounded-xl py-4 items-center justify-center flex-row mb-6"
-      >
-        <Ionicons name="checkmark-circle" size={24} color="#fff" />
-        <Text className="text-white font-semibold text-lg ml-2">Submit Service Report</Text>
-      </TouchableOpacity>
+      {!isHistoryJob && (
+        <TouchableOpacity
+          onPress={onSubmit}
+          className="bg-[#0092ce] rounded-xl py-4 items-center justify-center flex-row mb-6"
+        >
+          <Ionicons name="checkmark-circle" size={24} color="#fff" />
+          <Text className="text-white font-semibold text-lg ml-2">Submit Service Report</Text>
+        </TouchableOpacity>
+      )}
 
       {/* Image Upload Modal */}
       <Modal
