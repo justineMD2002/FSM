@@ -108,14 +108,24 @@ export default function DetailsTab({ job, statusColor, isJobPending, onStartJob 
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  className="p-1 rounded-full"
-                  style={{ backgroundColor: '#e0f4fb' }}
-                  onPress={() => console.log('Call customer pressed')}
-                >
-                  <Ionicons name="call-sharp" size={18} color="#0092ce" />
-                </TouchableOpacity>
+                <View className="flex-row">
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    className="p-1 rounded-full mr-2"
+                    style={{ backgroundColor: '#e0f4fb' }}
+                    onPress={() => console.log('Call customer pressed')}
+                  >
+                    <Ionicons name="call-sharp" size={18} color="#0092ce" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    className="p-1 rounded-full"
+                    style={{ backgroundColor: '#25D366' }}
+                    onPress={() => console.log('WhatsApp customer pressed')}
+                  >
+                    <Ionicons name="logo-whatsapp" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
