@@ -61,42 +61,54 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
   const isJobPending = job.status === 'PENDING';
   const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
 
+  const activeTabIndex = tabs.findIndex(tab => tab.id === activeTab);
+
   return (
     <View className="flex-1 bg-slate-50">
       {/* Timeline Tabs */}
       <View className="bg-white px-4 py-6 border-b border-slate-200">
         <View className="flex-row justify-between items-center">
-          {tabs.map((tab, index) => (
-            <React.Fragment key={tab.id}>
-              <TouchableOpacity
-                onPress={() => setActiveTab(tab.id)}
-                className="items-center"
-                style={{ flex: 1 }}
-              >
-                <View
-                  className={`w-12 h-12 rounded-full items-center justify-center mb-2 ${
-                    activeTab === tab.id ? 'bg-[#0092ce]' : 'bg-slate-200'
-                  }`}
+          {tabs.map((tab, index) => {
+            const isLineCompleted = index < activeTabIndex;
+
+            return (
+              <React.Fragment key={tab.id}>
+                <TouchableOpacity
+                  onPress={() => setActiveTab(tab.id)}
+                  className="items-center"
+                  style={{ flex: 1 }}
                 >
-                  <Ionicons
-                    name={tab.icon}
-                    size={24}
-                    color={activeTab === tab.id ? '#fff' : '#64748b'}
+                  <View
+                    className={`w-12 h-12 rounded-full items-center justify-center mb-2 ${
+                      activeTab === tab.id ? 'bg-[#0092ce]' : 'bg-slate-200'
+                    }`}
+                  >
+                    <Ionicons
+                      name={tab.icon}
+                      size={24}
+                      color={activeTab === tab.id ? '#fff' : '#64748b'}
+                    />
+                  </View>
+                  <Text
+                    className={`text-xs text-center ${
+                      activeTab === tab.id ? 'text-[#0092ce] font-semibold' : 'text-slate-500'
+                    }`}
+                  >
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+                {index < tabs.length - 1 && (
+                  <View
+                    className="h-0.5 flex-1 mb-6"
+                    style={{
+                      marginHorizontal: 4,
+                      backgroundColor: isLineCompleted ? '#0092ce' : '#cbd5e1'
+                    }}
                   />
-                </View>
-                <Text
-                  className={`text-xs text-center ${
-                    activeTab === tab.id ? 'text-[#0092ce] font-semibold' : 'text-slate-500'
-                  }`}
-                >
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-              {index < tabs.length - 1 && (
-                <View className="h-0.5 bg-slate-300 flex-1 mb-6" style={{ marginHorizontal: 4 }} />
-              )}
-            </React.Fragment>
-          ))}
+                )}
+              </React.Fragment>
+            );
+          })}
         </View>
       </View>
 
