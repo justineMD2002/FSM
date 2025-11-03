@@ -16,3 +16,15 @@ export interface Job {
   providerName: string;
   status: 'COMPLETED' | 'CANCELLED' | 'PENDING';
 }
+
+export interface Technician {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  specialization: string;
+  status: 'AVAILABLE' | 'ON_JOB' | 'OFFLINE';
+  rating: number;
+  completedJobs: number;
+  avatar?: string;
+}
