@@ -28,3 +28,27 @@ export interface Technician {
   completedJobs: number;
   avatar?: string;
 }
+
+export interface TechnicianProfile {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  phone_number: string | null;
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  is_online: boolean;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  technician_id: string;
+  clock_in: string;
+  clock_out: string | null;
+  duration_minutes: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
