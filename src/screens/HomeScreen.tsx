@@ -10,7 +10,7 @@ type TabType = 'HISTORY' | 'CURRENT';
 
 // 🔹 Main Screen
 export default function HomeScreen() {
-  const [activeTab, setActiveTab] = useState<TabType>('HISTORY');
+  const [activeTab, setActiveTab] = useState<TabType>('CURRENT');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const { selectedJob, setSelectedJob } = useNavigation();
@@ -25,7 +25,7 @@ export default function HomeScreen() {
   const filteredJobs = jobs.filter(job =>
     job.jobName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.buildingName.toLowerCase().includes(searchQuery.toLowerCase())
+    job.customer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Show JobDetailsScreen if a job is selected
