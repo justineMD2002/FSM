@@ -241,12 +241,12 @@ export default function ProfileScreen() {
       if (profile.avatar_url) {
         const oldPath = profile.avatar_url.split('/').pop();
         if (oldPath) {
-          await supabase.storage.from('images').remove([`avatars/${oldPath}`]);
+          await supabase.storage.from('avatar').remove([`avatars/${oldPath}`]);
         }
       }
 
       const { error: uploadError } = await supabase.storage
-        .from('images')
+        .from('avatar')
         .upload(filePath, blob, {
           contentType: `image/${fileExt}`,
           upsert: false,
@@ -255,7 +255,7 @@ export default function ProfileScreen() {
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('images')
+        .from('avatar')
         .getPublicUrl(filePath);
 
       const { error: updateError } = await supabase
@@ -281,7 +281,7 @@ export default function ProfileScreen() {
     try {
       const oldPath = profile.avatar_url.split('/').pop();
       if (oldPath) {
-        await supabase.storage.from('images').remove([`avatars/${oldPath}`]);
+        await supabase.storage.from('avatar').remove([`avatars/${oldPath}`]);
       }
 
       const { error } = await supabase
