@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { mockHistoryJobs, mockCurrentJobs } from '@/data/JobsMockData';
 import { JobCard } from '@/components/JobCard';
@@ -7,12 +7,18 @@ import JobDetailsScreen from './JobDetailsScreen';
 import { useNavigation } from '@/contexts/NavigationContext';
 
 type TabType = 'HISTORY' | 'CURRENT';
+type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
 
 // 🔹 Main Screen
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('CURRENT');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateFilter>('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const { selectedJob, setSelectedJob } = useNavigation();
 
   const onRefresh = useCallback(() => {
@@ -22,11 +28,54 @@ export default function HomeScreen() {
 
   const jobs = activeTab === 'HISTORY' ? mockHistoryJobs : mockCurrentJobs;
 
-  const filteredJobs = jobs.filter(job =>
-    job.jobName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.customer.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Date filtering helper
+  const isJobInDateRange = (jobDate: string) => {
+    if (dateFilter === 'ALL') return true;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const job = new Date(jobDate);
+    job.setHours(0, 0, 0, 0);
+
+    switch (dateFilter) {
+      case 'TODAY':
+        return job.getTime() === today.getTime();
+
+      case 'THIS_WEEK':
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        return job >= weekStart && job <= weekEnd;
+
+      case 'THIS_MONTH':
+        return job.getMonth() === today.getMonth() &&
+               job.getFullYear() === today.getFullYear();
+
+      case 'CUSTOM':
+        if (!startDate || !endDate) return true;
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return job >= start && job <= end;
+
+      default:
+        return true;
+    }
+  };
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch =
+      job.jobName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.customer.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesDate = isJobInDateRange(job.date);
+
+    return matchesSearch && matchesDate;
+  });
 
   // Show JobDetailsScreen if a job is selected
   if (selectedJob) {
@@ -56,17 +105,30 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Search */}
+      {/* Search and Filter */}
       <View className="px-6 pt-4 bg-white">
-        <View className="flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
-          <Ionicons name="search-outline" size={20} color="#64748b" />
-          <TextInput
-            className="flex-1 ml-2 text-slate-800"
-            placeholder="Search jobs..."
-            placeholderTextColor="#94a3b8"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+        <View className="flex-row items-center gap-2">
+          <View className="flex-1 flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
+            <Ionicons name="search-outline" size={20} color="#64748b" />
+            <TextInput
+              className="flex-1 ml-2 text-slate-800"
+              placeholder="Search jobs..."
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => setShowFilterModal(true)}
+            className="bg-[#0092ce] rounded-lg p-3 items-center justify-center"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="filter-outline" size={24} color="#ffffff" />
+            {dateFilter !== 'ALL' && (
+              <View className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -96,6 +158,162 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Date Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowFilterModal(false);
+          setShowCustomDatePicker(false);
+        }}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <View className="flex-row items-center justify-between mb-6">
+              <View className="flex-row items-center">
+                <Ionicons name="calendar-outline" size={24} color="#0092ce" />
+                <Text className="text-xl font-bold text-slate-800 ml-2">
+                  Filter by Date
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowFilterModal(false);
+                  setShowCustomDatePicker(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Filter Options */}
+            <View className="space-y-2">
+              {[
+                { value: 'ALL', label: 'All Jobs', icon: 'infinite-outline' },
+                { value: 'TODAY', label: 'Today', icon: 'today-outline' },
+                { value: 'THIS_WEEK', label: 'This Week', icon: 'calendar-outline' },
+                { value: 'THIS_MONTH', label: 'This Month', icon: 'calendar-number-outline' },
+                { value: 'CUSTOM', label: 'Date Range', icon: 'calendar-sharp' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => {
+                    if (option.value === 'CUSTOM') {
+                      setShowCustomDatePicker(true);
+                      setDateFilter('CUSTOM');
+                    } else {
+                      setDateFilter(option.value as DateFilter);
+                      setShowFilterModal(false);
+                    }
+                  }}
+                  className={`flex-row items-center justify-between p-4 rounded-xl ${
+                    dateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
+                  }`}
+                  activeOpacity={0.7}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons
+                      name={option.icon as keyof typeof Ionicons.glyphMap}
+                      size={20}
+                      color={dateFilter === option.value ? '#ffffff' : '#64748b'}
+                    />
+                    <Text
+                      className={`ml-3 text-base font-semibold ${
+                        dateFilter === option.value ? 'text-white' : 'text-slate-800'
+                      }`}
+                    >
+                      {option.label}
+                    </Text>
+                  </View>
+                  {dateFilter === option.value && (
+                    <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Custom Date Range Picker */}
+            {showCustomDatePicker && (
+              <View className="mt-4 p-4 bg-slate-50 rounded-xl">
+                <Text className="text-sm font-semibold text-slate-700 mb-3">
+                  Select Date Range
+                </Text>
+
+                {/* Start Date */}
+                <View className="mb-3">
+                  <Text className="text-xs text-slate-600 mb-1">From</Text>
+                  <View className="flex-row items-center bg-white rounded-lg px-3 py-2 border border-slate-200">
+                    <Ionicons name="calendar-outline" size={18} color="#64748b" />
+                    <TextInput
+                      className="flex-1 ml-2 text-slate-800"
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#94a3b8"
+                      value={startDate}
+                      onChangeText={setStartDate}
+                    />
+                  </View>
+                </View>
+
+                {/* End Date */}
+                <View className="mb-3">
+                  <Text className="text-xs text-slate-600 mb-1">To</Text>
+                  <View className="flex-row items-center bg-white rounded-lg px-3 py-2 border border-slate-200">
+                    <Ionicons name="calendar-outline" size={18} color="#64748b" />
+                    <TextInput
+                      className="flex-1 ml-2 text-slate-800"
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#94a3b8"
+                      value={endDate}
+                      onChangeText={setEndDate}
+                    />
+                  </View>
+                </View>
+
+                {/* Apply Button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if (startDate && endDate) {
+                      setShowCustomDatePicker(false);
+                      setShowFilterModal(false);
+                    }
+                  }}
+                  className={`rounded-lg py-3 items-center ${
+                    startDate && endDate ? 'bg-[#0092ce]' : 'bg-slate-300'
+                  }`}
+                  activeOpacity={0.7}
+                  disabled={!startDate || !endDate}
+                >
+                  <Text className="text-white font-semibold text-base">
+                    Apply Date Range
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Clear Filter Button */}
+            {dateFilter !== 'ALL' && (
+              <TouchableOpacity
+                onPress={() => {
+                  setDateFilter('ALL');
+                  setStartDate('');
+                  setEndDate('');
+                  setShowCustomDatePicker(false);
+                  setShowFilterModal(false);
+                }}
+                className="mt-4 bg-slate-200 rounded-xl py-3 items-center"
+                activeOpacity={0.7}
+              >
+                <Text className="text-slate-700 font-semibold text-base">
+                  Clear Filter
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
