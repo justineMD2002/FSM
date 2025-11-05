@@ -15,12 +15,33 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('ALL');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+
+  // Separate filter states for HISTORY tab
+  const [historyDateFilter, setHistoryDateFilter] = useState<DateFilter>('ALL');
+  const [historyStartDate, setHistoryStartDate] = useState('');
+  const [historyEndDate, setHistoryEndDate] = useState('');
+  const [historyStatusFilters, setHistoryStatusFilters] = useState<string[]>([]);
+
+  // Separate filter states for CURRENT tab
+  const [currentDateFilter, setCurrentDateFilter] = useState<DateFilter>('ALL');
+  const [currentStartDate, setCurrentStartDate] = useState('');
+  const [currentEndDate, setCurrentEndDate] = useState('');
+  const [currentStatusFilters, setCurrentStatusFilters] = useState<string[]>([]);
+
+  // Temporary filter states for the modal (not applied until user clicks Apply)
+  const [tempDateFilter, setTempDateFilter] = useState<DateFilter>('ALL');
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
+  const [tempStatusFilters, setTempStatusFilters] = useState<string[]>([]);
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
-  const [statusFilters, setStatusFilters] = useState<string[]>([]);
+
   const { selectedJob, setSelectedJob, showMapView, setShowMapView } = useNavigation();
+
+  // Get current tab's filter states
+  const dateFilter = activeTab === 'HISTORY' ? historyDateFilter : currentDateFilter;
+  const startDate = activeTab === 'HISTORY' ? historyStartDate : currentStartDate;
+  const endDate = activeTab === 'HISTORY' ? historyEndDate : currentEndDate;
+  const statusFilters = activeTab === 'HISTORY' ? historyStatusFilters : currentStatusFilters;
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -29,9 +50,41 @@ export default function HomeScreen() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'CURRENT') {
-      setStatusFilters([]);
+  };
+
+  // Initialize temporary filters with current tab's values when opening modal
+  const handleOpenFilterModal = () => {
+    setTempDateFilter(dateFilter);
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+    setTempStatusFilters([...statusFilters]);
+    setShowFilterModal(true);
+  };
+
+  // Apply temporary filters to the current tab
+  const handleApplyFilters = () => {
+    if (activeTab === 'HISTORY') {
+      setHistoryDateFilter(tempDateFilter);
+      setHistoryStartDate(tempStartDate);
+      setHistoryEndDate(tempEndDate);
+      setHistoryStatusFilters([...tempStatusFilters]);
+    } else {
+      setCurrentDateFilter(tempDateFilter);
+      setCurrentStartDate(tempStartDate);
+      setCurrentEndDate(tempEndDate);
+      setCurrentStatusFilters([...tempStatusFilters]);
     }
+    setShowFilterModal(false);
+    setShowCustomDatePicker(false);
+  };
+
+  // Clear temporary filters
+  const handleClearFilters = () => {
+    setTempDateFilter('ALL');
+    setTempStartDate('');
+    setTempEndDate('');
+    setTempStatusFilters([]);
+    setShowCustomDatePicker(false);
   };
 
   const jobs = activeTab === 'HISTORY' ? mockHistoryJobs : mockCurrentJobs;
@@ -133,7 +186,7 @@ export default function HomeScreen() {
           </View>
 
           <TouchableOpacity
-            onPress={() => setShowFilterModal(true)}
+            onPress={handleOpenFilterModal}
             className="bg-[#0092ce] rounded-lg p-3 items-center justify-center"
             activeOpacity={0.7}
           >
@@ -217,16 +270,16 @@ export default function HomeScreen() {
                     onPress={() => {
                       if (option.value === 'CUSTOM') {
                         setShowCustomDatePicker(true);
-                        setDateFilter('CUSTOM');
+                        setTempDateFilter('CUSTOM');
                       } else {
-                        setDateFilter(option.value as DateFilter);
+                        setTempDateFilter(option.value as DateFilter);
                         if (option.value !== 'CUSTOM') {
                           setShowCustomDatePicker(false);
                         }
                       }
                     }}
                     className={`flex-row items-center justify-between p-3 rounded-lg ${
-                      dateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
+                      tempDateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
                     }`}
                     activeOpacity={0.7}
                   >
@@ -234,17 +287,17 @@ export default function HomeScreen() {
                       <Ionicons
                         name={option.icon as keyof typeof Ionicons.glyphMap}
                         size={18}
-                        color={dateFilter === option.value ? '#ffffff' : '#64748b'}
+                        color={tempDateFilter === option.value ? '#ffffff' : '#64748b'}
                       />
                       <Text
                         className={`ml-3 text-sm font-semibold ${
-                          dateFilter === option.value ? 'text-white' : 'text-slate-800'
+                          tempDateFilter === option.value ? 'text-white' : 'text-slate-800'
                         }`}
                       >
                         {option.label}
                       </Text>
                     </View>
-                    {dateFilter === option.value && (
+                    {tempDateFilter === option.value && (
                       <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
                     )}
                   </TouchableOpacity>
@@ -260,15 +313,15 @@ export default function HomeScreen() {
                     { value: 'COMPLETED', label: 'Completed', icon: 'checkmark-circle-outline', color: '#22c55e' },
                     { value: 'CANCELLED', label: 'Cancelled', icon: 'close-circle-outline', color: '#ef4444' },
                   ].map((status) => {
-                    const isSelected = statusFilters.includes(status.value);
+                    const isSelected = tempStatusFilters.includes(status.value);
                     return (
                       <TouchableOpacity
                         key={status.value}
                         onPress={() => {
                           if (isSelected) {
-                            setStatusFilters(statusFilters.filter(s => s !== status.value));
+                            setTempStatusFilters(tempStatusFilters.filter(s => s !== status.value));
                           } else {
-                            setStatusFilters([...statusFilters, status.value]);
+                            setTempStatusFilters([...tempStatusFilters, status.value]);
                           }
                         }}
                         className={`flex-row items-center justify-between p-3 rounded-lg ${
@@ -314,8 +367,8 @@ export default function HomeScreen() {
                       className="flex-1 ml-2 text-slate-800"
                       placeholder="YYYY-MM-DD"
                       placeholderTextColor="#94a3b8"
-                      value={startDate}
-                      onChangeText={setStartDate}
+                      value={tempStartDate}
+                      onChangeText={setTempStartDate}
                     />
                   </View>
                 </View>
@@ -328,23 +381,23 @@ export default function HomeScreen() {
                       className="flex-1 ml-2 text-slate-800"
                       placeholder="YYYY-MM-DD"
                       placeholderTextColor="#94a3b8"
-                      value={endDate}
-                      onChangeText={setEndDate}
+                      value={tempEndDate}
+                      onChangeText={setTempEndDate}
                     />
                   </View>
                 </View>
 
                 <TouchableOpacity
                   onPress={() => {
-                    if (startDate && endDate) {
+                    if (tempStartDate && tempEndDate) {
                       setShowCustomDatePicker(false);
                     }
                   }}
                   className={`rounded-lg py-3 items-center ${
-                    startDate && endDate ? 'bg-[#0092ce]' : 'bg-slate-300'
+                    tempStartDate && tempEndDate ? 'bg-[#0092ce]' : 'bg-slate-300'
                   }`}
                   activeOpacity={0.7}
-                  disabled={!startDate || !endDate}
+                  disabled={!tempStartDate || !tempEndDate}
                 >
                   <Text className="text-white font-semibold text-base">
                     Apply Date Range
@@ -356,15 +409,9 @@ export default function HomeScreen() {
 
             <View className="px-6 py-4 border-t border-slate-200">
               <View className="flex-row gap-2">
-                {hasActiveFilters && (
+                {(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) && (
                   <TouchableOpacity
-                    onPress={() => {
-                      setDateFilter('ALL');
-                      setStartDate('');
-                      setEndDate('');
-                      setShowCustomDatePicker(false);
-                      setStatusFilters([]);
-                    }}
+                    onPress={handleClearFilters}
                     className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
                     activeOpacity={0.7}
                   >
@@ -374,12 +421,12 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
-                  onPress={() => setShowFilterModal(false)}
-                  className={`${hasActiveFilters ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl py-3 items-center`}
+                  onPress={handleApplyFilters}
+                  className={`${(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl py-3 items-center`}
                   activeOpacity={0.7}
                 >
                   <Text className="text-white font-semibold text-base">
-                    {hasActiveFilters ? 'Apply Filters' : 'Close'}
+                    Apply Filters
                   </Text>
                 </TouchableOpacity>
               </View>
