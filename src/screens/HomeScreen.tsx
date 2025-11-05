@@ -9,7 +9,6 @@ import { useNavigation } from '@/contexts/NavigationContext';
 type TabType = 'HISTORY' | 'CURRENT';
 type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
 
-// 🔹 Main Screen
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('CURRENT');
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +18,7 @@ export default function HomeScreen() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const { selectedJob, setSelectedJob } = useNavigation();
 
   const onRefresh = useCallback(() => {
@@ -26,9 +26,15 @@ export default function HomeScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   }, []);
 
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    if (tab === 'CURRENT') {
+      setStatusFilters([]);
+    }
+  };
+
   const jobs = activeTab === 'HISTORY' ? mockHistoryJobs : mockCurrentJobs;
 
-  // Date filtering helper
   const isJobInDateRange = (jobDate: string) => {
     if (dateFilter === 'ALL') return true;
 
@@ -74,23 +80,25 @@ export default function HomeScreen() {
 
     const matchesDate = isJobInDateRange(job.date);
 
-    return matchesSearch && matchesDate;
+    const matchesStatus = statusFilters.length === 0 || statusFilters.includes(job.status);
+
+    return matchesSearch && matchesDate && matchesStatus;
   });
 
-  // Show JobDetailsScreen if a job is selected
+  const hasActiveFilters = dateFilter !== 'ALL' || (activeTab === 'HISTORY' && statusFilters.length > 0);
+
   if (selectedJob) {
     return <JobDetailsScreen job={selectedJob} onBack={() => setSelectedJob(null)} />;
   }
 
   return (
     <View className="flex-1 bg-white" style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}>
-      {/* Tabs */}
       <View className="flex-row bg-white border-b border-slate-200 px-6">
         {(['HISTORY', 'CURRENT'] as TabType[]).map((tab) => (
           <TouchableOpacity
             key={tab}
             className="flex-1 py-4 items-center"
-            onPress={() => setActiveTab(tab)}
+            onPress={() => handleTabChange(tab)}
             activeOpacity={0.7}
           >
             <Text
@@ -105,7 +113,6 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      {/* Search and Filter */}
       <View className="px-6 pt-4 bg-white">
         <View className="flex-row items-center gap-2">
           <View className="flex-1 flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
@@ -125,14 +132,13 @@ export default function HomeScreen() {
             activeOpacity={0.7}
           >
             <Ionicons name="filter-outline" size={24} color="#ffffff" />
-            {dateFilter !== 'ALL' && (
+            {hasActiveFilters && (
               <View className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
             )}
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Job List */}
       <ScrollView
         className="flex-1 bg-[#f5f5f5] mt-4"
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
@@ -159,7 +165,6 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* Date Filter Modal */}
       <Modal
         visible={showFilterModal}
         transparent={true}
@@ -170,12 +175,12 @@ export default function HomeScreen() {
         }}
       >
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
-          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <View className="flex-row items-center justify-between mb-6">
+          <View className="bg-white rounded-2xl w-full max-w-md" style={{ maxHeight: '80%' }}>
+            <View className="flex-row items-center justify-between p-6 pb-4 border-b border-slate-200">
               <View className="flex-row items-center">
-                <Ionicons name="calendar-outline" size={24} color="#0092ce" />
+                <Ionicons name="options-outline" size={24} color="#0092ce" />
                 <Text className="text-xl font-bold text-slate-800 ml-2">
-                  Filter by Date
+                  Filter Jobs
                 </Text>
               </View>
               <TouchableOpacity
@@ -189,60 +194,112 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Filter Options */}
-            <View className="space-y-2">
-              {[
-                { value: 'ALL', label: 'All Jobs', icon: 'infinite-outline' },
-                { value: 'TODAY', label: 'Today', icon: 'today-outline' },
-                { value: 'THIS_WEEK', label: 'This Week', icon: 'calendar-outline' },
-                { value: 'THIS_MONTH', label: 'This Month', icon: 'calendar-number-outline' },
-                { value: 'CUSTOM', label: 'Date Range', icon: 'calendar-sharp' },
-              ].map((option) => (
-                <TouchableOpacity
-                  key={option.value}
-                  onPress={() => {
-                    if (option.value === 'CUSTOM') {
-                      setShowCustomDatePicker(true);
-                      setDateFilter('CUSTOM');
-                    } else {
-                      setDateFilter(option.value as DateFilter);
-                      setShowFilterModal(false);
-                    }
-                  }}
-                  className={`flex-row items-center justify-between p-4 rounded-xl ${
-                    dateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
-                  }`}
-                  activeOpacity={0.7}
-                >
-                  <View className="flex-row items-center">
-                    <Ionicons
-                      name={option.icon as keyof typeof Ionicons.glyphMap}
-                      size={20}
-                      color={dateFilter === option.value ? '#ffffff' : '#64748b'}
-                    />
-                    <Text
-                      className={`ml-3 text-base font-semibold ${
-                        dateFilter === option.value ? 'text-white' : 'text-slate-800'
-                      }`}
-                    >
-                      {option.label}
-                    </Text>
-                  </View>
-                  {dateFilter === option.value && (
-                    <Ionicons name="checkmark-circle" size={24} color="#ffffff" />
-                  )}
-                </TouchableOpacity>
-              ))}
+            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false}>
+
+            <View className="mb-6">
+              <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Date</Text>
+              <View className="space-y-2">
+                {[
+                  { value: 'ALL', label: 'All Dates', icon: 'infinite-outline' },
+                  { value: 'TODAY', label: 'Today', icon: 'today-outline' },
+                  { value: 'THIS_WEEK', label: 'This Week', icon: 'calendar-outline' },
+                  { value: 'THIS_MONTH', label: 'This Month', icon: 'calendar-number-outline' },
+                  { value: 'CUSTOM', label: 'Date Range', icon: 'calendar-sharp' },
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    onPress={() => {
+                      if (option.value === 'CUSTOM') {
+                        setShowCustomDatePicker(true);
+                        setDateFilter('CUSTOM');
+                      } else {
+                        setDateFilter(option.value as DateFilter);
+                        if (option.value !== 'CUSTOM') {
+                          setShowCustomDatePicker(false);
+                        }
+                      }
+                    }}
+                    className={`flex-row items-center justify-between p-3 rounded-lg ${
+                      dateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
+                    }`}
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-center">
+                      <Ionicons
+                        name={option.icon as keyof typeof Ionicons.glyphMap}
+                        size={18}
+                        color={dateFilter === option.value ? '#ffffff' : '#64748b'}
+                      />
+                      <Text
+                        className={`ml-3 text-sm font-semibold ${
+                          dateFilter === option.value ? 'text-white' : 'text-slate-800'
+                        }`}
+                      >
+                        {option.label}
+                      </Text>
+                    </View>
+                    {dateFilter === option.value && (
+                      <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
-            {/* Custom Date Range Picker */}
+            {activeTab === 'HISTORY' && (
+              <View className="mb-4">
+                <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Status</Text>
+                <View className="space-y-2">
+                  {[
+                    { value: 'COMPLETED', label: 'Completed', icon: 'checkmark-circle-outline', color: '#22c55e' },
+                    { value: 'CANCELLED', label: 'Cancelled', icon: 'close-circle-outline', color: '#ef4444' },
+                  ].map((status) => {
+                    const isSelected = statusFilters.includes(status.value);
+                    return (
+                      <TouchableOpacity
+                        key={status.value}
+                        onPress={() => {
+                          if (isSelected) {
+                            setStatusFilters(statusFilters.filter(s => s !== status.value));
+                          } else {
+                            setStatusFilters([...statusFilters, status.value]);
+                          }
+                        }}
+                        className={`flex-row items-center justify-between p-3 rounded-lg ${
+                          isSelected ? 'bg-slate-800' : 'bg-slate-100'
+                        }`}
+                        activeOpacity={0.7}
+                      >
+                        <View className="flex-row items-center">
+                          <Ionicons
+                            name={status.icon as keyof typeof Ionicons.glyphMap}
+                            size={18}
+                            color={isSelected ? '#ffffff' : status.color}
+                          />
+                          <Text
+                            className={`ml-3 text-sm font-semibold ${
+                              isSelected ? 'text-white' : 'text-slate-800'
+                            }`}
+                          >
+                            {status.label}
+                          </Text>
+                        </View>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
             {showCustomDatePicker && (
               <View className="mt-4 p-4 bg-slate-50 rounded-xl">
                 <Text className="text-sm font-semibold text-slate-700 mb-3">
                   Select Date Range
                 </Text>
 
-                {/* Start Date */}
                 <View className="mb-3">
                   <Text className="text-xs text-slate-600 mb-1">From</Text>
                   <View className="flex-row items-center bg-white rounded-lg px-3 py-2 border border-slate-200">
@@ -257,7 +314,6 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
-                {/* End Date */}
                 <View className="mb-3">
                   <Text className="text-xs text-slate-600 mb-1">To</Text>
                   <View className="flex-row items-center bg-white rounded-lg px-3 py-2 border border-slate-200">
@@ -272,12 +328,10 @@ export default function HomeScreen() {
                   </View>
                 </View>
 
-                {/* Apply Button */}
                 <TouchableOpacity
                   onPress={() => {
                     if (startDate && endDate) {
                       setShowCustomDatePicker(false);
-                      setShowFilterModal(false);
                     }
                   }}
                   className={`rounded-lg py-3 items-center ${
@@ -292,25 +346,38 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            </ScrollView>
 
-            {/* Clear Filter Button */}
-            {dateFilter !== 'ALL' && (
-              <TouchableOpacity
-                onPress={() => {
-                  setDateFilter('ALL');
-                  setStartDate('');
-                  setEndDate('');
-                  setShowCustomDatePicker(false);
-                  setShowFilterModal(false);
-                }}
-                className="mt-4 bg-slate-200 rounded-xl py-3 items-center"
-                activeOpacity={0.7}
-              >
-                <Text className="text-slate-700 font-semibold text-base">
-                  Clear Filter
-                </Text>
-              </TouchableOpacity>
-            )}
+            <View className="px-6 py-4 border-t border-slate-200">
+              <View className="flex-row gap-2">
+                {hasActiveFilters && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setDateFilter('ALL');
+                      setStartDate('');
+                      setEndDate('');
+                      setShowCustomDatePicker(false);
+                      setStatusFilters([]);
+                    }}
+                    className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-slate-700 font-semibold text-base">
+                      Clear All
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => setShowFilterModal(false)}
+                  className={`${hasActiveFilters ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl py-3 items-center`}
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-white font-semibold text-base">
+                    {hasActiveFilters ? 'Apply Filters' : 'Close'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
