@@ -6,7 +6,7 @@ import { useNavigation } from '@/contexts/NavigationContext';
 
 export default function DashboardHeader() {
   const { user } = useAuth();
-  const { selectedJob, setSelectedJob } = useNavigation();
+  const { selectedJob, setSelectedJob, setShowMapView } = useNavigation();
 
   // Get initials for avatar
   const getInitials = () => {
@@ -53,9 +53,15 @@ export default function DashboardHeader() {
             <Text className="text-black text-xl font-semibold ml-3">My Jobs</Text>
           </View>
 
-          {/* Right: Info Icon and Avatar */}
+          {/* Right: Map Icon and Avatar */}
           <View className="flex-row items-center">
-            <Ionicons name="information-circle" size={26} color="#0092ce" style={{ marginRight: 12 }} />
+            <TouchableOpacity
+              onPress={() => setShowMapView(true)}
+              activeOpacity={0.7}
+              style={{ marginRight: 12 }}
+            >
+              <Ionicons name="map" size={24} color="#0092ce" />
+            </TouchableOpacity>
             <View
               className="w-12 h-12 rounded-full items-center justify-center"
               style={{ backgroundColor: '#ffffff' }}
