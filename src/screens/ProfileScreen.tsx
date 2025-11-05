@@ -17,6 +17,11 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
+  // Break functionality states
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [breakStartTime, setBreakStartTime] = useState<number | null>(null);
+  const [totalBreakTime, setTotalBreakTime] = useState(0);
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -40,11 +45,11 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (currentAttendance?.clock_in && !currentAttendance?.clock_out) {
+    if (currentAttendance?.clock_in && !currentAttendance?.clock_out && !isOnBreak) {
       interval = setInterval(() => {
         const clockInTime = new Date(currentAttendance.clock_in).getTime();
         const now = Date.now();
-        const diff = now - clockInTime;
+        const diff = now - clockInTime - totalBreakTime;
 
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -54,14 +59,14 @@ export default function ProfileScreen() {
           `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
         );
       }, 1000);
-    } else {
+    } else if (!currentAttendance?.clock_in || currentAttendance?.clock_out) {
       setRunningTime('00:00:00');
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [currentAttendance]);
+  }, [currentAttendance, isOnBreak, totalBreakTime]);
 
   const fetchProfile = async () => {
     try {
@@ -154,6 +159,10 @@ export default function ProfileScreen() {
 
       console.log('Clock in successful:', data);
       setCurrentAttendance(data);
+      // Reset break states
+      setIsOnBreak(false);
+      setBreakStartTime(null);
+      setTotalBreakTime(0);
       setShowSuccessModal(true);
       await fetchAttendanceData();
     } catch (error: any) {
@@ -171,7 +180,8 @@ export default function ProfileScreen() {
     try {
       const clockOutTime = new Date().toISOString();
       const clockInTime = new Date(currentAttendance.clock_in).getTime();
-      const durationMinutes = Math.floor((Date.now() - clockInTime) / (1000 * 60));
+      // Calculate duration excluding break time
+      const durationMinutes = Math.floor((Date.now() - clockInTime - totalBreakTime) / (1000 * 60));
 
       console.log('Clocking out attendance:', currentAttendance.id);
 
@@ -190,11 +200,31 @@ export default function ProfileScreen() {
 
       console.log('Clock out successful');
       setCurrentAttendance(null);
+      // Reset break states
+      setIsOnBreak(false);
+      setBreakStartTime(null);
+      setTotalBreakTime(0);
       await fetchAttendanceData();
       Alert.alert('Success', 'You have been clocked out successfully.');
     } catch (error: any) {
       console.error('Error clocking out:', error);
       Alert.alert('Error', error?.message || 'Failed to clock out. Please try again.');
+    }
+  };
+
+  const handleBreakToggle = () => {
+    if (isOnBreak) {
+      // Resume from break
+      if (breakStartTime) {
+        const breakDuration = Date.now() - breakStartTime;
+        setTotalBreakTime(totalBreakTime + breakDuration);
+        setBreakStartTime(null);
+      }
+      setIsOnBreak(false);
+    } else {
+      // Start break
+      setBreakStartTime(Date.now());
+      setIsOnBreak(true);
     }
   };
 
@@ -422,14 +452,22 @@ export default function ProfileScreen() {
           <View className="bg-white rounded-2xl p-4 shadow-md flex-row items-center" style={{ width: '85%' }}>
             <Ionicons name="stopwatch-outline" size={24} color="#0092ce" style={{ marginRight: 12 }} />
             <View className="flex-1">
-              <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-slate-500 text-sm mb-1">Running Time</Text>
+                {isOnBreak && (
+                  <View className="flex-row items-center bg-orange-100 px-2 py-1 rounded-full">
+                    <Ionicons name="pause" size={12} color="#f59e0b" style={{ marginRight: 4 }} />
+                    <Text className="text-orange-600 text-xs font-semibold">On Break</Text>
+                  </View>
+                )}
+              </View>
               <Text className="text-slate-800 text-lg font-semibold text-[#0092ce]">{runningTime}</Text>
             </View>
           </View>
         </View>
 
         <TouchableOpacity
-          className="rounded-lg py-4 shadow-md mb-6 flex-row items-center justify-center"
+          className="rounded-lg py-4 shadow-md mb-3 flex-row items-center justify-center"
           style={{ backgroundColor: currentAttendance ? '#ef4444' : '#0092ce' }}
           onPress={handleClockToggle}
           activeOpacity={0.8}
@@ -437,6 +475,28 @@ export default function ProfileScreen() {
           <Ionicons name={currentAttendance ? 'log-out-outline' : 'log-in-outline'} size={20} color="#ffffff" style={{ marginRight: 8 }} />
           <Text className="text-white text-center font-bold text-base">
             {currentAttendance ? 'Clock Out' : 'Clock In'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Take a Break Button */}
+        <TouchableOpacity
+          className="rounded-lg py-4 shadow-md mb-6 flex-row items-center justify-center"
+          style={{
+            backgroundColor: !currentAttendance ? '#cbd5e1' : isOnBreak ? '#10b981' : '#f59e0b',
+            opacity: !currentAttendance ? 0.5 : 1
+          }}
+          onPress={handleBreakToggle}
+          disabled={!currentAttendance}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={isOnBreak ? 'play-outline' : 'pause-outline'}
+            size={20}
+            color="#ffffff"
+            style={{ marginRight: 8 }}
+          />
+          <Text className="text-white text-center font-bold text-base">
+            {isOnBreak ? 'Resume' : 'Take a Break'}
           </Text>
         </TouchableOpacity>
 
