@@ -8,6 +8,7 @@ import JobMapView from '@/components/JobMapView';
 import DetailsTab from '@/components/DetailsTab';
 import ServiceTab from '@/components/ServiceTab';
 import CompleteTab from '@/components/CompleteTab';
+import ChatTab from '@/components/ChatTab';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -15,7 +16,7 @@ interface JobDetailsScreenProps {
   showBackButton?: boolean;
 }
 
-type TabType = 'Details' | 'Navigate' | 'Service' | 'Complete';
+type TabType = 'Details' | 'Navigate' | 'Service' | 'Complete' | 'Chat';
 
 interface TabConfig {
   id: TabType;
@@ -76,6 +77,19 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const isJobPending = job.status === 'PENDING';
   const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
+
+  // Define tabs based on whether it's a history job
+  const baseTabs: TabConfig[] = [
+    { id: 'Details', icon: 'document-text-outline', label: 'Details' },
+    { id: 'Navigate', icon: 'navigate-outline', label: 'Navigate' },
+    { id: 'Service', icon: 'build-outline', label: 'Service' },
+    { id: 'Complete', icon: 'checkmark-circle-outline', label: 'Complete' },
+  ];
+
+  // Add Chat tab for history jobs only
+  const tabs: TabConfig[] = isHistoryJob
+    ? [...baseTabs, { id: 'Chat', icon: 'chatbubbles-outline', label: 'Chat' }]
+    : baseTabs;
 
   const activeTabIndex = tabs.findIndex(tab => tab.id === activeTab);
 
@@ -155,6 +169,11 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         // Map view takes full height without ScrollView
         <View className="flex-1">
           <JobMapView address={job.address} isHistoryJob={isHistoryJob} />
+        </View>
+      ) : activeTab === 'Chat' ? (
+        // Chat tab takes full height without parent ScrollView
+        <View className="flex-1 px-4 py-4">
+          <ChatTab />
         </View>
       ) : (
         <ScrollView className="flex-1 px-4 py-4">
