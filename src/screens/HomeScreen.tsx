@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { mockHistoryJobs, mockCurrentJobs } from '@/data/JobsMockData';
 import { JobCard } from '@/components/JobCard';
 import JobDetailsScreen from './JobDetailsScreen';
+import MapViewScreen from './MapViewScreen';
 import { useNavigation } from '@/contexts/NavigationContext';
 
 type TabType = 'HISTORY' | 'CURRENT';
@@ -19,7 +20,7 @@ export default function HomeScreen() {
   const [endDate, setEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
-  const { selectedJob, setSelectedJob } = useNavigation();
+  const { selectedJob, setSelectedJob, showMapView, setShowMapView } = useNavigation();
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -86,6 +87,11 @@ export default function HomeScreen() {
   });
 
   const hasActiveFilters = dateFilter !== 'ALL' || (activeTab === 'HISTORY' && statusFilters.length > 0);
+
+  // Show MapViewScreen if map view is active
+  if (showMapView) {
+    return <MapViewScreen onBack={() => setShowMapView(false)} />;
+  }
 
   if (selectedJob) {
     return <JobDetailsScreen job={selectedJob} onBack={() => setSelectedJob(null)} />;

@@ -35,9 +35,69 @@ export const mockCurrentJobs: Job[] = [
     date: '2025-10-30',
     time: '01:00 PM',
     customer: 'Building D',
-    address: 'SM Seaside City Cebu, South Road Properties, Cebu City, Cebu, Philippines',
+    address: '426 Cebu South Coastal Road, :contentReference[oaicite:0]{index=0}, South Road Properties, Cebu City 6000, Cebu, Philippines',
     notes: 'Check pressure levels',
     providerName: 'Sarah Connor',
+    status: 'PENDING'
+  },
+  {
+    id: '5',
+    jobName: 'Air Conditioning Service',
+    jobCode: 'JOB-005',
+    date: '2025-10-30',
+    time: '09:00 AM',
+    customer: 'PANASONIC ASIA PACIFIC PTE LTD',
+    address: 'Panasonic Building, C.D. Seno St., Tipolo, Mandaue City (near Cebu City), Cebu, Philippines',
+    notes: 'Quarterly AC maintenance',
+    providerName: 'John Doe',
+    status: 'PENDING'
+  },
+  {
+    id: '6',
+    jobName: 'Generator Maintenance',
+    jobCode: 'JOB-006',
+    date: '2025-10-30',
+    time: '10:30 AM',
+    customer: 'Building B',
+    address: '429 Asiatown IT Park, Lahug, Cebu City 6000, Cebu, Philippines',
+    notes: 'Monthly generator check',
+    providerName: 'Jane Smith',
+    status: 'PENDING'
+  },
+  {
+    id: '7',
+    jobName: 'Fire Alarm System Test',
+    jobCode: 'JOB-007',
+    date: '2025-10-30',
+    time: '03:00 PM',
+    customer: 'SM Seaside Complex',
+    address: '426 Cebu South Coastal Road, SM Seaside City Cebu, South Road Properties, Cebu City 6000, Cebu, Philippines',
+    notes: 'Annual fire safety inspection',
+    providerName: 'Mike Johnson',
+    status: 'PENDING'
+  },
+  {
+    id: '8',
+    jobName: 'Plumbing Repair',
+    jobCode: 'JOB-008',
+    date: '2025-10-31',
+    time: '08:00 AM',
+    customer: 'PANASONIC ASIA PACIFIC PTE LTD',
+    address: 'Panasonic Building, C.D. Seno St., Tipolo, Mandaue City, Cebu, Philippines',
+    notes: 'Fix water leak in basement',
+    providerName: 'Sarah Connor',
+    status: 'PENDING'
+  },
+  {
+    id: '9',
+    jobName: 'Security System Update',
+    jobCode: 'JOB-009',
+    date: '2025-10-31',
+    time: '11:00 AM',
+    customer: 'IT Park Building',
+    address: 'G/F Teleperformance Tower (beside Skyrise 2), I Villa St., Brgy. Apas, Cebu IT Park, Cebu City 6000, Cebu, Philippines',
+    notes: 'Install new cameras',
+    providerName: 'John Doe',
     status: 'PENDING'
   }
 ];

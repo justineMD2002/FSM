@@ -6,7 +6,7 @@ import Header from '@/components/Header';
 import DashboardHeader from '@/components/DashboardHeader';
 import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
-import { NavigationProvider } from '@/contexts/NavigationContext';
+import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
 import CustomersScreen from './CustomersScreen';
 
 interface TabConfig {
@@ -15,8 +15,9 @@ interface TabConfig {
   useCustomHeader?: boolean;
 }
 
-export default function MainScreen() {
+function MainScreenContent() {
   const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
+  const { showMapView, selectedJob } = useNavigation();
 
   const tabConfig: Record<Tab, TabConfig> = {
     [Tab.HOME]: {
@@ -36,13 +37,22 @@ export default function MainScreen() {
 
   const currentTab = tabConfig[activeTab];
 
+  // Show header/footer when viewing job details even from map view
+  const shouldShowHeaderFooter = !showMapView || selectedJob !== null;
+
+  return (
+    <View className="flex-1 bg-slate-50">
+      {shouldShowHeaderFooter && (currentTab.useCustomHeader ? <DashboardHeader /> : <Header title={currentTab.title} />)}
+      {currentTab.screen}
+      {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
+    </View>
+  );
+}
+
+export default function MainScreen() {
   return (
     <NavigationProvider>
-      <View className="flex-1 bg-slate-50">
-        {currentTab.useCustomHeader ? <DashboardHeader /> : <Header title={currentTab.title} />}
-        {currentTab.screen}
-        <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />
-      </View>
+      <MainScreenContent />
     </NavigationProvider>
   );
 }
