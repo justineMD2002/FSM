@@ -6,8 +6,8 @@ import Header from '@/components/Header';
 import DashboardHeader from '@/components/DashboardHeader';
 import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
-import Technicians from './TechniciansScreen';
 import { NavigationProvider } from '@/contexts/NavigationContext';
+import CustomersScreen from './CustomersScreen';
 
 interface TabConfig {
   title: string;
@@ -25,8 +25,8 @@ export default function MainScreen() {
       useCustomHeader: true,
     },
     [Tab.TECHNICIANS]: {
-      title: 'Technicicans',
-      screen: <Technicians />,
+      title: 'Customers',
+      screen: <CustomersScreen />,
     },
     [Tab.PROFILE]: {
       title: 'Profile',
