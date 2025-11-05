@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,9 +14,9 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState('');
   const { signIn } = useAuth();
 
-  // Load saved credentials on mount
   useEffect(() => {
     loadSavedCredentials();
   }, []);
@@ -54,18 +54,24 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password');
+      setError('Please enter both email and password');
       return;
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
+    setError('');
+    const { error: authError } = await signIn(email, password);
     setLoading(false);
 
-    if (error) {
-      Alert.alert('Login Failed', error.message);
+    if (authError) {
+      if (authError.message.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please try again.');
+      } else if (authError.message.includes('Email not confirmed')) {
+        setError('Please verify your email address before logging in.');
+      } else {
+        setError(authError.message || 'Login failed. Please try again.');
+      }
     } else {
-      // Save credentials if login is successful
       await saveCredentials();
     }
   };
@@ -76,7 +82,6 @@ export default function LoginScreen() {
       className="flex-1 bg-white"
     >
       <View className="flex-1 justify-center px-8">
-        {/* Header Section */}
         <View className="mb-10 items-center">
           <Image
             source={require('../../assets/SAS-LOGO.png')}
@@ -91,9 +96,7 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        {/* Form Section */}
         <View>
-          {/* Email Input */}
           <View className="mb-4">
             <View className="relative flex-row items-center">
               <Ionicons
@@ -107,7 +110,10 @@ export default function LoginScreen() {
                 placeholder="Enter your email"
                 placeholderTextColor="#94a3b8"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setError(''); 
+                }}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 editable={!loading}
@@ -115,7 +121,6 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Password Input with Eye Icon */}
           <View className="mb-4">
             <View className="relative flex-row items-center">
               <Ionicons
@@ -129,7 +134,10 @@ export default function LoginScreen() {
                 placeholder="Enter your password"
                 placeholderTextColor="#94a3b8"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setError(''); 
+                }}
                 secureTextEntry={!showPassword}
                 editable={!loading}
               />
@@ -147,7 +155,13 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* Remember Me Checkbox */}
+          {error ? (
+            <View className="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex-row items-center">
+              <Ionicons name="alert-circle" size={20} color="#ef4444" style={{ marginRight: 8 }} />
+              <Text className="text-red-600 text-sm flex-1">{error}</Text>
+            </View>
+          ) : null}
+
           <TouchableOpacity
             className="flex-row items-center mb-6"
             onPress={() => setRememberMe(!rememberMe)}
@@ -165,7 +179,6 @@ export default function LoginScreen() {
             <Text className="text-slate-700 text-sm">Remember me</Text>
           </TouchableOpacity>
 
-          {/* Sign In Button */}
           <TouchableOpacity
             className={`rounded-xl py-4 shadow-md ${loading ? 'opacity-70' : ''}`}
             style={{ backgroundColor: '#0092ce' }}
@@ -182,14 +195,12 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Technical Support */}
           <Text className="text-slate-500 text-center mt-6 text-sm">
             Need technical support? {' '}
             <Text className="text-[#0092ce]">Contact IT</Text>
           </Text>
         </View>
 
-        {/* Footer */}
         <View className="items-center mt-8">
           <Text className="text-slate-400 text-center text-xs">
             Version 1.2.8.2
