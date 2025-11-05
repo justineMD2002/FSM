@@ -12,6 +12,7 @@ import CompleteTab from '@/components/CompleteTab';
 interface JobDetailsScreenProps {
   job: Job;
   onBack: () => void;
+  showBackButton?: boolean;
 }
 
 type TabType = 'Details' | 'Navigate' | 'Service' | 'Complete';
@@ -29,7 +30,7 @@ const tabs: TabConfig[] = [
   { id: 'Complete', icon: 'checkmark-circle-outline', label: 'Complete' },
 ];
 
-export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps) {
+export default function JobDetailsScreen({ job, onBack, showBackButton = false }: JobDetailsScreenProps) {
   const [activeTab, setActiveTab] = useState<TabType>('Details');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -80,6 +81,28 @@ export default function JobDetailsScreen({ job, onBack }: JobDetailsScreenProps)
 
   return (
     <View className="flex-1 bg-slate-50">
+      {/* Header - Only shown when showBackButton is true */}
+      {showBackButton && (
+        <View className="bg-white border-b border-slate-200">
+          <View className="px-3 pt-7 pb-4">
+            <View className="flex-row items-center justify-between">
+              {/* Left: Back button and Job Details text */}
+              <View className="flex-row items-center">
+                <TouchableOpacity onPress={onBack} className="mr-3">
+                  <Ionicons name="arrow-back" size={24} color="#334155" />
+                </TouchableOpacity>
+                <Text className="text-black text-xl font-semibold">Job Details</Text>
+              </View>
+
+              {/* Right: Info Icon */}
+              <View className="flex-row items-center">
+                <Ionicons name="information-circle" size={26} color="#0092ce" />
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Timeline Tabs */}
       <View className="bg-white px-4 py-6 border-b border-slate-200">
         <View className="flex-row justify-between items-center">
