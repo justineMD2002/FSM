@@ -1,21 +1,23 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Linking } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { mockTechnicians } from '@/data/TechniciansMockData';
-import { Technician } from '@/types';
+import { useCustomers } from '@/hooks';
+import { Customer } from '@/types';
 
 export default function CustomersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { customers, loading, error, refetch } = useCustomers();
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const handleWhatsApp = (phone: string, name: string) => {
-    // Remove + and format for WhatsApp
-    const phoneNumber = phone.replace('+', '');
+    // Remove spaces and special characters, keep only numbers and +
+    const phoneNumber = phone.replace(/[^\d+]/g, '').replace('+', '');
     const message = encodeURIComponent(`Hi ${name}, I would like to get in touch regarding your service.`);
     const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${message}`;
 
@@ -32,16 +34,6 @@ export default function CustomersScreen() {
       .catch((err) => console.error('Error opening WhatsApp:', err));
   };
 
-  // Filter customers
-  const filteredCustomers = mockTechnicians.filter((customer) => {
-    const matchesSearch =
-      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesSearch;
-  });
-
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -51,7 +43,25 @@ export default function CustomersScreen() {
       .slice(0, 2);
   };
 
-  const renderCustomerCard = (customer: Technician) => (
+  // Client-side filtering - no API calls
+  const filteredCustomers = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return customers;
+    }
+
+    const query = searchQuery.toLowerCase();
+    return customers.filter((customer) => {
+      return (
+        customer.customer_name.toLowerCase().includes(query) ||
+        customer.customer_code.toLowerCase().includes(query) ||
+        customer.email.toLowerCase().includes(query) ||
+        customer.phone_number.toLowerCase().includes(query) ||
+        customer.customer_address.toLowerCase().includes(query)
+      );
+    });
+  }, [customers, searchQuery]);
+
+  const renderCustomerCard = (customer: Customer) => (
     <View key={customer.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
       {/* Header with Avatar */}
       <View className="flex-row items-start mb-3">
@@ -60,27 +70,40 @@ export default function CustomersScreen() {
           className="w-16 h-16 rounded-full items-center justify-center"
           style={{ backgroundColor: '#0092ce' }}
         >
-          <Text className="text-white text-xl font-bold">{getInitials(customer.name)}</Text>
+          <Text className="text-white text-xl font-bold">
+            {getInitials(customer.customer_name)}
+          </Text>
         </View>
 
-        {/* Name and Company */}
+        {/* Name and Code */}
         <View className="flex-1 ml-3">
-          <Text className="text-lg font-bold text-slate-800">{customer.name}</Text>
-          <Text className="text-sm text-slate-600 mt-0.5">{customer.specialization}</Text>
+          <Text className="text-lg font-bold text-slate-800">{customer.customer_name}</Text>
+          <Text className="text-sm text-slate-600 mt-0.5">Code: {customer.customer_code}</Text>
         </View>
       </View>
 
       {/* Contact Info */}
       <View className="border-t border-slate-100 pt-3 mb-3">
+        {/* Address */}
+        <View className="flex-row items-start mb-2">
+          <Ionicons name="location-outline" size={16} color="#64748b" />
+          <Text className="text-sm text-slate-600 ml-2 flex-1" numberOfLines={2}>
+            {customer.customer_address}
+          </Text>
+        </View>
+
+        {/* Email */}
         <View className="flex-row items-center mb-2">
           <Ionicons name="mail-outline" size={16} color="#64748b" />
           <Text className="text-sm text-slate-600 ml-2 flex-1" numberOfLines={1}>
             {customer.email}
           </Text>
         </View>
+
+        {/* Phone */}
         <View className="flex-row items-center">
           <Ionicons name="call-outline" size={16} color="#64748b" />
-          <Text className="text-sm text-slate-600 ml-2">{customer.phone}</Text>
+          <Text className="text-sm text-slate-600 ml-2">{customer.phone_number}</Text>
         </View>
       </View>
 
@@ -88,7 +111,7 @@ export default function CustomersScreen() {
       <TouchableOpacity
         className="flex-row items-center justify-center py-3 rounded-lg"
         style={{ backgroundColor: '#25D366' }}
-        onPress={() => handleWhatsApp(customer.phone, customer.name)}
+        onPress={() => handleWhatsApp(customer.phone_number, customer.customer_name)}
         activeOpacity={0.8}
       >
         <Ionicons name="logo-whatsapp" size={20} color="#ffffff" />
@@ -96,6 +119,26 @@ export default function CustomersScreen() {
       </TouchableOpacity>
     </View>
   );
+
+  // Error state
+  if (error && !loading && customers.length === 0) {
+    return (
+      <View className="flex-1 bg-white" style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}>
+        <View className="flex-1 items-center justify-center px-6">
+          <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+          <Text className="text-slate-800 text-xl font-bold mt-4 text-center">Error Loading Customers</Text>
+          <Text className="text-slate-600 text-base mt-2 text-center">{error.message}</Text>
+          <TouchableOpacity
+            onPress={onRefresh}
+            className="mt-6 bg-[#0092ce] rounded-xl py-3 px-6"
+            activeOpacity={0.7}
+          >
+            <Text className="text-white font-semibold">Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white" style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}>
@@ -111,6 +154,11 @@ export default function CustomersScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+              <Ionicons name="close-circle" size={20} color="#64748b" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -119,8 +167,17 @@ export default function CustomersScreen() {
         <View className="flex-row items-center bg-slate-50 rounded-lg p-3">
           <Ionicons name="people-outline" size={20} color="#0092ce" />
           <Text className="text-sm text-slate-600 ml-2">
-            {filteredCustomers.length} Customer{filteredCustomers.length !== 1 ? 's' : ''}
+            {loading ? 'Loading...' : `${filteredCustomers.length} Customer${filteredCustomers.length !== 1 ? 's' : ''}`}
+            {!loading && searchQuery && customers.length !== filteredCustomers.length && (
+              <Text className="text-slate-500"> of {customers.length}</Text>
+            )}
           </Text>
+          {error && customers.length > 0 && (
+            <View className="ml-auto flex-row items-center">
+              <Ionicons name="warning-outline" size={16} color="#f59e0b" />
+              <Text className="text-xs text-amber-600 ml-1">Partial results</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -130,7 +187,12 @@ export default function CustomersScreen() {
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {filteredCustomers.length > 0 ? (
+        {loading && !refreshing ? (
+          <View className="items-center justify-center py-20">
+            <ActivityIndicator size="large" color="#0092ce" />
+            <Text className="text-slate-500 text-base mt-4">Loading customers...</Text>
+          </View>
+        ) : filteredCustomers.length > 0 ? (
           filteredCustomers.map((customer) => renderCustomerCard(customer))
         ) : (
           <View className="items-center justify-center py-20">
@@ -138,8 +200,13 @@ export default function CustomersScreen() {
             <Text className="text-slate-400 text-base mt-4">
               {searchQuery ? 'No customers found' : 'No customers available'}
             </Text>
+            {!searchQuery && (
+              <Text className="text-slate-400 text-sm mt-2 text-center px-6">
+                Add customers to your Supabase database to see them here
+              </Text>
+            )}
             <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
-              <Text className="text-[#0092ce] text-sm mt-2">Tap to refresh</Text>
+              <Text className="text-[#0092ce] text-sm mt-4">Tap to refresh</Text>
             </TouchableOpacity>
           </View>
         )}

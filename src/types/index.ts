@@ -52,3 +52,26 @@ export interface AttendanceRecord {
   created_at: string;
   updated_at: string;
 }
+
+export interface Customer {
+  id: string;
+  customer_code: string;
+  customer_name: string;
+  customer_address: string;
+  phone_number: string;
+  email: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// API Response Types
+export interface ApiResponse<T> {
+  data: T | null;
+  error: ApiError | null;
+}
+
+export interface ApiError {
+  message: string;
+  code?: string;
+  details?: any;
+}
