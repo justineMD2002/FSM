@@ -193,6 +193,38 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
         showsUserLocation={true}
         showsMyLocationButton={true}
       >
+        {currentLocation && (
+          <Marker
+            coordinate={currentLocation}
+            title="Your Location"
+            anchor={{ x: 0.5, y: 0.5 }}
+          >
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: '#3b82f6',
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 3,
+                elevation: 5,
+              }}
+            />
+            <Callout>
+              <View style={{ width: 150 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 14 }}>Your Location</Text>
+                <Text style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                  Current position
+                </Text>
+              </View>
+            </Callout>
+          </Marker>
+        )}
+
         {/* Job Markers */}
         {jobsWithCoords.map((job) => (
           <Marker

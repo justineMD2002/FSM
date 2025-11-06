@@ -241,13 +241,16 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
               fullscreenControl: true,
             }}
           >
-            {/* Current Location Marker */}
             {currentLocation && (
               <Marker
                 position={currentLocation}
                 icon={{
-                  url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-                  scaledSize: new google.maps.Size(40, 40),
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 10,
+                  fillColor: '#3b82f6',
+                  fillOpacity: 1,
+                  strokeColor: '#ffffff',
+                  strokeWeight: 3,
                 }}
                 title="Your Location"
               />
