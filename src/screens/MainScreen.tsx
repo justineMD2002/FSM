@@ -16,7 +16,7 @@ interface TabConfig {
 }
 
 function MainScreenContent() {
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.HOME);
+  const [activeTab, setActiveTab] = useState<Tab>(Tab.PROFILE);
   const { showMapView, selectedJob } = useNavigation();
 
   const tabConfig: Record<Tab, TabConfig> = {
@@ -25,7 +25,7 @@ function MainScreenContent() {
       screen: <HomeScreen />,
       useCustomHeader: true,
     },
-    [Tab.TECHNICIANS]: {
+    [Tab.CUSTOMERS]: {
       title: 'Customers',
       screen: <CustomersScreen />,
     },
