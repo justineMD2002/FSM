@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { TechnicianProfile, AttendanceRecord } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuthStore();
   const [profile, setProfile] = useState<TechnicianProfile | null>(null);
   const [currentAttendance, setCurrentAttendance] = useState<AttendanceRecord | null>(null);
   const [lastClockOut, setLastClockOut] = useState<string | null>(null);

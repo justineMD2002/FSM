@@ -5,7 +5,7 @@ import { mockHistoryJobs, mockCurrentJobs } from '@/data/JobsMockData';
 import { JobCard } from '@/components/JobCard';
 import JobDetailsScreen from './JobDetailsScreen';
 import MapViewScreen from './MapViewScreen';
-import { useNavigation } from '@/contexts/NavigationContext';
+import { useNavigationStore } from '@/store';
 
 type TabType = 'HISTORY' | 'CURRENT';
 type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
@@ -35,7 +35,7 @@ export default function HomeScreen() {
   const [tempStatusFilters, setTempStatusFilters] = useState<string[]>([]);
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
 
-  const { selectedJob, setSelectedJob, showMapView, setShowMapView } = useNavigation();
+  const { selectedJob, setSelectedJob, showMapView, setShowMapView } = useNavigationStore();
 
   // Get current tab's filter states
   const dateFilter = activeTab === 'HISTORY' ? historyDateFilter : currentDateFilter;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/store';
 
 const REMEMBER_ME_KEY = '@remember_me';
 const SAVED_EMAIL_KEY = '@saved_email';
@@ -15,7 +15,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const signIn = useAuthStore((state) => state.signIn);
 
   useEffect(() => {
     loadSavedCredentials();

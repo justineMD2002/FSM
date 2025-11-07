@@ -1,12 +1,18 @@
 import './global.css';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store';
 import LoginScreen from '@/screens/LoginScreen';
 import MainScreen from '@/screens/MainScreen';
 
-function AppContent() {
-  const { user, loading } = useAuth();
+export default function App() {
+  const { user, loading, initialize } = useAuthStore();
+
+  useEffect(() => {
+    const cleanup = initialize();
+    return cleanup;
+  }, [initialize]);
 
   if (loading) {
     return (
@@ -21,13 +27,5 @@ function AppContent() {
       {user ? <MainScreen /> : <LoginScreen />}
       <StatusBar style="auto" />
     </>
-  );
-}
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }

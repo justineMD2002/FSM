@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import HomeScreen from './HomeScreen';
 import ProfileScreen from './ProfileScreen';
 import DashboardHeader from '@/components/DashboardHeader';
 import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
-import { NavigationProvider, useNavigation } from '@/contexts/NavigationContext';
+import { useNavigationStore } from '@/store';
 import CustomersScreen from './CustomersScreen';
 
 interface TabConfig {
@@ -14,9 +14,8 @@ interface TabConfig {
   showMapIcon?: boolean;
 }
 
-function MainScreenContent() {
-  const [activeTab, setActiveTab] = useState<Tab>(Tab.PROFILE);
-  const { showMapView, selectedJob } = useNavigation();
+export default function MainScreen() {
+  const { activeTab, setActiveTab, showMapView, selectedJob } = useNavigationStore();
 
   const tabConfig: Record<Tab, TabConfig> = {
     [Tab.HOME]: {
@@ -52,13 +51,5 @@ function MainScreenContent() {
       {currentTab.screen}
       {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
     </View>
-  );
-}
-
-export default function MainScreen() {
-  return (
-    <NavigationProvider>
-      <MainScreenContent />
-    </NavigationProvider>
   );
 }

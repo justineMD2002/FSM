@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigation } from '@/contexts/NavigationContext';
+import { useAuthStore, useNavigationStore } from '@/store';
 
 interface DashboardHeaderProps {
   title?: string;
@@ -10,8 +9,8 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ title = 'My Jobs', showMapIcon = false }: DashboardHeaderProps) {
-  const { user } = useAuth();
-  const { selectedJob, setSelectedJob, setShowMapView } = useNavigation();
+  const user = useAuthStore((state) => state.user);
+  const { selectedJob, setSelectedJob, setShowMapView } = useNavigationStore();
 
   // Get initials for avatar
   const getInitials = () => {

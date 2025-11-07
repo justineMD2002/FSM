@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 
 interface Message {
@@ -14,7 +14,7 @@ interface Message {
 }
 
 export default function ChatTab() {
-  const { user } = useAuth();
+  const user = useAuthStore((state) => state.user);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [userName, setUserName] = useState('You');
