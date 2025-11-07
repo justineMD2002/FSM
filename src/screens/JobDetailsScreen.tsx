@@ -4,11 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
+import ErrorModal from '@/components/ErrorModal';
 import JobMapView from '@/components/JobMapView';
 import DetailsTab from '@/components/DetailsTab';
 import ServiceTab from '@/components/ServiceTab';
 import CompleteTab from '@/components/CompleteTab';
 import ChatTab from '@/components/ChatTab';
+import { useAuthStore, useNavigationStore } from '@/store';
+import { Tab } from '@/enums';
+import { checkClockInStatus } from '@/services/attendance.service';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -35,8 +39,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [activeTab, setActiveTab] = useState<TabType>('Details');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const [showJobStatusModal, setShowJobStatusModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
+
+  const user = useAuthStore((state) => state.user);
+  const { setActiveTab: setGlobalActiveTab, setSelectedJob } = useNavigationStore();
 
   // Show modal if job is completed or cancelled
   useEffect(() => {
@@ -58,7 +66,22 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const statusColor = getStatusColor(job.status);
 
-  const handleStartJob = () => {
+  const handleStartJob = async () => {
+    // Check if user is clocked in
+    if (!user) {
+      setShowErrorModal(true);
+      return;
+    }
+
+    const { data: attendance, error } = await checkClockInStatus(user.id);
+
+    if (error || !attendance) {
+      // User is not clocked in, show error modal
+      setShowErrorModal(true);
+      return;
+    }
+
+    // User is clocked in, proceed with confirmation
     setShowConfirmModal(true);
   };
 
@@ -70,6 +93,14 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
     setActiveTab('Navigate');
+  };
+
+  const handleErrorClose = () => {
+    setShowErrorModal(false);
+    // Navigate to Profile tab
+    setGlobalActiveTab(Tab.PROFILE);
+    // Clear selected job to return to home view
+    setSelectedJob(null);
   };
 
   const handleSubmitServiceReport = () => {
@@ -235,6 +266,15 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         message="You can now proceed to Navigation screen"
         buttonText="OK"
         onClose={handleSuccessClose}
+      />
+
+      {/* Error Modal - Not Clocked In */}
+      <ErrorModal
+        visible={showErrorModal}
+        title="Clock In Required"
+        message="You need to clock in first before you can start a job. Please go to your profile and clock in."
+        buttonText="Go to Profile"
+        onClose={handleErrorClose}
       />
 
       {/* Job Status Modal (Completed/Cancelled) */}
