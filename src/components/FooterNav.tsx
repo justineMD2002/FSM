@@ -11,7 +11,7 @@ interface FooterNavProps {
 export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
   const tabs = [
     { id: Tab.HOME, label: 'Home', icon: 'briefcase' as const },
-    { id: Tab.TECHNICIANS, label: 'Customers', icon: 'people-outline' as const },
+    { id: Tab.CUSTOMERS, label: 'Customers', icon: 'people-outline' as const },
     { id: Tab.PROFILE, label: 'Profile', icon: 'person' as const },
   ];
 
