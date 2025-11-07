@@ -4,7 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@/contexts/NavigationContext';
 
-export default function DashboardHeader() {
+interface DashboardHeaderProps {
+  title?: string;
+  showMapIcon?: boolean;
+}
+
+export default function DashboardHeader({ title = 'My Jobs', showMapIcon = false }: DashboardHeaderProps) {
   const { user } = useAuth();
   const { selectedJob, setSelectedJob, setShowMapView } = useNavigation();
 
@@ -43,25 +48,30 @@ export default function DashboardHeader() {
     <View className="bg-white border-b border-slate-200" style={{ zIndex: 1 }}>
       <View className="px-3 pt-7 pb-4">
         <View className="flex-row items-center justify-between">
-          {/* Left: Logo and My Jobs Text */}
+          {/* Left: Logo and Title Text */}
           <View className="flex-row items-center">
             <Image
               source={require('../../assets/SAS-LOGO.png')}
               style={{ width: 70, height: 40 }}
               resizeMode="contain"
             />
-            <Text className="text-black text-xl font-semibold ml-3">My Jobs</Text>
           </View>
+          
+          <Text className="absolute left-0 right-0 text-center text-black text-xl font-semibold">
+            {title}
+          </Text>
 
-          {/* Right: Map Icon and Avatar */}
+          {/* Right: Map Icon (conditional) and Avatar */}
           <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => setShowMapView(true)}
-              activeOpacity={0.7}
-              style={{ marginRight: 12 }}
-            >
-              <Ionicons name="map" size={24} color="#0092ce" />
-            </TouchableOpacity>
+            {showMapIcon && (
+              <TouchableOpacity
+                onPress={() => setShowMapView(true)}
+                activeOpacity={0.7}
+                style={{ marginRight: 12 }}
+              >
+                <Ionicons name="map" size={24} color="#0092ce" />
+              </TouchableOpacity>
+            )}
             <View
               className="w-12 h-12 rounded-full items-center justify-center"
               style={{ backgroundColor: '#ffffff' }}
