@@ -8,6 +8,7 @@ import { GOOGLE_MAPS_API_KEY, DEFAULT_MAP_CENTER } from '@/constants/config';
 interface JobMapViewProps {
   address: string;
   isHistoryJob: boolean;
+  onArrival?: () => void;
 }
 
 interface Coordinates {
@@ -15,12 +16,42 @@ interface Coordinates {
   longitude: number;
 }
 
-export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
+export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapViewProps) {
   const [destination, setDestination] = useState<Coordinates | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasArrived, setHasArrived] = useState(false);
   const mapRef = React.useRef<MapView>(null);
+
+  // Calculate distance between two coordinates in meters (Haversine formula)
+  const calculateDistance = useCallback((coord1: Coordinates, coord2: Coordinates): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (coord1.latitude * Math.PI) / 180;
+    const φ2 = (coord2.latitude * Math.PI) / 180;
+    const Δφ = ((coord2.latitude - coord1.latitude) * Math.PI) / 180;
+    const Δλ = ((coord2.longitude - coord1.longitude) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+  }, []);
+
+  // Check if user has arrived at destination (within 50 meters)
+  useEffect(() => {
+    if (!currentLocation || !destination || isHistoryJob || hasArrived) return;
+
+    const distance = calculateDistance(currentLocation, destination);
+    const ARRIVAL_THRESHOLD = 50; // meters
+
+    if (distance <= ARRIVAL_THRESHOLD) {
+      setHasArrived(true);
+      onArrival?.();
+    }
+  }, [currentLocation, destination, isHistoryJob, hasArrived, calculateDistance, onArrival]);
 
   // Geocode the address to get coordinates
   const geocodeAddress = useCallback(async (addr: string) => {
@@ -91,6 +122,47 @@ export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
 
     initializeMap();
   }, [address, isHistoryJob, geocodeAddress, getCurrentLocation]);
+
+  // Continuously track user location for current jobs
+  useEffect(() => {
+    if (isHistoryJob || !destination) return;
+
+    let locationSubscription: Location.LocationSubscription | null = null;
+
+    const startLocationTracking = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.error('Location permission denied');
+          return;
+        }
+
+        locationSubscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            distanceInterval: 10, // Update every 10 meters
+            timeInterval: 5000, // Update every 5 seconds
+          },
+          (location) => {
+            setCurrentLocation({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            });
+          }
+        );
+      } catch (err) {
+        console.error('Location tracking error:', err);
+      }
+    };
+
+    startLocationTracking();
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [isHistoryJob, destination]);
 
   // Fit map to show both markers
   useEffect(() => {

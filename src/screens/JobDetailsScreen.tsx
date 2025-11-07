@@ -36,6 +36,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showJobStatusModal, setShowJobStatusModal] = useState(false);
+  const [showArrivalModal, setShowArrivalModal] = useState(false);
 
   // Show modal if job is completed or cancelled
   useEffect(() => {
@@ -74,6 +75,22 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const handleSubmitServiceReport = () => {
     setActiveTab('Complete');
   };
+
+  const handleArrival = () => {
+    setShowArrivalModal(true);
+  };
+
+  // Auto-redirect to Service tab after 3 seconds when arrival modal is shown
+  useEffect(() => {
+    if (showArrivalModal) {
+      const timer = setTimeout(() => {
+        setShowArrivalModal(false);
+        setActiveTab('Service');
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showArrivalModal]);
 
   const isJobPending = job.status === 'PENDING';
   const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
@@ -168,7 +185,11 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
       {activeTab === 'Navigate' ? (
         // Map view takes full height without ScrollView
         <View className="flex-1">
-          <JobMapView address={job.address} isHistoryJob={isHistoryJob} />
+          <JobMapView
+            address={job.address}
+            isHistoryJob={isHistoryJob}
+            onArrival={handleArrival}
+          />
         </View>
       ) : activeTab === 'Chat' ? (
         // Chat tab takes full height without parent ScrollView
@@ -245,6 +266,32 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
             >
               <Text className="text-white font-semibold text-base">OK</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Arrival Notification Modal */}
+      <Modal
+        visible={showArrivalModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowArrivalModal(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <View className="items-center mb-4">
+              <Ionicons
+                name="location"
+                size={64}
+                color="#22c55e"
+              />
+            </View>
+            <Text className="text-2xl font-bold text-slate-800 mb-4 text-center">
+              You've Arrived!
+            </Text>
+            <Text className="text-base text-slate-600 mb-6 text-center">
+              You have arrived at your destination. Redirecting to service tab...
+            </Text>
           </View>
         </View>
       </Modal>

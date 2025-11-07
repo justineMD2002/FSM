@@ -6,6 +6,7 @@ import { GOOGLE_MAPS_API_KEY, DEFAULT_MAP_CENTER } from '@/constants/config';
 interface JobMapViewProps {
   address: string;
   isHistoryJob: boolean;
+  onArrival?: () => void;
 }
 
 interface Coordinates {
@@ -21,16 +22,46 @@ const containerStyle = {
 // Debounce delay for route recalculation (in milliseconds)
 const ROUTE_UPDATE_DELAY = 5000; // 5 seconds
 
-export default function JobMapView({ address, isHistoryJob }: JobMapViewProps) {
+export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapViewProps) {
   const [destination, setDestination] = useState<Coordinates | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const [hasArrived, setHasArrived] = useState(false);
 
   const watchIdRef = useRef<number | null>(null);
   const routeUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Calculate distance between two coordinates in meters (Haversine formula)
+  const calculateDistance = useCallback((coord1: Coordinates, coord2: Coordinates): number => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (coord1.lat * Math.PI) / 180;
+    const φ2 = (coord2.lat * Math.PI) / 180;
+    const Δφ = ((coord2.lat - coord1.lat) * Math.PI) / 180;
+    const Δλ = ((coord2.lng - coord1.lng) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+  }, []);
+
+  // Check if user has arrived at destination (within 50 meters)
+  useEffect(() => {
+    if (!currentLocation || !destination || isHistoryJob || hasArrived) return;
+
+    const distance = calculateDistance(currentLocation, destination);
+    const ARRIVAL_THRESHOLD = 50; // meters
+
+    if (distance <= ARRIVAL_THRESHOLD) {
+      setHasArrived(true);
+      onArrival?.();
+    }
+  }, [currentLocation, destination, isHistoryJob, hasArrived, calculateDistance, onArrival]);
 
   // Geocode the address to get coordinates
   const geocodeAddress = useCallback(async (addr: string) => {
