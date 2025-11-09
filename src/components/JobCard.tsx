@@ -6,7 +6,9 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
     COMPLETED: { bg: '#dcfce7', text: '#16a34a', border: '#22c55e' },
     CANCELLED: { bg: '#fee2e2', text: '#dc2626', border: '#ef4444' },
-    PENDING: { bg: '#dbeafe', text: '#1d4ed8', border: '#3b82f6' }
+    PENDING: { bg: '#dbeafe', text: '#1d4ed8', border: '#3b82f6' },
+    UPCOMING: { bg: '#fef3c7', text: '#d97706', border: '#f59e0b' },
+    IN_PROGRESS: { bg: '#e0e7ff', text: '#4f46e5', border: '#6366f1' }
   };
 
   const colors = statusColors[job.status];

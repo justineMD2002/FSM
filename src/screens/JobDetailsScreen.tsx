@@ -53,7 +53,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
     }
   }, [job.status]);
 
-  const getStatusColor = (status: Job['status']) => {
+  const getStatusColor = (status: Job['status']): string => {
     switch (status) {
       case 'PENDING':
         return '#0092ce';
@@ -61,6 +61,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         return '#22c55e';
       case 'CANCELLED':
         return '#ef4444';
+      case 'UPCOMING':
+        return '#f59e0b';
+      case 'IN_PROGRESS':
+        return '#6366f1';
+      default:
+        return '#0092ce';
     }
   };
 

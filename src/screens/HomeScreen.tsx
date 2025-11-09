@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { mockHistoryJobs, mockCurrentJobs } from '@/data/JobsMockData';
 import { JobCard } from '@/components/JobCard';
 import JobDetailsScreen from './JobDetailsScreen';
 import MapViewScreen from './MapViewScreen';
 import { useNavigationStore } from '@/store';
+import { useJobs } from '@/hooks';
 
 type TabType = 'HISTORY' | 'CURRENT';
 type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
@@ -13,7 +13,6 @@ type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('CURRENT');
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   // Separate filter states for HISTORY tab
@@ -37,16 +36,26 @@ export default function HomeScreen() {
 
   const { selectedJob, setSelectedJob, showMapView, setShowMapView } = useNavigationStore();
 
-  // Get current tab's filter states
+  // Fetch jobs from backend
+  const { jobs: historyJobs, loading: historyLoading, error: historyError, refetch: refetchHistory } = useJobs(true);
+  const { jobs: currentJobs, loading: currentLoading, error: currentError, refetch: refetchCurrent } = useJobs(false);
+
+  // Get current tab's data and states
+  const jobs = activeTab === 'HISTORY' ? historyJobs : currentJobs;
+  const loading = activeTab === 'HISTORY' ? historyLoading : currentLoading;
+  const error = activeTab === 'HISTORY' ? historyError : currentError;
   const dateFilter = activeTab === 'HISTORY' ? historyDateFilter : currentDateFilter;
   const startDate = activeTab === 'HISTORY' ? historyStartDate : currentStartDate;
   const endDate = activeTab === 'HISTORY' ? historyEndDate : currentEndDate;
   const statusFilters = activeTab === 'HISTORY' ? historyStatusFilters : currentStatusFilters;
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+  const onRefresh = useCallback(async () => {
+    if (activeTab === 'HISTORY') {
+      await refetchHistory();
+    } else {
+      await refetchCurrent();
+    }
+  }, [activeTab, refetchHistory, refetchCurrent]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -86,8 +95,6 @@ export default function HomeScreen() {
     setTempStatusFilters([]);
     setShowCustomDatePicker(false);
   };
-
-  const jobs = activeTab === 'HISTORY' ? mockHistoryJobs : mockCurrentJobs;
 
   const isJobInDateRange = (jobDate: string) => {
     if (dateFilter === 'ALL') return true;
@@ -201,9 +208,27 @@ export default function HomeScreen() {
       <ScrollView
         className="flex-1 bg-[#f5f5f5] mt-4"
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
       >
-        {filteredJobs.length > 0 ? (
+        {error ? (
+          <View className="items-center justify-center py-20">
+            <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+            <Text className="text-slate-700 text-base font-semibold mt-4">Error Loading Jobs</Text>
+            <Text className="text-slate-500 text-sm mt-2 text-center px-6">{error.message}</Text>
+            <TouchableOpacity
+              onPress={onRefresh}
+              className="bg-[#0092ce] rounded-lg px-6 py-3 mt-4"
+              activeOpacity={0.7}
+            >
+              <Text className="text-white font-semibold">Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : loading && jobs.length === 0 ? (
+          <View className="items-center justify-center py-20">
+            <ActivityIndicator size="large" color="#0092ce" />
+            <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
+          </View>
+        ) : filteredJobs.length > 0 ? (
           filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} />)
         ) : (
           <View className="items-center justify-center py-20">
