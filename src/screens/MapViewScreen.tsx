@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Dimensions, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Dimensions, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { mockHistoryJobs, mockCurrentJobs } from '@/data/JobsMockData';
 import { Job } from '@/types';
 import JobDetailsScreen from './JobDetailsScreen';
 import MultipleJobsMapView, { ROUTE_COLORS } from '@/components/MultipleJobsMapView';
+import { useJobs } from '@/hooks';
 
 type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
 
@@ -26,10 +26,13 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const scrollViewRef = React.useRef<ScrollView>(null);
 
+  // Fetch current jobs from database
+  const { jobs: currentJobs, loading, error } = useJobs(false);
+
   // Only show pending/current jobs in map view - memoized to prevent map refresh
   const allJobs = useMemo(() =>
-    mockCurrentJobs.filter(job => job.status === 'PENDING'),
-    []
+    currentJobs.filter(job => job.status === 'PENDING'),
+    [currentJobs]
   );
 
   // Date filtering helper
@@ -101,6 +104,12 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
         return '#22c55e';
       case 'CANCELLED':
         return '#ef4444';
+      case 'UPCOMING':
+        return '#f59e0b';
+      case 'IN_PROGRESS':
+        return '#6366f1';
+      default:
+        return '#0092ce';
     }
   };
 
@@ -112,6 +121,12 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
         return 'Completed';
       case 'CANCELLED':
         return 'Cancelled';
+      case 'UPCOMING':
+        return 'Upcoming';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      default:
+        return 'Pending';
     }
   };
 
@@ -151,6 +166,49 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
 
   if (selectedJob) {
     return <JobDetailsScreen job={selectedJob} onBack={() => setSelectedJob(null)} showBackButton={true} />;
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <View className="flex-1 bg-slate-50">
+        {/* Header */}
+        <View className="bg-white px-6 py-4 border-b border-slate-200 flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={onBack} className="mr-3" activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={24} color="#0092ce" />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-slate-800">Job Map</Text>
+          </View>
+        </View>
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#0092ce" />
+          <Text className="text-slate-600 mt-4">Loading jobs...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <View className="flex-1 bg-slate-50">
+        {/* Header */}
+        <View className="bg-white px-6 py-4 border-b border-slate-200 flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <TouchableOpacity onPress={onBack} className="mr-3" activeOpacity={0.7}>
+              <Ionicons name="arrow-back" size={24} color="#0092ce" />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-slate-800">Job Map</Text>
+          </View>
+        </View>
+        <View className="flex-1 justify-center items-center px-6">
+          <Ionicons name="alert-circle" size={64} color="#ef4444" />
+          <Text className="text-slate-800 text-lg font-semibold mt-4">Error Loading Jobs</Text>
+          <Text className="text-slate-600 text-center mt-2">{error}</Text>
+        </View>
+      </View>
+    );
   }
 
   return (
