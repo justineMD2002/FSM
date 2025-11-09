@@ -44,6 +44,7 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     date,
     time,
     customer: dbJob.customer?.customer_name || 'Unknown Customer',
+    customerId: dbJob.customer_id,
     // Use location_name if available, otherwise fall back to customer address
     address: dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided',
     notes: dbJob.description || '',

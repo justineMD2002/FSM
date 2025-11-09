@@ -1,42 +1,37 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, Platform, Modal } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Image, Platform, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SignatureScreen from 'react-native-signature-canvas';
 import SignatureCanvas from 'react-signature-canvas';
-import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
-
-interface ChecklistItem {
-  id: string;
-  name: string;
-  completed: boolean;
-  completedBy: string;
-  completedAt: Date;
-}
-
-interface Equipment {
-  id: string;
-  name: string;
-  model: string;
-  serialNumber: string;
-}
+import { useJobTasks, useTaskCompletions, useJobEquipments, useJobSignature } from '@/hooks';
+import { uploadSignatureAndCreateRecord } from '@/services/jobSignatures.service';
+import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
+import { updateJob } from '@/services/jobs.service';
 
 interface CompleteTabProps {
-  customerName?: string;
-  customerAddress?: string;
-  customerPhone?: string;
-  customerEmail?: string;
+  jobId: string;
+  customerId: string;
+  customerName: string;
+  technicianJobId: string | null;
+  jobStatus: string;
+  assignmentStatus: string | null;
+  onJobCompleted?: () => void;
 }
 
 export default function CompleteTab({
-  customerName = "SM Seaside City Cebu",
-  customerAddress = "South Road Properties, Cebu City, Cebu, Philippines",
-  customerPhone = "(032) 888-8888",
-  customerEmail = "contact@smseaside.com"
+  jobId,
+  customerId,
+  customerName,
+  technicianJobId,
+  jobStatus,
+  assignmentStatus,
+  onJobCompleted,
 }: CompleteTabProps) {
-  const [signature, setSignature] = useState<string | null>(null);
+  const [localSignature, setLocalSignature] = useState<string | null>(null);
   const [signatureDate, setSignatureDate] = useState<Date | null>(null);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const signatureRef = useRef<any>(null);
   const isWeb = Platform.OS === 'web';
 
@@ -44,47 +39,65 @@ export default function CompleteTab({
   const [showSignatureSavedModal, setShowSignatureSavedModal] = useState(false);
   const [showCompleteJobModal, setShowCompleteJobModal] = useState(false);
   const [showCongratulationsModal, setShowCongratulationsModal] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
-  // Mock checklist items
-  const [checklistItems] = useState<ChecklistItem[]>([
-    {
-      id: '1',
-      name: 'Inspect air conditioning unit',
-      completed: true,
-      completedBy: 'John Doe',
-      completedAt: new Date(),
-    },
-    {
-      id: '2',
-      name: 'Clean air filters',
-      completed: true,
-      completedBy: 'John Doe',
-      completedAt: new Date(),
-    },
-    {
-      id: '3',
-      name: 'Test cooling system',
-      completed: true,
-      completedBy: 'Alice Smith',
-      completedAt: new Date(),
-    },
-  ]);
+  // Fetch data
+  const { tasks, loading: tasksLoading } = useJobTasks(jobId);
+  const { completions, loading: completionsLoading } = useTaskCompletions(technicianJobId);
+  const { jobEquipments, loading: equipmentsLoading } = useJobEquipments(jobId);
+  const { signature: existingSignature, loading: signatureLoading, refetch: refetchSignature } = useJobSignature(technicianJobId);
 
-  // Mock equipment data
-  const [equipments] = useState<Equipment[]>([
-    {
-      id: '1',
-      name: 'Air Conditioning Unit',
-      model: 'CS-T43KB4H52',
-      serialNumber: '2408304977',
-    },
-  ]);
+  // Check if job has been started
+  const jobStarted = assignmentStatus === 'STARTED';
+  const jobCompleted = jobStatus === 'COMPLETED' || jobStatus === 'CANCELLED';
 
-  const handleSignatureOK = (signatureData: string) => {
-    setSignature(signatureData);
-    setSignatureDate(new Date());
-    setShowSignaturePad(false);
-    setShowSignatureSavedModal(true);
+  // Load existing signature
+  useEffect(() => {
+    if (existingSignature) {
+      setLocalSignature(existingSignature.signature_image_url);
+      setSignatureDate(new Date(existingSignature.signed_at));
+    }
+  }, [existingSignature]);
+
+  // Check if all required tasks are completed
+  const allRequiredTasksCompleted = tasks
+    .filter(task => task.is_required)
+    .every(task => {
+      const completion = completions.find(c => c.job_task_id === task.id);
+      return completion?.is_completed;
+    });
+
+  // Can save signature if job started and not completed
+  const canSaveSignature = jobStarted && !jobCompleted;
+
+  // Can complete job if signature exists, job started, and all required tasks done
+  const canCompleteJob = localSignature && jobStarted && !jobCompleted && allRequiredTasksCompleted;
+
+  const handleSignatureOK = async (signatureData: string) => {
+    if (!canSaveSignature || !technicianJobId) return;
+
+    setUploading(true);
+    try {
+      const result = await uploadSignatureAndCreateRecord(
+        technicianJobId,
+        signatureData,
+        customerName
+      );
+
+      if (result.error) {
+        alert(`Error saving signature: ${result.error.message}`);
+      } else {
+        setLocalSignature(signatureData);
+        setSignatureDate(new Date());
+        setShowSignaturePad(false);
+        setShowSignatureSavedModal(true);
+        await refetchSignature();
+      }
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSignatureClear = () => {
@@ -95,31 +108,73 @@ export default function CompleteTab({
     }
   };
 
-  const handleSaveSignature = () => {
+  const handleSaveSignature = async () => {
+    if (!canSaveSignature || !technicianJobId) {
+      alert('You must start the job before saving a signature');
+      return;
+    }
+
     if (isWeb && signatureRef.current) {
       const signatureData = signatureRef.current.toDataURL();
       if (signatureData) {
-        setSignature(signatureData);
-        setSignatureDate(new Date());
-        setShowSignaturePad(false);
-        setShowSignatureSavedModal(true);
+        await handleSignatureOK(signatureData);
       }
     }
   };
 
   const handleRetakeSignature = () => {
-    setSignature(null);
+    if (!canSaveSignature) {
+      alert('Cannot retake signature - job is already completed');
+      return;
+    }
+    setLocalSignature(null);
     setSignatureDate(null);
     setShowSignaturePad(true);
   };
 
   const handleCompleteJob = () => {
+    if (!canCompleteJob) {
+      if (!jobStarted) {
+        alert('You must start the job before completing it');
+      } else if (!localSignature) {
+        alert('Customer signature is required to complete the job');
+      } else if (!allRequiredTasksCompleted) {
+        alert('Please complete all required tasks before finishing the job');
+      }
+      return;
+    }
     setShowCompleteJobModal(true);
   };
 
-  const handleConfirmComplete = () => {
-    setShowCompleteJobModal(false);
-    setShowCongratulationsModal(true);
+  const handleConfirmComplete = async () => {
+    if (!technicianJobId) return;
+
+    setCompleting(true);
+    try {
+      // Update technician job status to COMPLETED
+      const techJobResult = await updateTechnicianJobStatus(technicianJobId, 'COMPLETED');
+      if (techJobResult.error) {
+        throw new Error(techJobResult.error.message);
+      }
+
+      // Update main job status to COMPLETED
+      const jobResult = await updateJob(jobId, { status: 'COMPLETED' });
+      if (jobResult.error) {
+        throw new Error(jobResult.error.message);
+      }
+
+      setShowCompleteJobModal(false);
+      setShowCongratulationsModal(true);
+
+      // Notify parent component
+      if (onJobCompleted) {
+        onJobCompleted();
+      }
+    } catch (error: any) {
+      alert(`Error completing job: ${error.message}`);
+    } finally {
+      setCompleting(false);
+    }
   };
 
   const style = `.m-signature-pad {
@@ -137,84 +192,115 @@ export default function CompleteTab({
     height: 100%;
   }`;
 
+  if (tasksLoading || completionsLoading || equipmentsLoading || signatureLoading) {
+    return (
+      <View className="items-center justify-center py-20">
+        <ActivityIndicator size="large" color="#0092ce" />
+        <Text className="text-slate-400 text-base mt-4">Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <View>
-      {/* Customer Details Section */}
-      <View className="mb-6">
-        <View className="flex-row items-center mb-4">
-          <Ionicons name="person-circle-outline" size={24} color="#0092ce" />
-          <Text className="text-lg font-semibold text-slate-800 ml-2">Customer Details</Text>
-        </View>
-        <View className="bg-white rounded-xl p-4 shadow-sm">
-          <View className="mb-3">
-            <Text className="text-xs text-slate-500 mb-1">Customer Name</Text>
-            <Text className="text-base text-slate-800">{customerName}</Text>
-          </View>
-          <View className="mb-3">
-            <Text className="text-xs text-slate-500 mb-1">Address</Text>
-            <Text className="text-base text-slate-800">{customerAddress}</Text>
-          </View>
-          <View className="mb-3">
-            <Text className="text-xs text-slate-500 mb-1">Phone</Text>
-            <Text className="text-base text-slate-800">{customerPhone}</Text>
-          </View>
-          <View>
-            <Text className="text-xs text-slate-500 mb-1">Email</Text>
-            <Text className="text-base text-slate-800">{customerEmail}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Service Checklist Section */}
-      <View className="mb-6">
-        <View className="flex-row items-center mb-4">
-          <Ionicons name="checkmark-done-outline" size={24} color="#0092ce" />
-          <Text className="text-lg font-semibold text-slate-800 ml-2">Service Checklist</Text>
-        </View>
-        {checklistItems.map((item) => (
-          <View key={item.id} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
-            <View className="flex-row items-start">
-              <View className="mr-3 mt-0.5">
-                <Ionicons
-                  name={item.completed ? 'checkmark-circle' : 'ellipse-outline'}
-                  size={24}
-                  color={item.completed ? '#22c55e' : '#94a3b8'}
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="text-base text-slate-800 mb-1">{item.name}</Text>
-                <Text className="text-xs text-slate-500">
-                  Completed by {item.completedBy} at {item.completedAt.toLocaleString()}
-                </Text>
-              </View>
+      {/* Warning if job not started (and not completed) */}
+      {!jobStarted && !jobCompleted && (
+        <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <View className="flex-row items-start">
+            <Ionicons name="warning-outline" size={24} color="#f59e0b" />
+            <View className="ml-3 flex-1">
+              <Text className="text-amber-900 font-semibold mb-1">Job Not Started</Text>
+              <Text className="text-amber-700 text-sm">
+                You must start this job before you can add a signature or complete it.
+              </Text>
             </View>
           </View>
-        ))}
-      </View>
-
-      {/* Equipments Section */}
-      <View className="mb-6">
-        <View className="flex-row items-center mb-4">
-          <Ionicons name="construct-outline" size={24} color="#0092ce" />
-          <Text className="text-lg font-semibold text-slate-800 ml-2">Equipments</Text>
         </View>
-        {equipments.map((equipment) => (
-          <View key={equipment.id} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
-            <View className="flex-row items-start">
-              <View className="mr-3">
-                <Ionicons name="hardware-chip-outline" size={24} color="#0092ce" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-base font-semibold text-slate-800 mb-1">
-                  {equipment.name}
-                </Text>
-                <Text className="text-sm text-slate-600 mb-1">Model: {equipment.model}</Text>
-                <Text className="text-sm text-slate-600">S/N: {equipment.serialNumber}</Text>
-              </View>
-            </View>
+      )}
+
+      {/* Service Checklist Section - Only show if there are tasks */}
+      {tasks.length > 0 && (
+        <View className="mb-6">
+          <View className="flex-row items-center mb-4">
+            <Ionicons name="checkmark-done-outline" size={24} color="#0092ce" />
+            <Text className="text-lg font-semibold text-slate-800 ml-2">Service Checklist</Text>
           </View>
-        ))}
-      </View>
+          {tasks.map((task) => {
+            const completion = completions.find(c => c.job_task_id === task.id);
+            const isCompleted = completion?.is_completed || false;
+
+            return (
+              <View key={task.id} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
+                <View className="flex-row items-start">
+                  <View className="mr-3 mt-0.5">
+                    <Ionicons
+                      name={isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={24}
+                      color={isCompleted ? '#22c55e' : '#94a3b8'}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <View className="flex-row items-center mb-1">
+                      <Text className="text-base text-slate-800 flex-1">{task.task_name}</Text>
+                      {task.is_required && (
+                        <View className="bg-red-100 px-2 py-1 rounded">
+                          <Text className="text-xs font-medium text-red-700">Required</Text>
+                        </View>
+                      )}
+                    </View>
+                    {task.task_description && (
+                      <Text className="text-sm text-slate-600 mb-2">{task.task_description}</Text>
+                    )}
+                    {completion && (
+                      <Text className="text-xs text-slate-500">
+                        Completed {new Date(completion.completed_at || '').toLocaleString()}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Equipments Section - Only show if there are equipments */}
+      {jobEquipments.length > 0 && (
+        <View className="mb-6">
+          <View className="flex-row items-center mb-4">
+            <Ionicons name="construct-outline" size={24} color="#0092ce" />
+            <Text className="text-lg font-semibold text-slate-800 ml-2">Equipments Used</Text>
+          </View>
+          {jobEquipments.map((jobEquipment) => {
+            const equipment = jobEquipment.equipment;
+            if (!equipment) return null;
+
+            return (
+              <View key={jobEquipment.id} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
+                <View className="flex-row items-start">
+                  <View className="mr-3">
+                    <Ionicons name="hardware-chip-outline" size={24} color="#0092ce" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-base font-semibold text-slate-800 mb-1">
+                      {equipment.item_name}
+                    </Text>
+                    {equipment.model_series && (
+                      <Text className="text-sm text-slate-600 mb-1">Model: {equipment.model_series}</Text>
+                    )}
+                    {equipment.serial_number && (
+                      <Text className="text-sm text-slate-600">S/N: {equipment.serial_number}</Text>
+                    )}
+                    {jobEquipment.quantity_used > 1 && (
+                      <Text className="text-xs text-slate-500 mt-1">Quantity: {jobEquipment.quantity_used}</Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       {/* Customer Signature Section */}
       <View className="mb-6">
@@ -223,7 +309,7 @@ export default function CompleteTab({
           <Text className="text-lg font-semibold text-slate-800 ml-2">Customer Signature</Text>
         </View>
         <View className="bg-white rounded-xl p-4 shadow-sm">
-          {!signature || showSignaturePad ? (
+          {!localSignature || showSignaturePad ? (
             <View>
               {/* Signature Canvas */}
               <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 250 }}>
@@ -250,6 +336,8 @@ export default function CompleteTab({
                 <TouchableOpacity
                   onPress={handleSignatureClear}
                   className="flex-1 bg-slate-200 rounded-lg py-2 px-4 flex-row items-center justify-center mr-2"
+                  disabled={!canSaveSignature}
+                  style={{ opacity: canSaveSignature ? 1 : 0.5 }}
                 >
                   <Ionicons name="trash-outline" size={18} color="#475569" />
                   <Text className="text-slate-700 font-medium ml-2">Clear</Text>
@@ -258,9 +346,17 @@ export default function CompleteTab({
                   <TouchableOpacity
                     onPress={handleSaveSignature}
                     className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
+                    disabled={!canSaveSignature || uploading}
+                    style={{ opacity: canSaveSignature && !uploading ? 1 : 0.5 }}
                   >
-                    <Ionicons name="checkmark" size={18} color="#fff" />
-                    <Text className="text-white font-medium ml-2">Save</Text>
+                    {uploading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <>
+                        <Ionicons name="checkmark" size={18} color="#fff" />
+                        <Text className="text-white font-medium ml-2">Save</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 )}
               </View>
@@ -270,7 +366,7 @@ export default function CompleteTab({
               {/* Display Captured Signature */}
               <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 200 }}>
                 <Image
-                  source={{ uri: signature }}
+                  source={{ uri: localSignature }}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="contain"
                 />
@@ -290,6 +386,8 @@ export default function CompleteTab({
               <TouchableOpacity
                 onPress={handleRetakeSignature}
                 className="bg-slate-200 rounded-lg py-2 px-4 flex-row items-center justify-center"
+                disabled={!canSaveSignature}
+                style={{ opacity: canSaveSignature ? 1 : 0.5 }}
               >
                 <Ionicons name="refresh" size={18} color="#475569" />
                 <Text className="text-slate-700 font-medium ml-2">Retake Signature</Text>
@@ -303,12 +401,21 @@ export default function CompleteTab({
       <TouchableOpacity
         onPress={handleCompleteJob}
         className="bg-[#22c55e] rounded-xl py-4 items-center justify-center flex-row mb-6"
-        disabled={!signature}
-        style={{ opacity: signature ? 1 : 0.5 }}
+        disabled={!canCompleteJob}
+        style={{ opacity: canCompleteJob ? 1 : 0.5 }}
       >
         <Ionicons name="checkmark-done-circle" size={24} color="#fff" />
         <Text className="text-white font-semibold text-lg ml-2">Complete Job</Text>
       </TouchableOpacity>
+
+      {!canCompleteJob && jobStarted && (
+        <View className="bg-slate-100 rounded-xl p-4 mb-6">
+          <Text className="text-slate-600 text-sm text-center">
+            {!localSignature && 'Customer signature is required. '}
+            {!allRequiredTasksCompleted && 'Complete all required tasks. '}
+          </Text>
+        </View>
+      )}
 
       {/* Signature Saved Modal */}
       <SuccessModal
@@ -324,7 +431,7 @@ export default function CompleteTab({
         visible={showCompleteJobModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowCompleteJobModal(false)}
+        onRequestClose={() => !completing && setShowCompleteJobModal(false)}
       >
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
           <View className="bg-white rounded-2xl p-6 w-full max-w-md">
@@ -353,14 +460,21 @@ export default function CompleteTab({
               <TouchableOpacity
                 onPress={() => setShowCompleteJobModal(false)}
                 className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
+                disabled={completing}
               >
                 <Text className="text-slate-700 font-semibold">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleConfirmComplete}
                 className="flex-1 bg-[#22c55e] rounded-xl py-3 items-center"
+                disabled={completing}
+                style={{ opacity: completing ? 0.5 : 1 }}
               >
-                <Text className="text-white font-semibold">Complete</Text>
+                {completing ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text className="text-white font-semibold">Complete</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

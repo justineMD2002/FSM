@@ -13,6 +13,8 @@ import ChatTab from '@/components/ChatTab';
 import { useAuthStore, useNavigationStore } from '@/store';
 import { Tab } from '@/enums';
 import { checkClockInStatus } from '@/services/attendance.service';
+import { useCurrentUserTechnicianJob } from '@/hooks';
+import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -45,6 +47,9 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const user = useAuthStore((state) => state.user);
   const { setActiveTab: setGlobalActiveTab, setSelectedJob } = useNavigationStore();
+
+  // Fetch current user's technician job assignment
+  const { technicianJob, refetch: refetchTechnicianJob } = useCurrentUserTechnicianJob(job.id, user?.id || null);
 
   // Show modal if job is completed or cancelled
   useEffect(() => {
@@ -91,9 +96,31 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
     setShowConfirmModal(true);
   };
 
-  const handleConfirmStart = () => {
-    setShowConfirmModal(false);
-    setShowSuccessModal(true);
+  const handleConfirmStart = async () => {
+    if (!technicianJob?.id) {
+      alert('No technician assignment found for this job');
+      setShowConfirmModal(false);
+      return;
+    }
+
+    try {
+      const result = await updateTechnicianJobStatus(technicianJob.id, 'STARTED');
+
+      if (result.error) {
+        alert(`Error starting job: ${result.error.message}`);
+        setShowConfirmModal(false);
+        return;
+      }
+
+      // Refetch to get updated status
+      await refetchTechnicianJob();
+
+      setShowConfirmModal(false);
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+      setShowConfirmModal(false);
+    }
   };
 
   const handleSuccessClose = () => {
@@ -238,8 +265,10 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
           {activeTab === 'Details' && (
             <DetailsTab
               job={job}
+              jobId={job.id}
+              customerId={job.customerId}
               statusColor={statusColor}
-              isJobPending={isJobPending}
+              canStartJob={isJobPending && (!technicianJob || technicianJob.assignment_status === 'ASSIGNED')}
               onStartJob={handleStartJob}
             />
           )}
@@ -249,7 +278,18 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
           )}
 
           {activeTab === 'Complete' && (
-            <CompleteTab />
+            <CompleteTab
+              jobId={job.id}
+              customerId={job.customerId}
+              customerName={job.customer}
+              technicianJobId={technicianJob?.id || null}
+              jobStatus={job.status}
+              assignmentStatus={technicianJob?.assignment_status || null}
+              onJobCompleted={() => {
+                refetchTechnicianJob();
+                // Optionally navigate back or refresh
+              }}
+            />
           )}
         </ScrollView>
       )}

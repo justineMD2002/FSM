@@ -63,6 +63,7 @@ export interface Job {
   date: string;
   time: string;
   customer: string;
+  customerId: string; // Add customer ID for lookups
   address: string;
   notes: string;
   providerName: string;
@@ -131,6 +132,101 @@ export interface Customer {
   email: string;
   created_at?: string;
   updated_at?: string;
+}
+
+// Equipment types
+export interface Equipment {
+  id: string;
+  customer_id: string;
+  item_code: string;
+  serial_number: string | null;
+  model_series: string | null;
+  item_group: string | null;
+  brand: string | null;
+  item_name: string;
+  equipment_location: string | null;
+  warranty_start_date: string | null;
+  warranty_end_date: string | null;
+  equipment_type: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+// Job Equipment (junction table)
+export interface JobEquipment {
+  id: string;
+  job_id: string;
+  equipment_id: string;
+  quantity_used: number;
+  notes: string | null;
+  created_at: string;
+  // Relations
+  equipment?: Equipment;
+}
+
+// Job Task types
+export interface JobTask {
+  id: string;
+  job_id: string;
+  task_name: string;
+  task_description: string | null;
+  task_order: number;
+  is_required: boolean;
+}
+
+// Task Completion types
+export interface TaskCompletion {
+  id: string;
+  technician_job_id: string;
+  job_task_id: string;
+  is_completed: boolean;
+  completion_notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  // Relations
+  job_task?: JobTask;
+}
+
+// Follow-up types
+export interface Followup {
+  id: string;
+  job_id: string;
+  user_id: string;
+  technician_id: string | null;
+  type: string | null;
+  status: string | null;
+  priority: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  // Relations
+  technician?: TechnicianProfile;
+}
+
+// Job Signature types
+export interface JobSignature {
+  id: string;
+  technician_job_id: string;
+  signature_image_url: string;
+  customer_name: string;
+  customer_feedback: string | null;
+  signed_at: string;
+  created_at: string;
+}
+
+// Contact types (for customer contact persons)
+export interface Contact {
+  id: string;
+  customer_id: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  tel1: string | null;
+  tel2: string | null;
+  email: string | null;
 }
 
 // API Response Types
