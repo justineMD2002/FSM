@@ -83,14 +83,49 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
           setCurrentLocation(currentCoords);
         }
 
-        // Geocode all job addresses
+        // Get coordinates for all jobs
+        // First, fetch destination coordinates from database for all jobs
+        const { supabase } = await import('@/lib/supabase');
+        const jobIds = jobs.map(j => j.id);
+
+        const { data: dbJobs } = await supabase
+          .from('jobs')
+          .select(`
+            id,
+            location:location_id (
+              destination_latitude,
+              destination_longitude
+            )
+          `)
+          .in('id', jobIds);
+
+        // Create a map of job IDs to their coordinates
+        const coordsMap = new Map<string, { lat: number, lng: number }>();
+        if (dbJobs) {
+          for (const dbJob of dbJobs) {
+            if (dbJob.location?.destination_latitude && dbJob.location?.destination_longitude) {
+              coordsMap.set(dbJob.id, {
+                lat: parseFloat(dbJob.location.destination_latitude),
+                lng: parseFloat(dbJob.location.destination_longitude),
+              });
+            }
+          }
+        }
+
+        // Build job list with coordinates
         const jobsWithCoordinates: JobWithCoordinates[] = [];
         for (const job of jobs) {
-          const coords = await geocodeAddress(job.address);
+          let coords = coordsMap.get(job.id);
+
+          // If no coordinates from database, geocode the address
+          if (!coords) {
+            coords = await geocodeAddress(job.address);
+          }
+
           if (coords) {
             jobsWithCoordinates.push({
               ...job,
-              coordinates: coords,
+              coordinates: { latitude: coords.lat, longitude: coords.lng },
             });
           }
         }

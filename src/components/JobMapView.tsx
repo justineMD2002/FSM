@@ -9,6 +9,8 @@ interface JobMapViewProps {
   address: string;
   isHistoryJob: boolean;
   onArrival?: () => void;
+  destinationLatitude?: string | null;
+  destinationLongitude?: string | null;
 }
 
 interface Coordinates {
@@ -16,7 +18,7 @@ interface Coordinates {
   longitude: number;
 }
 
-export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapViewProps) {
+export default function JobMapView({ address, isHistoryJob, onArrival, destinationLatitude, destinationLongitude }: JobMapViewProps) {
   const [destination, setDestination] = useState<Coordinates | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +100,20 @@ export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapV
         setLoading(true);
         setError(null);
 
-        // Geocode the job address
-        const destCoords = await geocodeAddress(address);
+        // Use destination coordinates from locations table if available, otherwise geocode the address
+        let destCoords: Coordinates | null = null;
+
+        if (destinationLatitude && destinationLongitude) {
+          // Parse coordinates from locations table
+          destCoords = {
+            latitude: parseFloat(destinationLatitude),
+            longitude: parseFloat(destinationLongitude),
+          };
+        } else {
+          // Fall back to geocoding the address
+          destCoords = await geocodeAddress(address);
+        }
+
         setDestination(destCoords);
 
         if (!isHistoryJob) {
@@ -121,7 +135,7 @@ export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapV
     };
 
     initializeMap();
-  }, [address, isHistoryJob, geocodeAddress, getCurrentLocation]);
+  }, [address, isHistoryJob, destinationLatitude, destinationLongitude, geocodeAddress, getCurrentLocation]);
 
   // Continuously track user location for current jobs
   useEffect(() => {

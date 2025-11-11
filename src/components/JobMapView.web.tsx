@@ -7,6 +7,8 @@ interface JobMapViewProps {
   address: string;
   isHistoryJob: boolean;
   onArrival?: () => void;
+  destinationLatitude?: string | null;
+  destinationLongitude?: string | null;
 }
 
 interface Coordinates {
@@ -22,7 +24,7 @@ const containerStyle = {
 // Debounce delay for route recalculation (in milliseconds)
 const ROUTE_UPDATE_DELAY = 5000; // 5 seconds
 
-export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapViewProps) {
+export default function JobMapView({ address, isHistoryJob, onArrival, destinationLatitude, destinationLongitude }: JobMapViewProps) {
   const [destination, setDestination] = useState<Coordinates | null>(null);
   const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -128,8 +130,20 @@ export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapV
         setLoading(true);
         setError(null);
 
-        // Geocode the job address
-        const destCoords = await geocodeAddress(address);
+        // Use destination coordinates from locations table if available, otherwise geocode the address
+        let destCoords: Coordinates | null = null;
+
+        if (destinationLatitude && destinationLongitude) {
+          // Parse coordinates from locations table
+          destCoords = {
+            lat: parseFloat(destinationLatitude),
+            lng: parseFloat(destinationLongitude),
+          };
+        } else {
+          // Fall back to geocoding the address
+          destCoords = await geocodeAddress(address);
+        }
+
         setDestination(destCoords);
 
         if (!isHistoryJob) {
@@ -152,7 +166,7 @@ export default function JobMapView({ address, isHistoryJob, onArrival }: JobMapV
     };
 
     initializeMap();
-  }, [address, isHistoryJob, isGoogleMapsLoaded, geocodeAddress, getCurrentLocation, getDirections]);
+  }, [address, isHistoryJob, isGoogleMapsLoaded, destinationLatitude, destinationLongitude, geocodeAddress, getCurrentLocation, getDirections]);
 
   // Continuously track user location for current jobs
   useEffect(() => {

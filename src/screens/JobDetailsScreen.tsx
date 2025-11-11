@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { Job } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
@@ -15,6 +16,8 @@ import { Tab } from '@/enums';
 import { checkClockInStatus } from '@/services/attendance.service';
 import { useCurrentUserTechnicianJob } from '@/hooks';
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
+import { updateCurrentLocation } from '@/services/locations.service';
+import { getJobById } from '@/services/jobs.service';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -44,12 +47,44 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showJobStatusModal, setShowJobStatusModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
+  const [destinationCoords, setDestinationCoords] = useState<{ lat: string | null; lng: string | null }>({ lat: null, lng: null });
 
   const user = useAuthStore((state) => state.user);
   const { setActiveTab: setGlobalActiveTab, setSelectedJob } = useNavigationStore();
 
   // Fetch current user's technician job assignment
   const { technicianJob, refetch: refetchTechnicianJob } = useCurrentUserTechnicianJob(job.id, user?.id || null);
+
+  // Fetch location coordinates from database
+  useEffect(() => {
+    const fetchLocationCoords = async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { data: dbJob } = await supabase
+          .from('jobs')
+          .select(`
+            location_id,
+            location:location_id (
+              destination_latitude,
+              destination_longitude
+            )
+          `)
+          .eq('id', job.id)
+          .single();
+
+        if (dbJob?.location) {
+          setDestinationCoords({
+            lat: dbJob.location.destination_latitude,
+            lng: dbJob.location.destination_longitude,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching location coordinates:', error);
+      }
+    };
+
+    fetchLocationCoords();
+  }, [job.id]);
 
   // Show modal if job is completed or cancelled
   useEffect(() => {
@@ -104,12 +139,60 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
     }
 
     try {
+      // Get current location to save as starting point
+      let currentLocation = null;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+          currentLocation = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+        }
+      } catch (locError) {
+        console.error('Could not get current location:', locError);
+        // Continue without location - it's not critical for starting the job
+      }
+
+      // Update technician job status to STARTED
       const result = await updateTechnicianJobStatus(technicianJob.id, 'STARTED');
 
       if (result.error) {
         alert(`Error starting job: ${result.error.message}`);
         setShowConfirmModal(false);
         return;
+      }
+
+      // Save current location to the locations table if we have a location_id
+      if (currentLocation) {
+        // Fetch the full job details to get location_id
+        const jobResult = await getJobById(job.id);
+        if (!jobResult.error && jobResult.data) {
+          // Get the location_id from the database job
+          const { data: dbJob } = await import('@/lib/supabase').then(({ supabase }) =>
+            supabase
+              .from('jobs')
+              .select('location_id')
+              .eq('id', job.id)
+              .single()
+          );
+
+          if (dbJob?.location_id) {
+            const locationResult = await updateCurrentLocation(
+              dbJob.location_id,
+              currentLocation.latitude,
+              currentLocation.longitude
+            );
+
+            if (locationResult.error) {
+              console.error('Error saving starting location:', locationResult.error);
+              // Don't fail the job start if location save fails
+            }
+          }
+        }
       }
 
       // Refetch to get updated status
@@ -253,6 +336,8 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
             address={job.address}
             isHistoryJob={isHistoryJob}
             onArrival={handleArrival}
+            destinationLatitude={destinationCoords.lat}
+            destinationLongitude={destinationCoords.lng}
           />
         </View>
       ) : activeTab === 'Chat' ? (
