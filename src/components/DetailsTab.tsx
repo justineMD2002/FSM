@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, Linking } from 'react-
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 import { useJobTechnicians, useCustomerEquipments, useCustomerContacts } from '@/hooks';
+import TechnicianStatusBadge from './TechnicianStatusBadge';
 
 interface DetailsTabProps {
   job: Job;
@@ -305,18 +306,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                               {techJob.assignment_status}
                             </Text>
                           </View>
-                          <View className="flex-row items-center">
-                            <View
-                              className="w-2 h-2 rounded-full mr-1"
-                              style={{ backgroundColor: tech.is_online ? '#22c55e' : '#94a3b8' }}
-                            />
-                            <Text
-                              className="text-xs font-medium"
-                              style={{ color: tech.is_online ? '#22c55e' : '#94a3b8' }}
-                            >
-                              {tech.is_online ? 'Online' : 'Offline'}
-                            </Text>
-                          </View>
+                          <TechnicianStatusBadge technicianId={tech.id} />
                         </View>
                       </View>
                     </View>

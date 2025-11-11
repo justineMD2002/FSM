@@ -122,6 +122,7 @@ export interface AttendanceRecord {
   clock_out: string | null;
   duration_minutes: number | null;
   notes: string | null;
+  is_break: boolean | null;
   created_at: string;
   updated_at: string;
 }

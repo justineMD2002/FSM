@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { TechnicianProfile, AttendanceRecord } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
+import { setBreakStatus } from '@/services/attendance.service';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
@@ -112,6 +113,13 @@ export default function ProfileScreen() {
 
       setCurrentAttendance(activeAttendance);
 
+      // Set break status from database
+      if (activeAttendance?.is_break === true) {
+        setIsOnBreak(true);
+      } else {
+        setIsOnBreak(false);
+      }
+
       const { data: lastAttendance } = await supabase
         .from('attendance')
         .select('clock_out')
@@ -148,6 +156,7 @@ export default function ProfileScreen() {
         .insert({
           technician_id: profile.id,
           clock_in: new Date().toISOString(),
+          is_break: false,
         })
         .select()
         .single();
@@ -212,19 +221,45 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleBreakToggle = () => {
-    if (isOnBreak) {
-      // Resume from break
-      if (breakStartTime) {
-        const breakDuration = Date.now() - breakStartTime;
-        setTotalBreakTime(totalBreakTime + breakDuration);
-        setBreakStartTime(null);
+  const handleBreakToggle = async () => {
+    if (!currentAttendance) {
+      Alert.alert('Error', 'You must be clocked in to take a break.');
+      return;
+    }
+
+    try {
+      const newBreakStatus = !isOnBreak;
+
+      // Update database
+      const { error } = await setBreakStatus(currentAttendance.id, newBreakStatus);
+
+      if (error) {
+        Alert.alert('Error', error.message || 'Failed to update break status.');
+        return;
       }
-      setIsOnBreak(false);
-    } else {
-      // Start break
-      setBreakStartTime(Date.now());
-      setIsOnBreak(true);
+
+      // Update local state
+      if (newBreakStatus) {
+        // Starting break
+        setBreakStartTime(Date.now());
+        setIsOnBreak(true);
+        Alert.alert('Break Started', 'You are now on break.');
+      } else {
+        // Ending break
+        if (breakStartTime) {
+          const breakDuration = Date.now() - breakStartTime;
+          setTotalBreakTime(totalBreakTime + breakDuration);
+          setBreakStartTime(null);
+        }
+        setIsOnBreak(false);
+        Alert.alert('Break Ended', 'You are back online.');
+      }
+
+      // Refetch attendance data to ensure sync
+      await fetchAttendanceData();
+    } catch (error: any) {
+      console.error('Error toggling break:', error);
+      Alert.alert('Error', error?.message || 'Failed to update break status.');
     }
   };
 

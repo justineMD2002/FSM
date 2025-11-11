@@ -12,3 +12,4 @@ export {
   useJobSignature,
   useCurrentUserTechnicianJob,
 } from './useJobDetails';
+export { useTechnicianStatus } from './useAttendance';

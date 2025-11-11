@@ -102,3 +102,97 @@ export const getAttendanceHistory = async (userId: string): Promise<ApiResponse<
     };
   }
 };
+
+/**
+ * Set break status for current attendance record
+ * @param attendanceId - The attendance record ID
+ * @param isBreak - true to start break, false to end break
+ * @returns Updated attendance record
+ */
+export const setBreakStatus = async (
+  attendanceId: string,
+  isBreak: boolean
+): Promise<ApiResponse<AttendanceRecord>> => {
+  try {
+    const { data, error } = await supabase
+      .from('attendance')
+      .update({
+        is_break: isBreak,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', attendanceId)
+      .select()
+      .single();
+
+    if (error) {
+      return {
+        data: null,
+        error: { message: error.message },
+      };
+    }
+
+    return {
+      data: data as AttendanceRecord,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: { message: error?.message || 'Failed to update break status' },
+    };
+  }
+};
+
+/**
+ * Get technician status based on attendance
+ * @param technicianId - The technician ID
+ * @returns Status: 'Online', 'Break', or 'Offline'
+ */
+export const getTechnicianStatus = async (
+  technicianId: string
+): Promise<ApiResponse<{ status: 'Online' | 'Break' | 'Offline'; attendance: AttendanceRecord | null }>> => {
+  try {
+    // Check for active attendance today (clock_in exists, clock_out is null)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase
+      .from('attendance')
+      .select('*')
+      .eq('technician_id', technicianId)
+      .is('clock_out', null)
+      .gte('clock_in', today.toISOString())
+      .order('clock_in', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      return {
+        data: null,
+        error: { message: error.message },
+      };
+    }
+
+    // Determine status
+    if (!data) {
+      // Not clocked in today
+      return {
+        data: { status: 'Offline', attendance: null },
+        error: null,
+      };
+    }
+
+    // Clocked in - check break status
+    const status = data.is_break === true ? 'Break' : 'Online';
+
+    return {
+      data: { status, attendance: data as AttendanceRecord },
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: { message: error?.message || 'Failed to get technician status' },
+    };
+  }
+};
