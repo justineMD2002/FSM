@@ -233,6 +233,19 @@ export interface Contact {
   email: string | null;
 }
 
+// Job Image types
+export interface JobImage {
+  id: string;
+  job_id: string;
+  technician_job_id: string | null;
+  image_url: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data: T | null;

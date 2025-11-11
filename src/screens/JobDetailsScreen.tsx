@@ -359,7 +359,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
           )}
 
           {activeTab === 'Service' && (
-            <ServiceTab onSubmit={handleSubmitServiceReport} isHistoryJob={isHistoryJob} />
+            <ServiceTab jobId={job.id} onSubmit={handleSubmitServiceReport} isHistoryJob={isHistoryJob} />
           )}
 
           {activeTab === 'Complete' && (

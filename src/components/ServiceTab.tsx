@@ -1,115 +1,152 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { JobTask, Followup, JobImage } from '@/types';
+import { getTasksByJobId, createJobTask } from '@/services/jobTasks.service';
+import { getFollowupsByJobId, createFollowup } from '@/services/followups.service';
+import { getImagesByJobId, uploadImageAndCreateRecord } from '@/services/jobImages.service';
+import { useAuthStore } from '@/store';
 
-interface Task {
-  id: string;
-  title: string;
-  completed: boolean;
-  createdBy: string;
-  createdAt: Date;
-  lastUpdatedAt: Date;
-  lastUpdatedBy: string;
+interface Task extends JobTask {
+  isNew?: boolean; // Flag to identify newly added tasks (not yet saved to backend)
 }
 
-interface FollowUp {
-  id: string;
-  title: string;
-  dueDate: string;
-  urgency: 'Low' | 'Medium' | 'High';
-  status: 'Repair' | 'Logged';
-  createdBy: string;
-  createdAt: Date;
-  lastUpdatedAt: Date;
-  lastUpdatedBy: string;
+interface FollowUp extends Omit<Followup, 'technician'> {
+  isNew?: boolean; // Flag to identify newly added followups (not yet saved to backend)
 }
 
-interface ServiceImage {
-  id: string;
-  url: string;
-  description: string;
-  createdBy: string;
-  createdAt: Date;
+interface ServiceImage extends JobImage {
+  isNew?: boolean; // Flag to identify newly added images (not yet saved to backend)
+  base64?: string; // Store base64 for later upload
 }
 
 interface ServiceTabProps {
+  jobId: string;
   onSubmit: () => void;
   isHistoryJob: boolean;
 }
 
-export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) {
+export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTabProps) {
+  const user = useAuthStore((state) => state.user);
+
   // Service tab states
   const [tasks, setTasks] = useState<Task[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [images, setImages] = useState<ServiceImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Task form states
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
 
   // Follow-up form states
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [followUpTitle, setFollowUpTitle] = useState('');
-  const [followUpDueDate, setFollowUpDueDate] = useState('');
-  const [followUpUrgency, setFollowUpUrgency] = useState<'Low' | 'Medium' | 'High'>('Medium');
+  const [followUpType, setFollowUpType] = useState('');
+  const [followUpPriority, setFollowUpPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+  const [followUpStatus, setFollowUpStatus] = useState<'OPEN' | 'IN_PROGRESS' | 'RESOLVED'>('OPEN');
 
   // Image form states
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageDescription, setImageDescription] = useState('');
+  const [selectedImage, setSelectedImage] = useState<{ uri: string; base64?: string } | null>(null);
+
+  // Fetch existing data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      // Guard: Don't fetch if jobId is not valid
+      if (!jobId || jobId === 'undefined') {
+        console.warn('ServiceTab: Invalid jobId, skipping data fetch. jobId:', jobId);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log('ServiceTab: Fetching data for jobId:', jobId);
+
+        // Fetch tasks
+        const tasksResult = await getTasksByJobId(jobId);
+        if (!tasksResult.error && tasksResult.data) {
+          setTasks(tasksResult.data.map(task => ({ ...task, isNew: false })));
+        }
+
+        // Fetch followups
+        const followupsResult = await getFollowupsByJobId(jobId);
+        if (!followupsResult.error && followupsResult.data) {
+          setFollowUps(followupsResult.data.map(followup => ({ ...followup, isNew: false })));
+        }
+
+        // Fetch images
+        const imagesResult = await getImagesByJobId(jobId);
+        if (!imagesResult.error && imagesResult.data) {
+          setImages(imagesResult.data.map(image => ({ ...image, isNew: false })));
+        }
+      } catch (error) {
+        console.error('Error fetching service data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [jobId]);
 
   // Task handlers
   const handleAddTask = () => {
     if (taskTitle.trim()) {
-      const now = new Date();
       const newTask: Task = {
-        id: Date.now().toString(),
-        title: taskTitle,
-        completed: false,
-        createdBy: 'Current User', // Replace with actual user
-        createdAt: now,
-        lastUpdatedAt: now,
-        lastUpdatedBy: 'Current User',
+        id: `temp_${Date.now()}`, // Temporary ID for frontend
+        job_id: jobId,
+        task_name: taskTitle,
+        task_description: taskDescription || null,
+        task_order: tasks.length,
+        is_required: false,
+        isNew: true, // Mark as new (not yet saved to backend)
       };
       setTasks([...tasks, newTask]);
       setTaskTitle('');
+      setTaskDescription('');
       setShowTaskForm(false);
     }
   };
 
-  const handleToggleTask = (taskId: string) => {
-    setTasks(tasks.map(task =>
-      task.id === taskId
-        ? {
-            ...task,
-            completed: !task.completed,
-            lastUpdatedAt: new Date(),
-            lastUpdatedBy: 'Current User',
-          }
-        : task
-    ));
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
   };
 
   // Follow-up handlers
   const handleAddFollowUp = () => {
-    if (followUpTitle.trim() && followUpDueDate.trim()) {
-      const now = new Date();
+    if (followUpTitle.trim()) {
+      if (!user) return;
+
       const newFollowUp: FollowUp = {
-        id: Date.now().toString(),
-        title: followUpTitle,
-        dueDate: followUpDueDate,
-        urgency: followUpUrgency,
-        status: 'Repair',
-        createdBy: 'Current User', // Replace with actual user
-        createdAt: now,
-        lastUpdatedAt: now,
-        lastUpdatedBy: 'Current User',
+        id: `temp_${Date.now()}`, // Temporary ID for frontend
+        job_id: jobId,
+        user_id: user.id,
+        technician_id: null,
+        type: followUpType || null,
+        status: followUpStatus || null,
+        priority: followUpPriority || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: null,
+        isNew: true, // Mark as new (not yet saved to backend)
       };
       setFollowUps([...followUps, newFollowUp]);
       setFollowUpTitle('');
-      setFollowUpDueDate('');
-      setFollowUpUrgency('Medium');
+      setFollowUpType('');
+      setFollowUpPriority('MEDIUM');
+      setFollowUpStatus('OPEN');
       setShowFollowUpForm(false);
     }
+  };
+
+  const handleDeleteFollowUp = (followUpId: string) => {
+    setFollowUps(followUps.filter(followUp => followUp.id !== followUpId));
   };
 
   const handleToggleFollowUpStatus = (followUpId: string) => {
@@ -117,28 +154,63 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
       followUp.id === followUpId
         ? {
             ...followUp,
-            status: followUp.status === 'Repair' ? 'Logged' : 'Repair',
-            lastUpdatedAt: new Date(),
-            lastUpdatedBy: 'Current User',
+            status: followUp.status === 'OPEN' ? 'RESOLVED' : 'OPEN',
+            updated_at: new Date().toISOString(),
           }
         : followUp
     ));
   };
 
   // Image handlers
-  const handleUploadImage = () => {
-    // TODO: Implement Supabase storage upload
-    // For now, just add a placeholder
-    if (imageDescription.trim()) {
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Please grant permission to access your photo library');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+        base64: true, // Get base64 for upload
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage({
+          uri: result.assets[0].uri,
+          base64: result.assets[0].base64,
+        });
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const handleAddImage = () => {
+    if (selectedImage && imageDescription.trim()) {
+      if (!user) return;
+
       const newImage: ServiceImage = {
-        id: Date.now().toString(),
-        url: 'https://via.placeholder.com/150', // Replace with actual uploaded URL
+        id: `temp_${Date.now()}`, // Temporary ID for frontend
+        job_id: jobId,
+        technician_job_id: null,
+        image_url: selectedImage.uri, // Local URI for preview
         description: imageDescription,
-        createdBy: 'Current User',
-        createdAt: new Date(),
+        created_by: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: null,
+        isNew: true, // Mark as new (not yet saved to backend)
+        base64: selectedImage.base64, // Store base64 for later upload
       };
       setImages([...images, newImage]);
       setImageDescription('');
+      setSelectedImage(null);
       setShowImageModal(false);
     }
   };
@@ -146,6 +218,80 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
   const handleDeleteImage = (imageId: string) => {
     setImages(images.filter(image => image.id !== imageId));
   };
+
+  // Submit service report handler
+  const handleSubmitServiceReport = async () => {
+    if (!user) {
+      Alert.alert('Error', 'User not authenticated');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // Save new tasks to backend
+      const newTasks = tasks.filter(task => task.isNew);
+      for (const task of newTasks) {
+        const { id, isNew, ...taskData } = task; // Remove temporary fields
+        const result = await createJobTask(taskData);
+        if (result.error) {
+          console.error('Error creating task:', result.error);
+          Alert.alert('Error', `Failed to save task: ${result.error.message}`);
+          return;
+        }
+      }
+
+      // Save new followups to backend
+      const newFollowUps = followUps.filter(followUp => followUp.isNew);
+      for (const followUp of newFollowUps) {
+        const { id, isNew, ...followUpData } = followUp; // Remove temporary fields
+        const result = await createFollowup(followUpData);
+        if (result.error) {
+          console.error('Error creating followup:', result.error);
+          Alert.alert('Error', `Failed to save followup: ${result.error.message}`);
+          return;
+        }
+      }
+
+      // Upload new images to backend and save to database
+      const newImages = images.filter(image => image.isNew);
+      for (const image of newImages) {
+        if (image.base64) {
+          const result = await uploadImageAndCreateRecord(
+            jobId,
+            null, // technician_job_id - can be set if needed
+            `data:image/png;base64,${image.base64}`,
+            image.description,
+            user.id
+          );
+          if (result.error) {
+            console.error('Error uploading image:', result.error);
+            Alert.alert('Error', `Failed to upload image: ${result.error.message}`);
+            return;
+          }
+          console.log('Image uploaded and saved successfully:', result.data);
+        }
+      }
+
+      Alert.alert('Success', 'Service report submitted successfully', [
+        { text: 'OK', onPress: onSubmit }
+      ]);
+    } catch (error: any) {
+      console.error('Error submitting service report:', error);
+      Alert.alert('Error', error.message || 'Failed to submit service report');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center py-20">
+        <ActivityIndicator size="large" color="#0092ce" />
+        <Text className="text-slate-500 mt-4">Loading service data...</Text>
+      </View>
+    );
+  }
 
   return (
     <View>
@@ -175,11 +321,21 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
               value={taskTitle}
               onChangeText={setTaskTitle}
             />
+            <TextInput
+              className="border border-slate-300 rounded-lg px-4 py-3 mb-3"
+              placeholder="Task description (optional)"
+              value={taskDescription}
+              onChangeText={setTaskDescription}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
             <View className="flex-row justify-end space-x-2">
               <TouchableOpacity
                 onPress={() => {
                   setShowTaskForm(false);
                   setTaskTitle('');
+                  setTaskDescription('');
                 }}
                 className="px-4 py-2 rounded-lg bg-slate-200 mr-2"
               >
@@ -203,36 +359,35 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
           </View>
         ) : (
           tasks.map((task) => (
-            <TouchableOpacity
+            <View
               key={task.id}
-              onPress={() => handleToggleTask(task.id)}
               className="bg-white rounded-xl p-4 mb-3 shadow-sm"
             >
-              <View className="flex-row items-start">
-                <View className="mr-3 mt-0.5">
-                  <Ionicons
-                    name={task.completed ? 'checkbox' : 'square-outline'}
-                    size={24}
-                    color={task.completed ? '#22c55e' : '#94a3b8'}
-                  />
-                </View>
+              <View className="flex-row items-start justify-between">
                 <View className="flex-1">
-                  <Text
-                    className={`text-base mb-1 ${
-                      task.completed ? 'text-slate-400 line-through' : 'text-slate-800'
-                    }`}
-                  >
-                    {task.title}
+                  <Text className="text-base font-semibold text-slate-800 mb-1">
+                    {task.task_name}
                   </Text>
-                  <Text className="text-xs text-slate-500 mb-1">
-                    Created by {task.createdBy} at {task.createdAt.toLocaleString()}
-                  </Text>
-                  <Text className="text-xs text-slate-500">
-                    Last updated {task.lastUpdatedAt.toLocaleString()} by {task.lastUpdatedBy}
-                  </Text>
+                  {task.task_description && (
+                    <Text className="text-sm text-slate-600 mb-2">
+                      {task.task_description}
+                    </Text>
+                  )}
+                  {/* <Text className="text-xs text-slate-500">
+                    {task.is_required ? 'Required' : 'Optional'}
+                  </Text> */}
                 </View>
+                {/* Show delete button only for newly added tasks */}
+                {task.isNew && !isHistoryJob && (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteTask(task.id)}
+                    className="ml-3 bg-red-500 rounded-full p-2"
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#fff" />
+                  </TouchableOpacity>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
           ))
         )}
       </View>
@@ -259,33 +414,55 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
           <View className="bg-white rounded-xl p-4 mb-3 shadow-sm">
             <TextInput
               className="border border-slate-300 rounded-lg px-4 py-3 mb-3"
-              placeholder="Follow-up title"
+              placeholder="Follow-up description"
               value={followUpTitle}
               onChangeText={setFollowUpTitle}
             />
             <TextInput
               className="border border-slate-300 rounded-lg px-4 py-3 mb-3"
-              placeholder="Due date (e.g., 2024-12-31)"
-              value={followUpDueDate}
-              onChangeText={setFollowUpDueDate}
+              placeholder="Type (e.g., Repair, Maintenance)"
+              value={followUpType}
+              onChangeText={setFollowUpType}
             />
             <View className="mb-3">
-              <Text className="text-sm text-slate-600 mb-2">Urgency</Text>
+              <Text className="text-sm text-slate-600 mb-2">Priority</Text>
               <View className="flex-row space-x-2">
-                {(['Low', 'Medium', 'High'] as const).map((urgency) => (
+                {(['LOW', 'MEDIUM', 'HIGH'] as const).map((priority) => (
                   <TouchableOpacity
-                    key={urgency}
-                    onPress={() => setFollowUpUrgency(urgency)}
+                    key={priority}
+                    onPress={() => setFollowUpPriority(priority)}
                     className={`flex-1 py-2 rounded-lg ${
-                      followUpUrgency === urgency ? 'bg-[#0092ce]' : 'bg-slate-200'
+                      followUpPriority === priority ? 'bg-[#0092ce]' : 'bg-slate-200'
                     }`}
                   >
                     <Text
                       className={`text-center font-medium ${
-                        followUpUrgency === urgency ? 'text-white' : 'text-slate-700'
+                        followUpPriority === priority ? 'text-white' : 'text-slate-700'
                       }`}
                     >
-                      {urgency}
+                      {priority}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View className="mb-3">
+              <Text className="text-sm text-slate-600 mb-2">Status</Text>
+              <View className="flex-row space-x-2">
+                {(['OPEN', 'IN_PROGRESS', 'RESOLVED'] as const).map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    onPress={() => setFollowUpStatus(status)}
+                    className={`flex-1 py-2 rounded-lg ${
+                      followUpStatus === status ? 'bg-[#0092ce]' : 'bg-slate-200'
+                    }`}
+                  >
+                    <Text
+                      className={`text-center font-medium text-xs ${
+                        followUpStatus === status ? 'text-white' : 'text-slate-700'
+                      }`}
+                    >
+                      {status.replace('_', ' ')}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -296,7 +473,7 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
                 onPress={() => {
                   setShowFollowUpForm(false);
                   setFollowUpTitle('');
-                  setFollowUpDueDate('');
+                  setFollowUpType('');
                 }}
                 className="px-4 py-2 rounded-lg bg-slate-200 mr-2"
               >
@@ -324,91 +501,55 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
               <View className="flex-row">
                 <View className="w-1 bg-[#0092ce]" />
                 <View className="flex-1 p-4">
-                  {/* Status Buttons */}
-                  <View className="flex-row mb-3">
-                    <TouchableOpacity
-                      onPress={() => handleToggleFollowUpStatus(followUp.id)}
-                      className={`px-3 py-1.5 rounded-lg mr-2 ${
-                        followUp.status === 'Repair' ? 'bg-red-500' : 'bg-slate-200'
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-medium ${
-                          followUp.status === 'Repair' ? 'text-white' : 'text-slate-600'
+                  <View className="flex-row justify-between items-start mb-3">
+                    <View className="flex-row flex-wrap">
+                      {/* Status Badge */}
+                      <View
+                        className={`px-3 py-1.5 rounded-lg mr-2 mb-2 ${
+                          followUp.status === 'RESOLVED' ? 'bg-green-500' :
+                          followUp.status === 'IN_PROGRESS' ? 'bg-blue-500' : 'bg-orange-500'
                         }`}
                       >
-                        Repair
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleToggleFollowUpStatus(followUp.id)}
-                      className={`px-3 py-1.5 rounded-lg ${
-                        followUp.status === 'Logged' ? 'bg-[#0092ce]' : 'bg-slate-200'
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-medium ${
-                          followUp.status === 'Logged' ? 'text-white' : 'text-slate-600'
+                        <Text className="text-xs font-medium text-white">
+                          {followUp.status || 'OPEN'}
+                        </Text>
+                      </View>
+                      {/* Priority Badge */}
+                      <View
+                        className={`px-3 py-1.5 rounded-lg mb-2 ${
+                          followUp.priority === 'HIGH' ? 'bg-red-500' :
+                          followUp.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
                         }`}
                       >
-                        Logged
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Title */}
-                  <Text className="text-base font-semibold text-slate-800 mb-3">
-                    {followUp.title}
-                  </Text>
-
-                  {/* Due Date and Urgency */}
-                  <View className="flex-row justify-between items-center mb-3">
-                    <View className="flex-row items-center">
-                      <Ionicons name="calendar-outline" size={16} color="#64748b" />
-                      <Text className="text-sm text-slate-600 ml-1">{followUp.dueDate}</Text>
+                        <Text className="text-xs font-medium text-white">
+                          {followUp.priority || 'MEDIUM'}
+                        </Text>
+                      </View>
                     </View>
-                    <View className="flex-row items-center">
-                      <Ionicons
-                        name="alert-circle-outline"
-                        size={16}
-                        color={
-                          followUp.urgency === 'High'
-                            ? '#ef4444'
-                            : followUp.urgency === 'Medium'
-                            ? '#f59e0b'
-                            : '#22c55e'
-                        }
-                      />
-                      <Text
-                        className="text-sm font-medium ml-1"
-                        style={{
-                          color:
-                            followUp.urgency === 'High'
-                              ? '#ef4444'
-                              : followUp.urgency === 'Medium'
-                              ? '#f59e0b'
-                              : '#22c55e',
-                        }}
+                    {/* Show delete button only for newly added followups */}
+                    {followUp.isNew && !isHistoryJob && (
+                      <TouchableOpacity
+                        onPress={() => handleDeleteFollowUp(followUp.id)}
+                        className="bg-red-500 rounded-full p-2"
                       >
-                        {followUp.urgency}
-                      </Text>
+                        <Ionicons name="trash-outline" size={18} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* Type */}
+                  {followUp.type && (
+                    <View className="flex-row items-center mb-2">
+                      <Ionicons name="pricetag-outline" size={16} color="#64748b" />
+                      <Text className="text-sm text-slate-600 ml-1">Type: {followUp.type}</Text>
                     </View>
-                  </View>
+                  )}
 
-                  {/* Created By */}
-                  <View className="flex-row items-center mb-2">
-                    <Ionicons name="person-outline" size={14} color="#64748b" />
-                    <Text className="text-xs text-slate-500 ml-1">
-                      Created by: {followUp.createdBy}
-                    </Text>
-                  </View>
-
-                  {/* Last Updated */}
+                  {/* Created Date */}
                   <View className="flex-row items-center">
                     <Ionicons name="time-outline" size={14} color="#64748b" />
                     <Text className="text-xs text-slate-500 ml-1">
-                      Last updated {followUp.lastUpdatedAt.toLocaleString()} by{' '}
-                      {followUp.lastUpdatedBy}
+                      Created: {new Date(followUp.created_at).toLocaleString()}
                     </Text>
                   </View>
                 </View>
@@ -448,22 +589,33 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
                 <View className="bg-white rounded-xl overflow-hidden shadow-sm">
                   {/* Image with Delete Button */}
                   <View className="bg-slate-200 h-32 items-center justify-center relative">
-                    <Ionicons name="image" size={48} color="#94a3b8" />
-                    <TouchableOpacity
-                      onPress={() => handleDeleteImage(image.id)}
-                      className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
-                      style={{ width: 28, height: 28 }}
-                    >
-                      <Ionicons name="trash" size={16} color="#fff" />
-                    </TouchableOpacity>
+                    {image.image_url ? (
+                      <Image
+                        source={{ uri: image.image_url }}
+                        className="w-full h-full"
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons name="image" size={48} color="#94a3b8" />
+                    )}
+                    {/* Show delete button only for newly added images or if not history job */}
+                    {image.isNew && !isHistoryJob && (
+                      <TouchableOpacity
+                        onPress={() => handleDeleteImage(image.id)}
+                        className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
+                        style={{ width: 28, height: 28 }}
+                      >
+                        <Ionicons name="trash" size={16} color="#fff" />
+                      </TouchableOpacity>
+                    )}
                   </View>
                   {/* Description and DateTime */}
                   <View className="p-3">
                     <Text className="text-xs text-slate-700 mb-2" numberOfLines={2}>
-                      {image.description}
+                      {image.description || 'No description'}
                     </Text>
                     <Text className="text-xs text-slate-500">
-                      {image.createdAt.toLocaleString()}
+                      {new Date(image.created_at).toLocaleString()}
                     </Text>
                   </View>
                 </View>
@@ -476,11 +628,23 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
       {/* Submit Button */}
       {!isHistoryJob && (
         <TouchableOpacity
-          onPress={onSubmit}
-          className="bg-[#0092ce] rounded-xl py-4 items-center justify-center flex-row mb-6"
+          onPress={handleSubmitServiceReport}
+          disabled={submitting}
+          className={`rounded-xl py-4 items-center justify-center flex-row mb-6 ${
+            submitting ? 'bg-slate-400' : 'bg-[#0092ce]'
+          }`}
         >
-          <Ionicons name="checkmark-circle" size={24} color="#fff" />
-          <Text className="text-white font-semibold text-lg ml-2">Submit Service Report</Text>
+          {submitting ? (
+            <>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text className="text-white font-semibold text-lg ml-2">Submitting...</Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+              <Text className="text-white font-semibold text-lg ml-2">Submit Service Report</Text>
+            </>
+          )}
         </TouchableOpacity>
       )}
 
@@ -501,10 +665,23 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
             </View>
 
             <ScrollView>
-              {/* Image Picker Placeholder */}
-              <TouchableOpacity className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl h-48 items-center justify-center mb-4">
-                <Ionicons name="cloud-upload-outline" size={48} color="#94a3b8" />
-                <Text className="text-slate-500 mt-2">Tap to select image</Text>
+              {/* Image Picker */}
+              <TouchableOpacity
+                onPress={handlePickImage}
+                className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl h-48 items-center justify-center mb-4"
+              >
+                {selectedImage ? (
+                  <Image
+                    source={{ uri: selectedImage.uri }}
+                    className="w-full h-full rounded-xl"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-upload-outline" size={48} color="#94a3b8" />
+                    <Text className="text-slate-500 mt-2">Tap to select image</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               {/* Description */}
@@ -526,17 +703,21 @@ export default function ServiceTab({ onSubmit, isHistoryJob }: ServiceTabProps) 
                   onPress={() => {
                     setShowImageModal(false);
                     setImageDescription('');
+                    setSelectedImage(null);
                   }}
                   className="px-6 py-3 rounded-lg bg-slate-200 mr-3"
                 >
                   <Text className="text-slate-700 font-medium">Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={handleUploadImage}
-                  className="px-6 py-3 rounded-lg bg-[#0092ce] flex-row items-center"
+                  onPress={handleAddImage}
+                  disabled={!selectedImage || !imageDescription.trim()}
+                  className={`px-6 py-3 rounded-lg flex-row items-center ${
+                    !selectedImage || !imageDescription.trim() ? 'bg-slate-400' : 'bg-[#0092ce]'
+                  }`}
                 >
-                  <Ionicons name="cloud-upload" size={20} color="#fff" />
-                  <Text className="text-white font-medium ml-2">Upload</Text>
+                  <Ionicons name="add-circle" size={20} color="#fff" />
+                  <Text className="text-white font-medium ml-2">Add Image</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
