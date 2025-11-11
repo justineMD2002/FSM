@@ -30,6 +30,7 @@ export interface Location {
   id: string;
   customer_id: string;
   location_name: string | null;
+  location_address: string | null;
   current_longitude: string | null;
   current_latitude: string | null;
   destination_longitude: string | null;
@@ -65,6 +66,8 @@ export interface Job {
   customer: string;
   customerId: string; // Add customer ID for lookups
   address: string;
+  locationName: string | null;
+  locationAddress: string | null;
   notes: string;
   providerName: string;
   status: 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'UPCOMING' | 'IN_PROGRESS';

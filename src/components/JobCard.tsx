@@ -45,15 +45,19 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
               </Text>
             </View>
 
-            <View className="flex-row items-center mt-2">
-              <Ionicons name="business-outline" size={16} color="#64748b" />
-              <Text className="text-sm text-slate-600 ml-2">{job.customer}</Text>
-            </View>
+            {job.locationName && (
+              <View className="flex-row items-center mt-2">
+                <Ionicons name="business-outline" size={16} color="#64748b" />
+                <Text className="text-sm text-slate-600 ml-2">{job.locationName}</Text>
+              </View>
+            )}
 
-            <View className="flex-row items-start mt-2">
-              <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-              <Text className="text-sm text-slate-600 ml-2 flex-1">{job.address}</Text>
-            </View>
+            {job.locationAddress && (
+              <View className="flex-row items-start mt-2">
+                <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
+                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.locationAddress}</Text>
+              </View>
+            )}
 
             {job.notes && (
               <View className="flex-row items-start mt-2">
@@ -64,7 +68,7 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
 
             <View className="flex-row items-center mt-2">
               <Ionicons name="person-outline" size={16} color="#64748b" />
-              <Text className="text-sm text-slate-600 ml-2">{job.providerName}</Text>
+              <Text className="text-sm text-slate-600 ml-2">{job.customer}</Text>
             </View>
           </View>
           <View className="mt-4 flex-row justify-end">

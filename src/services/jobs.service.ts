@@ -45,8 +45,10 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     time,
     customer: dbJob.customer?.customer_name || 'Unknown Customer',
     customerId: dbJob.customer_id,
-    // Use location_name if available, otherwise fall back to customer address
-    address: dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided',
+    // Use location_address if available, otherwise fall back to location_name or customer address
+    address: dbJob.location?.location_address || dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided',
+    locationName: dbJob.location?.location_name || null,
+    locationAddress: dbJob.location?.location_address || null,
     notes: dbJob.description || '',
     // TODO: Get technician name from technician_jobs table
     // Need to add a join to technician_jobs -> technicians to get full_name
@@ -82,6 +84,7 @@ export const getAllJobs = async (
           id,
           customer_id,
           location_name,
+          location_address,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -166,6 +169,7 @@ export const getJobById = async (
           id,
           customer_id,
           location_name,
+          location_address,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -227,6 +231,7 @@ export const createJob = async (
           id,
           customer_id,
           location_name,
+          location_address,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -290,6 +295,7 @@ export const updateJob = async (
           id,
           customer_id,
           location_name,
+          location_address,
           current_longitude,
           current_latitude,
           destination_longitude,

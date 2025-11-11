@@ -124,7 +124,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                 <Ionicons name="location-outline" size={18} color="#0092ce" />
                 <View className="ml-2 flex-1">
                   <Text className="text-xs text-slate-500 mb-0.5 font-semibold">Address</Text>
-                  <Text className="text-sm text-slate-700">{job.address}</Text>
+                  <Text className="text-sm text-slate-700">{job.locationAddress || job.address}</Text>
                 </View>
               </View>
 
@@ -152,8 +152,8 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                         <ActivityIndicator size="small" color="#0092ce" />
                       </View>
                     ) : primaryContact ? (
-                      <View className="mt-3 ml-5">
-                        <Text className="text-xs text-slate-500 font-semibold ml-1">Contact Person</Text>
+                      <View className="mt-3">
+                        <Text className="text-xs text-slate-500 font-semibold">Contact Person</Text>
                         <Text className="text-sm text-slate-700">
                           {primaryContact.first_name} {primaryContact.middle_name ? primaryContact.middle_name + ' ' : ''}{primaryContact.last_name}
                         </Text>
@@ -163,7 +163,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                             <Ionicons name="phone-portrait-outline" size={14} color="#64748b" />
                             <Text className="text-xs text-slate-600 ml-2">{primaryContact.tel1}</Text>
                           </View>
-                        )}
+                        )}  
 
                         {primaryContact.tel2 && (
                           <View className="flex-row items-center mt-1">

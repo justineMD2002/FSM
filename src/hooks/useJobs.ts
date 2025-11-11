@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Job, ApiError } from '@/types';
 import * as jobsService from '@/services/jobs.service';
+import { supabase } from '@/lib/supabase';
 
 interface UseJobsReturn {
   jobs: Job[];
@@ -12,6 +13,7 @@ interface UseJobsReturn {
 /**
  * Custom hook for managing jobs data
  * Provides jobs list, loading state, error handling, and refetch functionality
+ * Includes real-time updates via Supabase subscriptions
  *
  * @param isHistory - true for history jobs (COMPLETED/CANCELLED), false for current jobs (PENDING/UPCOMING/IN_PROGRESS)
  * @returns UseJobsReturn object with jobs data and operations
@@ -67,6 +69,37 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  // Set up real-time subscription
+  useEffect(() => {
+    const statusFilter = isHistory
+      ? ['COMPLETED', 'CANCELLED']
+      : ['PENDING', 'UPCOMING', 'IN_PROGRESS', 'OVERDUE', 'WAITING'];
+
+    // Subscribe to changes on the jobs table
+    const subscription = supabase
+      .channel(`jobs_${isHistory ? 'history' : 'current'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'jobs',
+          filter: `status=in.(${statusFilter.join(',')})`,
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          // Refetch jobs when any change occurs
+          refetch();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isHistory, refetch]);
 
   return {
     jobs,
