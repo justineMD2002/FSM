@@ -8,6 +8,7 @@ import { useJobTasks, useTaskCompletions, useJobEquipments, useJobSignature } fr
 import { uploadSignatureAndCreateRecord } from '@/services/jobSignatures.service';
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
 import { updateJob } from '@/services/jobs.service';
+import { updateTaskStatuses } from '@/services/jobTasks.service';
 
 interface CompleteTabProps {
   jobId: string;
@@ -31,7 +32,10 @@ export default function CompleteTab({
   const [localSignature, setLocalSignature] = useState<string | null>(null);
   const [signatureDate, setSignatureDate] = useState<Date | null>(null);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
+  const [localTaskCompletions, setLocalTaskCompletions] = useState<{ [taskId: string]: boolean }>({});
+  const [pendingSignature, setPendingSignature] = useState<string | null>(null); // Store signature temporarily until job completion
+  const [localJobCompleted, setLocalJobCompleted] = useState(false); // Track if job was completed in this session
   const signatureRef = useRef<any>(null);
   const isWeb = Platform.OS === 'web';
 
@@ -48,8 +52,8 @@ export default function CompleteTab({
   const { signature: existingSignature, loading: signatureLoading, refetch: refetchSignature } = useJobSignature(technicianJobId);
 
   // Check if job has been started
-  const jobStarted = assignmentStatus === 'STARTED';
-  const jobCompleted = jobStatus === 'COMPLETED' || jobStatus === 'CANCELLED';
+  const jobStarted = assignmentStatus === 'STARTED' || assignmentStatus === 'COMPLETED';
+  const jobCompleted = jobStatus === 'COMPLETED' || jobStatus === 'CANCELLED' || localJobCompleted;
 
   // Load existing signature
   useEffect(() => {
@@ -59,45 +63,46 @@ export default function CompleteTab({
     }
   }, [existingSignature]);
 
-  // Check if all required tasks are completed
+  // Initialize local task completions from database and task status
+  useEffect(() => {
+    const initialCompletions: { [taskId: string]: boolean } = {};
+    tasks.forEach(task => {
+      // Check if task status is 'COMPLETED' or if there's a completion record
+      const completion = completions.find(c => c.job_task_id === task.id);
+      initialCompletions[task.id] = task.status === 'COMPLETED' || completion?.is_completed || false;
+    });
+    setLocalTaskCompletions(initialCompletions);
+  }, [tasks, completions]);
+
+  // Check if all required tasks are completed (using local state)
   const allRequiredTasksCompleted = tasks
     .filter(task => task.is_required)
-    .every(task => {
-      const completion = completions.find(c => c.job_task_id === task.id);
-      return completion?.is_completed;
-    });
+    .every(task => localTaskCompletions[task.id] === true);
 
   // Can save signature if job started and not completed
   const canSaveSignature = jobStarted && !jobCompleted;
 
-  // Can complete job if signature exists, job started, and all required tasks done
-  const canCompleteJob = localSignature && jobStarted && !jobCompleted && allRequiredTasksCompleted;
+  // Can complete job if signature exists (either saved to DB or pending), job started, and all required tasks done
+  const hasSignature = localSignature || pendingSignature;
+  const canCompleteJob = hasSignature && jobStarted && !jobCompleted && allRequiredTasksCompleted;
 
-  const handleSignatureOK = async (signatureData: string) => {
-    if (!canSaveSignature || !technicianJobId) return;
+  const handleSignatureOK = (signatureData: string) => {
+    if (!canSaveSignature) return;
 
-    setUploading(true);
-    try {
-      const result = await uploadSignatureAndCreateRecord(
-        technicianJobId,
-        signatureData,
-        customerName
-      );
+    // Store signature locally, don't upload to database yet
+    setPendingSignature(signatureData);
+    setSignatureDate(new Date());
+    setShowSignaturePad(false);
+    setShowSignatureSavedModal(true);
+  };
 
-      if (result.error) {
-        alert(`Error saving signature: ${result.error.message}`);
-      } else {
-        setLocalSignature(signatureData);
-        setSignatureDate(new Date());
-        setShowSignaturePad(false);
-        setShowSignatureSavedModal(true);
-        await refetchSignature();
-      }
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
-    } finally {
-      setUploading(false);
-    }
+  const handleToggleTask = (taskId: string) => {
+    if (!jobStarted || jobCompleted) return;
+
+    setLocalTaskCompletions(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }));
   };
 
   const handleSignatureClear = () => {
@@ -106,18 +111,27 @@ export default function CompleteTab({
     } else {
       signatureRef.current?.clearSignature();
     }
+    setIsSignatureEmpty(true);
   };
 
-  const handleSaveSignature = async () => {
-    if (!canSaveSignature || !technicianJobId) {
-      alert('You must start the job before saving a signature');
-      return;
+  const handleSignatureBegin = () => {
+    setIsSignatureEmpty(false);
+  };
+
+  const handleSignatureEnd = () => {
+    // For web, check if signature is empty after drawing ends
+    if (isWeb && signatureRef.current) {
+      setIsSignatureEmpty(signatureRef.current.isEmpty());
     }
+  };
+
+  const handleSaveSignature = () => {
+    if (!canSaveSignature) return;
 
     if (isWeb && signatureRef.current) {
       const signatureData = signatureRef.current.toDataURL();
       if (signatureData) {
-        await handleSignatureOK(signatureData);
+        handleSignatureOK(signatureData);
       }
     }
   };
@@ -128,15 +142,17 @@ export default function CompleteTab({
       return;
     }
     setLocalSignature(null);
+    setPendingSignature(null);
     setSignatureDate(null);
     setShowSignaturePad(true);
+    setIsSignatureEmpty(true);
   };
 
   const handleCompleteJob = () => {
     if (!canCompleteJob) {
       if (!jobStarted) {
         alert('You must start the job before completing it');
-      } else if (!localSignature) {
+      } else if (!hasSignature) {
         alert('Customer signature is required to complete the job');
       } else if (!allRequiredTasksCompleted) {
         alert('Please complete all required tasks before finishing the job');
@@ -151,6 +167,30 @@ export default function CompleteTab({
 
     setCompleting(true);
     try {
+      // Upload pending signature to database if exists
+      if (pendingSignature) {
+        const signatureResult = await uploadSignatureAndCreateRecord(
+          technicianJobId,
+          pendingSignature,
+          customerName
+        );
+
+        if (signatureResult.error) {
+          throw new Error(`Error saving signature: ${signatureResult.error.message}`);
+        }
+      }
+
+      // Update task statuses in the database
+      const taskUpdates = tasks.map(task => ({
+        taskId: task.id,
+        status: localTaskCompletions[task.id] ? 'COMPLETED' : 'PENDING'
+      }));
+
+      const taskStatusResult = await updateTaskStatuses(taskUpdates);
+      if (taskStatusResult.error) {
+        throw new Error(taskStatusResult.error.message);
+      }
+
       // Update technician job status to COMPLETED
       const techJobResult = await updateTechnicianJobStatus(technicianJobId, 'COMPLETED');
       if (techJobResult.error) {
@@ -162,6 +202,9 @@ export default function CompleteTab({
       if (jobResult.error) {
         throw new Error(jobResult.error.message);
       }
+
+      // Mark job as completed locally
+      setLocalJobCompleted(true);
 
       setShowCompleteJobModal(false);
       setShowCongratulationsModal(true);
@@ -226,22 +269,31 @@ export default function CompleteTab({
             <Text className="text-lg font-semibold text-slate-800 ml-2">Service Checklist</Text>
           </View>
           {tasks.map((task) => {
-            const completion = completions.find(c => c.job_task_id === task.id);
-            const isCompleted = completion?.is_completed || false;
+            const isCompleted = localTaskCompletions[task.id] || false;
+            const canToggle = jobStarted && !jobCompleted;
 
             return (
               <View key={task.id} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
                 <View className="flex-row items-start">
-                  <View className="mr-3 mt-0.5">
+                  <TouchableOpacity
+                    className="mr-3 mt-0.5"
+                    onPress={() => handleToggleTask(task.id)}
+                    disabled={!canToggle}
+                  >
                     <Ionicons
                       name={isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
                       size={24}
                       color={isCompleted ? '#22c55e' : '#94a3b8'}
                     />
-                  </View>
+                  </TouchableOpacity>
                   <View className="flex-1">
                     <View className="flex-row items-center mb-1">
-                      <Text className="text-base text-slate-800 flex-1">{task.task_name}</Text>
+                      <Text
+                        className="text-base text-slate-800 flex-1"
+                        style={isCompleted ? { textDecorationLine: 'line-through', color: '#94a3b8' } : undefined}
+                      >
+                        {task.task_name}
+                      </Text>
                       {task.is_required && (
                         <View className="bg-red-100 px-2 py-1 rounded">
                           <Text className="text-xs font-medium text-red-700">Required</Text>
@@ -249,11 +301,11 @@ export default function CompleteTab({
                       )}
                     </View>
                     {task.task_description && (
-                      <Text className="text-sm text-slate-600 mb-2">{task.task_description}</Text>
-                    )}
-                    {completion && (
-                      <Text className="text-xs text-slate-500">
-                        Completed {new Date(completion.completed_at || '').toLocaleString()}
+                      <Text
+                        className="text-sm text-slate-600 mb-2"
+                        style={isCompleted ? { textDecorationLine: 'line-through', color: '#94a3b8' } : undefined}
+                      >
+                        {task.task_description}
                       </Text>
                     )}
                   </View>
@@ -309,13 +361,15 @@ export default function CompleteTab({
           <Text className="text-lg font-semibold text-slate-800 ml-2">Customer Signature</Text>
         </View>
         <View className="bg-white rounded-xl p-4 shadow-sm">
-          {!localSignature || showSignaturePad ? (
+          {!hasSignature || showSignaturePad ? (
             <View>
               {/* Signature Canvas */}
               <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 250 }}>
                 {isWeb ? (
                   <SignatureCanvas
                     ref={signatureRef}
+                    onBegin={handleSignatureBegin}
+                    onEnd={handleSignatureEnd}
                     canvasProps={{
                       className: 'signature-canvas',
                       style: { width: '100%', height: '100%' }
@@ -325,6 +379,7 @@ export default function CompleteTab({
                   <SignatureScreen
                     ref={signatureRef}
                     onOK={handleSignatureOK}
+                    onBegin={handleSignatureBegin}
                     onClear={handleSignatureClear}
                     webStyle={style}
                     descriptionText="Sign above"
@@ -336,8 +391,8 @@ export default function CompleteTab({
                 <TouchableOpacity
                   onPress={handleSignatureClear}
                   className="flex-1 bg-slate-200 rounded-lg py-2 px-4 flex-row items-center justify-center mr-2"
-                  disabled={!canSaveSignature}
-                  style={{ opacity: canSaveSignature ? 1 : 0.5 }}
+                  disabled={!canSaveSignature || isSignatureEmpty}
+                  style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
                 >
                   <Ionicons name="trash-outline" size={18} color="#475569" />
                   <Text className="text-slate-700 font-medium ml-2">Clear</Text>
@@ -346,17 +401,11 @@ export default function CompleteTab({
                   <TouchableOpacity
                     onPress={handleSaveSignature}
                     className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
-                    disabled={!canSaveSignature || uploading}
-                    style={{ opacity: canSaveSignature && !uploading ? 1 : 0.5 }}
+                    disabled={!canSaveSignature || isSignatureEmpty}
+                    style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
                   >
-                    {uploading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark" size={18} color="#fff" />
-                        <Text className="text-white font-medium ml-2">Save</Text>
-                      </>
-                    )}
+                    <Ionicons name="checkmark" size={18} color="#fff" />
+                    <Text className="text-white font-medium ml-2">Save</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -366,7 +415,7 @@ export default function CompleteTab({
               {/* Display Captured Signature */}
               <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 200 }}>
                 <Image
-                  source={{ uri: localSignature }}
+                  source={{ uri: (pendingSignature || localSignature) as string }}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="contain"
                 />
@@ -411,7 +460,7 @@ export default function CompleteTab({
       {!canCompleteJob && jobStarted && (
         <View className="bg-slate-100 rounded-xl p-4 mb-6">
           <Text className="text-slate-600 text-sm text-center">
-            {!localSignature && 'Customer signature is required. '}
+            {!hasSignature && 'Customer signature is required. '}
             {!allRequiredTasksCompleted && 'Complete all required tasks. '}
           </Text>
         </View>

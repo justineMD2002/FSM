@@ -178,6 +178,7 @@ export interface JobTask {
   task_description: string | null;
   task_order: number;
   is_required: boolean;
+  status: string | null;
 }
 
 // Task Completion types

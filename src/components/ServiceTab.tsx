@@ -114,6 +114,7 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
         task_description: taskDescription || null,
         task_order: tasks.length,
         is_required: false,
+        status: null,
         isNew: true, // Mark as new (not yet saved to backend)
       };
       setTasks([...tasks, newTask]);

@@ -243,7 +243,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
 
   // Check if THIS specific job has been started by the current user
-  const isJobStartedByUser = technicianJob && (technicianJob.assignment_status === 'STARTED' || technicianJob.assignment_status === 'COMPLETED');
+  const isJobStartedByUser = !!(technicianJob && (technicianJob.assignment_status === 'STARTED' || technicianJob.assignment_status === 'COMPLETED'));
 
   // Can start job if: job is PENDING AND (no assignment OR assignment is still in ASSIGNED status)
   const canStartJob = isJobPending && (!technicianJob || technicianJob.assignment_status === 'ASSIGNED');

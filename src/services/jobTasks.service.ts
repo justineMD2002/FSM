@@ -224,6 +224,52 @@ export const getTaskCompletionsByTechnicianJobId = async (
 };
 
 /**
+ * Update task status in batch
+ * @param taskUpdates - Array of task IDs and their statuses
+ * @returns ApiResponse with success status
+ */
+export const updateTaskStatuses = async (
+  taskUpdates: { taskId: string; status: string }[]
+): Promise<ApiResponse<{ success: boolean }>> => {
+  try {
+    // Update each task's status
+    const promises = taskUpdates.map((update) =>
+      supabase
+        .from(JOB_TASKS_TABLE)
+        .update({ status: update.status })
+        .eq('id', update.taskId)
+    );
+
+    const results = await Promise.all(promises);
+
+    // Check if any updates failed
+    const errors = results.filter((result) => result.error);
+    if (errors.length > 0) {
+      return {
+        data: null,
+        error: {
+          message: 'Failed to update some task statuses',
+          details: errors,
+        },
+      };
+    }
+
+    return {
+      data: { success: true },
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
  * Toggle task completion status
  * @param technicianJobId - Technician job ID
  * @param jobTaskId - Job task ID
