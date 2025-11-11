@@ -11,10 +11,11 @@ interface DetailsTabProps {
   customerId: string;
   statusColor: string;
   canStartJob: boolean;
+  isJobStartedByUser: boolean;
   onStartJob: () => void;
 }
 
-export default function DetailsTab({ job, jobId, customerId, statusColor, canStartJob, onStartJob }: DetailsTabProps) {
+export default function DetailsTab({ job, jobId, customerId, statusColor, canStartJob, isJobStartedByUser, onStartJob }: DetailsTabProps) {
   const { technicians, loading: techniciansLoading } = useJobTechnicians(jobId);
   const { equipments, loading: equipmentsLoading } = useCustomerEquipments(customerId);
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
@@ -327,10 +328,21 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
         onPress={canStartJob ? onStartJob : undefined}
         disabled={!canStartJob}
       >
-        <Ionicons name="play-circle-outline" size={24} color={canStartJob ? '#fff' : '#94a3b8'} />
-        <Text className={`font-semibold text-lg ml-2 ${canStartJob ? 'text-white' : 'text-slate-500'}`}>
-          Start Job
-        </Text>
+        {isJobStartedByUser ? (
+          <>
+            <Ionicons name="checkmark-circle-outline" size={24} color="#94a3b8" />
+            <Text className="text-slate-500 font-semibold text-lg ml-2">
+              Job Started
+            </Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="play-circle-outline" size={24} color={canStartJob ? '#fff' : '#94a3b8'} />
+            <Text className={`font-semibold text-lg ml-2 ${canStartJob ? 'text-white' : 'text-slate-500'}`}>
+              Start Job
+            </Text>
+          </>
+        )}
       </TouchableOpacity>
     </View>
   );

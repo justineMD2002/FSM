@@ -36,6 +36,7 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
   const [images, setImages] = useState<ServiceImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [hasSubmittedReport, setHasSubmittedReport] = useState(false);
 
   // Task form states
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -85,6 +86,14 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
         if (!imagesResult.error && imagesResult.data) {
           setImages(imagesResult.data.map(image => ({ ...image, isNew: false })));
         }
+
+        // Check if service report has been submitted (if there's any saved data)
+        const hasExistingData =
+          (tasksResult.data && tasksResult.data.length > 0) ||
+          (followupsResult.data && followupsResult.data.length > 0) ||
+          (imagesResult.data && imagesResult.data.length > 0);
+
+        setHasSubmittedReport(hasExistingData);
       } catch (error) {
         console.error('Error fetching service data:', error);
       } finally {
@@ -273,6 +282,9 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
         }
       }
 
+      // Mark report as submitted
+      setHasSubmittedReport(true);
+
       Alert.alert('Success', 'Service report submitted successfully', [
         { text: 'OK', onPress: onSubmit }
       ]);
@@ -377,8 +389,8 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
                     {task.is_required ? 'Required' : 'Optional'}
                   </Text> */}
                 </View>
-                {/* Show delete button only for newly added tasks */}
-                {task.isNew && !isHistoryJob && (
+                {/* Show delete button only for newly added tasks and report not submitted */}
+                {task.isNew && !isHistoryJob && !hasSubmittedReport && (
                   <TouchableOpacity
                     onPress={() => handleDeleteTask(task.id)}
                     className="ml-3 bg-red-500 rounded-full p-2"
@@ -526,8 +538,8 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
                         </Text>
                       </View>
                     </View>
-                    {/* Show delete button only for newly added followups */}
-                    {followUp.isNew && !isHistoryJob && (
+                    {/* Show delete button only for newly added followups and report not submitted */}
+                    {followUp.isNew && !isHistoryJob && !hasSubmittedReport && (
                       <TouchableOpacity
                         onPress={() => handleDeleteFollowUp(followUp.id)}
                         className="bg-red-500 rounded-full p-2"
@@ -598,14 +610,14 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
                     ) : (
                       <Ionicons name="image" size={48} color="#94a3b8" />
                     )}
-                    {/* Show delete button only for newly added images or if not history job */}
-                    {image.isNew && !isHistoryJob && (
+                    {/* Show delete button only for newly added images and report not submitted */}
+                    {image.isNew && !isHistoryJob && !hasSubmittedReport && (
                       <TouchableOpacity
                         onPress={() => handleDeleteImage(image.id)}
-                        className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
+                        className="absolute top-2 right-2 left-2 bg-red-500 rounded-full p-1"
                         style={{ width: 28, height: 28 }}
                       >
-                        <Ionicons name="trash" size={16} color="#fff" />
+                        <Ionicons name="trash" size={18} color="#fff" />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -629,15 +641,20 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
       {!isHistoryJob && (
         <TouchableOpacity
           onPress={handleSubmitServiceReport}
-          disabled={submitting}
+          disabled={submitting || hasSubmittedReport}
           className={`rounded-xl py-4 items-center justify-center flex-row mb-6 ${
-            submitting ? 'bg-slate-400' : 'bg-[#0092ce]'
+            submitting || hasSubmittedReport ? 'bg-slate-400' : 'bg-[#0092ce]'
           }`}
         >
           {submitting ? (
             <>
               <ActivityIndicator size="small" color="#fff" />
               <Text className="text-white font-semibold text-lg ml-2">Submitting...</Text>
+            </>
+          ) : hasSubmittedReport ? (
+            <>
+              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+              <Text className="text-white font-semibold text-lg ml-2">Service Report Submitted</Text>
             </>
           ) : (
             <>

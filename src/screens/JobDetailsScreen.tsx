@@ -242,6 +242,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const isJobPending = job.status === 'PENDING';
   const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
 
+  // Check if THIS specific job has been started by the current user
+  const isJobStartedByUser = technicianJob && (technicianJob.assignment_status === 'STARTED' || technicianJob.assignment_status === 'COMPLETED');
+
+  // Can start job if: job is PENDING AND (no assignment OR assignment is still in ASSIGNED status)
+  const canStartJob = isJobPending && (!technicianJob || technicianJob.assignment_status === 'ASSIGNED');
+
   // Define tabs based on whether it's a history job
   const baseTabs: TabConfig[] = [
     { id: 'Details', icon: 'document-text-outline', label: 'Details' },
@@ -353,7 +359,8 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
               jobId={job.id}
               customerId={job.customerId}
               statusColor={statusColor}
-              canStartJob={isJobPending && (!technicianJob || technicianJob.assignment_status === 'ASSIGNED')}
+              canStartJob={canStartJob}
+              isJobStartedByUser={isJobStartedByUser}
               onStartJob={handleStartJob}
             />
           )}
