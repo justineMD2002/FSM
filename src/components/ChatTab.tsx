@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
+import { useJobMessages } from '@/hooks';
 
-interface Message {
-  id: string;
-  sender: 'user' | 'receiver';
-  text: string;
-  timestamp: Date;
-  senderName: string;
-  avatarUrl?: string;
+interface ChatTabProps {
+  jobId: string;
+  technicianJobId: string | null;
 }
 
-export default function ChatTab() {
+export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   const user = useAuthStore((state) => state.user);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [userName, setUserName] = useState('You');
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Fetch messages using the hook
+  const { messages, loading, error, sendMessage } = useJobMessages(jobId, technicianJobId);
 
   // Fetch user's name from technicians table
   useEffect(() => {
@@ -42,77 +42,29 @@ export default function ChatTab() {
     fetchUserName();
   }, [user]);
 
-  // Dummy chat data - initialize with existing messages
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    setMessages([
-      {
-        id: '1',
-        sender: 'receiver',
-        text: 'Hello! I noticed you completed the service. Everything looks good?',
-        timestamp: new Date('2024-01-15T10:30:00'),
-        senderName: 'Admin',
-        avatarUrl: undefined,
-      },
-      {
-        id: '2',
-        sender: 'user',
-        text: 'Yes, all tasks completed successfully. The air conditioning unit is working perfectly now.',
-        timestamp: new Date('2024-01-15T10:32:00'),
-        senderName: userName,
-        avatarUrl: undefined,
-      },
-      {
-        id: '3',
-        sender: 'receiver',
-        text: 'Great! Did you replace the air filter?',
-        timestamp: new Date('2024-01-15T10:33:00'),
-        senderName: 'Admin',
-        avatarUrl: undefined,
-      },
-      {
-        id: '4',
-        sender: 'user',
-        text: 'Yes, the air filter was replaced with a new one. Also cleaned the condenser coils and checked the refrigerant levels.',
-        timestamp: new Date('2024-01-15T10:35:00'),
-        senderName: userName,
-        avatarUrl: undefined,
-      },
-      {
-        id: '5',
-        sender: 'receiver',
-        text: 'Perfect! Thank you for the detailed work. I really appreciate your service.',
-        timestamp: new Date('2024-01-15T10:36:00'),
-        senderName: 'Admin',
-        avatarUrl: undefined,
-      },
-      {
-        id: '6',
-        sender: 'user',
-        text: 'You\'re welcome! If you have any issues or questions, feel free to reach out.',
-        timestamp: new Date('2024-01-15T10:37:00'),
-        senderName: userName,
-        avatarUrl: undefined,
-      },
-    ]);
-  }, [userName]);
+    if (messages.length > 0) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages]);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() === '') return;
+  const handleSendMessage = async () => {
+    if (newMessage.trim() === '' || !technicianJobId) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text: newMessage.trim(),
-      timestamp: new Date(),
-      senderName: userName,
-      avatarUrl: undefined,
-    };
-
-    setMessages([...messages, message]);
-    setNewMessage('');
+    try {
+      await sendMessage(newMessage.trim());
+      setNewMessage('');
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      alert(`Failed to send message: ${error.message}`);
+    }
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -120,8 +72,9 @@ export default function ChatTab() {
     });
   };
 
-  const renderMessage = (message: Message) => {
-    const isUser = message.sender === 'user';
+  const renderMessage = (message: typeof messages[0]) => {
+    const isUser = message.sender_type === 'TECHNICIAN';
+    const displayName = isUser ? userName : 'Admin';
 
     return (
       <View
@@ -131,16 +84,9 @@ export default function ChatTab() {
         {/* Receiver avatar on the left */}
         {!isUser && (
           <View className="mr-2">
-            {message.avatarUrl ? (
-              <Image
-                source={{ uri: message.avatarUrl }}
-                className="w-10 h-10 rounded-full"
-              />
-            ) : (
-              <View className="w-10 h-10 rounded-full bg-slate-300 items-center justify-center">
-                <Ionicons name="person" size={24} color="#64748b" />
-              </View>
-            )}
+            <View className="w-10 h-10 rounded-full bg-slate-300 items-center justify-center">
+              <Ionicons name="person" size={24} color="#64748b" />
+            </View>
           </View>
         )}
 
@@ -148,11 +94,11 @@ export default function ChatTab() {
         <View className={`max-w-[70%] ${isUser ? 'items-end' : 'items-start'}`}>
           {/* Sender name */}
           <Text className="text-xs text-slate-600 mb-1 px-1 font-semibold">
-            {message.senderName}
+            {displayName}
           </Text>
 
           <View
-            className={`rounded-2xl px-4 py-3 ${
+            className={`rounded-2xl overflow-hidden ${
               isUser ? 'bg-[#0092ce]' : 'bg-white'
             }`}
             style={{
@@ -160,37 +106,65 @@ export default function ChatTab() {
               borderBottomLeftRadius: isUser ? 16 : 4,
             }}
           >
-            <Text
-              className={`text-base ${isUser ? 'text-white' : 'text-slate-800'}`}
-            >
-              {message.text}
-            </Text>
+            {/* Image if available */}
+            {message.image_url && (
+              <Image
+                source={{ uri: message.image_url }}
+                className="w-full h-48"
+                style={{ resizeMode: 'cover' }}
+              />
+            )}
+
+            {/* Text message */}
+            {message.message_text && (
+              <View className="px-4 py-3">
+                <Text
+                  className={`text-base ${isUser ? 'text-white' : 'text-slate-800'}`}
+                >
+                  {message.message_text}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Timestamp */}
           <Text className="text-xs text-slate-500 mt-1 px-1">
-            {formatTime(message.timestamp)}
+            {formatTime(message.created_at)}
           </Text>
         </View>
 
         {/* User avatar on the right */}
         {isUser && (
           <View className="ml-2">
-            {message.avatarUrl ? (
-              <Image
-                source={{ uri: message.avatarUrl }}
-                className="w-10 h-10 rounded-full"
-              />
-            ) : (
-              <View className="w-10 h-10 rounded-full bg-[#0092ce] items-center justify-center">
-                <Ionicons name="person" size={24} color="#ffffff" />
-              </View>
-            )}
+            <View className="w-10 h-10 rounded-full bg-[#0092ce] items-center justify-center">
+              <Ionicons name="person" size={24} color="#ffffff" />
+            </View>
           </View>
         )}
       </View>
     );
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#0092ce" />
+        <Text className="text-slate-600 mt-4">Loading messages...</Text>
+      </View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center px-6">
+        <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+        <Text className="text-slate-800 text-lg font-semibold mt-4">Error Loading Messages</Text>
+        <Text className="text-slate-600 text-center mt-2">{error.message}</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -212,8 +186,17 @@ export default function ChatTab() {
       </View>
 
       {/* Messages - Scrollable */}
-      <ScrollView className="flex-1 mb-4">
-        {messages.map((message) => renderMessage(message))}
+      <ScrollView ref={scrollViewRef} className="flex-1 mb-4">
+        {messages.length === 0 ? (
+          <View className="flex-1 justify-center items-center py-12">
+            <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
+            <Text className="text-slate-500 text-center mt-4">
+              No messages yet. Start a conversation!
+            </Text>
+          </View>
+        ) : (
+          messages.map((message) => renderMessage(message))
+        )}
       </ScrollView>
 
       {/* Message Input - Fixed */}
@@ -233,8 +216,8 @@ export default function ChatTab() {
           <TouchableOpacity
             onPress={handleSendMessage}
             className="w-12 h-12 rounded-full items-center justify-center"
-            style={{ backgroundColor: newMessage.trim() ? '#0092ce' : '#cbd5e1' }}
-            disabled={!newMessage.trim()}
+            style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
+            disabled={!newMessage.trim() || !technicianJobId}
             activeOpacity={0.7}
           >
             <Ionicons name="send" size={20} color="#ffffff" />

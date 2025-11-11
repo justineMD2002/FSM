@@ -247,6 +247,19 @@ export interface JobImage {
   deleted_at: string | null;
 }
 
+// Job Technician Admin Message types
+export interface JobTechnicianAdminMessage {
+  id: string;
+  job_id: string;
+  technician_job_id: string;
+  sender_type: 'TECHNICIAN' | 'ADMIN';
+  message_text: string | null;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
 // API Response Types
 export interface ApiResponse<T> {
   data: T | null;

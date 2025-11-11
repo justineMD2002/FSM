@@ -349,7 +349,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
       ) : activeTab === 'Chat' ? (
         // Chat tab takes full height without parent ScrollView
         <View className="flex-1 px-4 py-4">
-          <ChatTab />
+          <ChatTab jobId={job.id} technicianJobId={technicianJob?.id || null} />
         </View>
       ) : (
         <ScrollView className="flex-1 px-4 py-4">
@@ -366,7 +366,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
           )}
 
           {activeTab === 'Service' && (
-            <ServiceTab jobId={job.id} onSubmit={handleSubmitServiceReport} isHistoryJob={isHistoryJob} />
+            <ServiceTab
+              jobId={job.id}
+              technicianJobId={technicianJob?.id || null}
+              onSubmit={handleSubmitServiceReport}
+              isHistoryJob={isHistoryJob}
+            />
           )}
 
           {activeTab === 'Complete' && (

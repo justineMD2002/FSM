@@ -6,6 +6,7 @@ import { JobTask, Followup, JobImage } from '@/types';
 import { getTasksByJobId, createJobTask } from '@/services/jobTasks.service';
 import { getFollowupsByJobId, createFollowup } from '@/services/followups.service';
 import { getImagesByJobId, uploadImageAndCreateRecord } from '@/services/jobImages.service';
+import { createMessagesBatch } from '@/services/jobMessages.service';
 import { useAuthStore } from '@/store';
 
 interface Task extends JobTask {
@@ -23,11 +24,12 @@ interface ServiceImage extends JobImage {
 
 interface ServiceTabProps {
   jobId: string;
+  technicianJobId: string | null;
   onSubmit: () => void;
   isHistoryJob: boolean;
 }
 
-export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTabProps) {
+export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistoryJob }: ServiceTabProps) {
   const user = useAuthStore((state) => state.user);
 
   // Service tab states
@@ -273,6 +275,8 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
 
       // Upload new images to backend and save to database
       const newImages = images.filter(image => image.isNew);
+      const uploadedImages: { imageUrl: string; description: string | null }[] = [];
+
       for (const image of newImages) {
         if (image.base64) {
           const result = await uploadImageAndCreateRecord(
@@ -288,6 +292,33 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
             return;
           }
           console.log('Image uploaded and saved successfully:', result.data);
+
+          // Store uploaded image info for creating chat messages
+          if (result.data) {
+            uploadedImages.push({
+              imageUrl: result.data.image_url,
+              description: result.data.description,
+            });
+          }
+        }
+      }
+
+      // Create chat messages for each uploaded image (if technicianJobId is available)
+      if (technicianJobId && uploadedImages.length > 0) {
+        const messageData = uploadedImages.map(img => ({
+          job_id: jobId,
+          technician_job_id: technicianJobId,
+          sender_type: 'TECHNICIAN' as const,
+          message_text: img.description,
+          image_url: img.imageUrl,
+        }));
+
+        const messagesResult = await createMessagesBatch(messageData);
+        if (messagesResult.error) {
+          console.error('Error creating chat messages:', messagesResult.error);
+          // Don't fail the whole submission if messages fail, just log it
+        } else {
+          console.log('Chat messages created successfully for uploaded images');
         }
       }
 
