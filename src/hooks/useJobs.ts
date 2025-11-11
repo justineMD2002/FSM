@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Job, ApiError } from '@/types';
 import * as jobsService from '@/services/jobs.service';
+import * as technicianJobsService from '@/services/technicianJobs.service';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store';
 
 interface UseJobsReturn {
   jobs: Job[];
@@ -29,16 +31,40 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const user = useAuthStore((state) => state.user);
 
   /**
    * Fetch jobs from the database based on type (history or current)
+   * Filters by technician_jobs.assignment_status for the current user
    */
   const fetchJobs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await jobsService.getJobsByType(isHistory);
+      if (!user?.id) {
+        setError({ message: 'User not authenticated' });
+        setJobs([]);
+        setLoading(false);
+        return;
+      }
+
+      // First, get the technician ID for the current user
+      const { data: technicianData, error: techError } = await supabase
+        .from('technicians')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (techError || !technicianData) {
+        setError({ message: 'Technician profile not found' });
+        setJobs([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch jobs for this technician using the new function
+      const response = await jobsService.getJobsForTechnician(technicianData.id, isHistory);
 
       if (response.error) {
         setError(response.error);
@@ -56,7 +82,7 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isHistory]);
+  }, [isHistory, user?.id]);
 
   /**
    * Refetch all jobs
@@ -72,20 +98,22 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
 
   // Set up real-time subscription
   useEffect(() => {
-    const statusFilter = isHistory
-      ? ['COMPLETED', 'CANCELLED']
-      : ['PENDING', 'UPCOMING', 'IN_PROGRESS', 'OVERDUE', 'WAITING'];
+    if (!user?.id) return;
 
-    // Subscribe to changes on the jobs table
+    const assignmentStatusFilter = isHistory
+      ? ['COMPLETED', 'CANCELLED']
+      : ['ASSIGNED', 'STARTED'];
+
+    // Subscribe to changes on the technician_jobs table for the current user
     const subscription = supabase
-      .channel(`jobs_${isHistory ? 'history' : 'current'}`)
+      .channel(`technician_jobs_${isHistory ? 'history' : 'current'}_${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
-          table: 'jobs',
-          filter: `status=in.(${statusFilter.join(',')})`,
+          table: 'technician_jobs',
+          filter: `assignment_status=in.(${assignmentStatusFilter.join(',')})`,
         },
         (payload) => {
           console.log('Real-time update received:', payload);
@@ -99,7 +127,7 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isHistory, refetch]);
+  }, [isHistory, user?.id, refetch]);
 
   return {
     jobs,

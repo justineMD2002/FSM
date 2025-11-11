@@ -369,3 +369,91 @@ export const deleteJob = async (
     };
   }
 };
+
+/**
+ * Fetch jobs assigned to a specific technician
+ * Filters by technician_jobs.assignment_status instead of jobs.status
+ * @param technicianId - Technician ID
+ * @param isHistory - true for COMPLETED jobs, false for ASSIGNED/STARTED jobs
+ * @returns ApiResponse with array of jobs in UI format
+ */
+export const getJobsForTechnician = async (
+  technicianId: string,
+  isHistory: boolean
+): Promise<ApiResponse<Job[]>> => {
+  try {
+    // Define assignment status filter based on history flag
+    const assignmentStatusFilter = isHistory
+      ? ['COMPLETED', 'CANCELLED']
+      : ['ASSIGNED', 'STARTED'];
+
+    const { data, error } = await supabase
+      .from('technician_jobs')
+      .select(`
+        assignment_status,
+        job:job_id (
+          id,
+          job_number,
+          title,
+          description,
+          priority,
+          status,
+          scheduled_start,
+          scheduled_end,
+          customer_id,
+          location_id,
+          customer:customer_id (
+            id,
+            customer_code,
+            customer_name,
+            customer_address,
+            phone_number,
+            email
+          ),
+          location:location_id (
+            id,
+            customer_id,
+            location_name,
+            location_address,
+            current_longitude,
+            current_latitude,
+            destination_longitude,
+            destination_latitude
+          )
+        )
+      `)
+      .eq('technician_id', technicianId)
+      .in('assignment_status', assignmentStatusFilter)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    // Transform the data to extract jobs and transform to UI format
+    const jobs = (data || [])
+      .map((item: any) => item.job)
+      .filter((job: any) => job !== null) // Filter out null jobs
+      .map((job: JobDB) => transformJobToUI(job));
+
+    return {
+      data: jobs,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};

@@ -229,10 +229,18 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
     setImages(images.filter(image => image.id !== imageId));
   };
 
+  // Check if service report has content (at least one of: tasks, followups, or images)
+  const hasServiceReportContent = tasks.length > 0 || followUps.length > 0 || images.length > 0;
+
   // Submit service report handler
   const handleSubmitServiceReport = async () => {
     if (!user) {
       Alert.alert('Error', 'User not authenticated');
+      return;
+    }
+
+    if (!hasServiceReportContent) {
+      Alert.alert('Error', 'Please add at least one task, follow-up, or image before submitting');
       return;
     }
 
@@ -642,9 +650,9 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
       {!isHistoryJob && (
         <TouchableOpacity
           onPress={handleSubmitServiceReport}
-          disabled={submitting || hasSubmittedReport}
+          disabled={submitting || hasSubmittedReport || !hasServiceReportContent}
           className={`rounded-xl py-4 items-center justify-center flex-row mb-6 ${
-            submitting || hasSubmittedReport ? 'bg-slate-400' : 'bg-[#0092ce]'
+            submitting || hasSubmittedReport || !hasServiceReportContent ? 'bg-slate-400' : 'bg-[#0092ce]'
           }`}
         >
           {submitting ? (
@@ -664,6 +672,15 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
             </>
           )}
         </TouchableOpacity>
+      )}
+
+      {/* Info message when button is disabled due to empty content */}
+      {!isHistoryJob && !hasSubmittedReport && !hasServiceReportContent && (
+        <View className="bg-slate-100 rounded-xl p-4 mb-6 -mt-2">
+          <Text className="text-slate-600 text-sm text-center">
+            Add at least one task, follow-up, or image to submit the service report
+          </Text>
+        </View>
       )}
 
       {/* Image Upload Modal */}

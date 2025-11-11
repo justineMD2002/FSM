@@ -154,7 +154,17 @@ export default function HomeScreen() {
   }
 
   if (selectedJob) {
-    return <JobDetailsScreen job={selectedJob} onBack={() => setSelectedJob(null)} />;
+    return (
+      <JobDetailsScreen
+        job={selectedJob}
+        onBack={() => {
+          setSelectedJob(null);
+          // Refetch both lists to ensure they're up to date
+          refetchHistory();
+          refetchCurrent();
+        }}
+      />
+    );
   }
 
   return (
