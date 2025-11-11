@@ -88,10 +88,10 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
         }
 
         // Check if service report has been submitted (if there's any saved data)
-        const hasExistingData =
-          (tasksResult.data && tasksResult.data.length > 0) ||
-          (followupsResult.data && followupsResult.data.length > 0) ||
-          (imagesResult.data && imagesResult.data.length > 0);
+    const hasExistingData =
+      Boolean(tasksResult.data?.length) ||
+      Boolean(followupsResult.data?.length) ||
+      Boolean(imagesResult.data?.length);
 
         setHasSubmittedReport(hasExistingData);
       } catch (error) {
@@ -191,7 +191,7 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
       if (!result.canceled && result.assets[0]) {
         setSelectedImage({
           uri: result.assets[0].uri,
-          base64: result.assets[0].base64,
+          base64: result.assets[0].base64 ?? undefined,
         });
       }
     } catch (error) {
