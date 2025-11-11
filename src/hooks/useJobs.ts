@@ -31,7 +31,32 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const [technicianId, setTechnicianId] = useState<string | null>(null);
   const user = useAuthStore((state) => state.user);
+
+  // Fetch technician ID once when user is available
+  useEffect(() => {
+    const fetchTechnicianId = async () => {
+      if (!user?.id) {
+        setTechnicianId(null);
+        return;
+      }
+
+      const { data: technicianData, error: techError } = await supabase
+        .from('technicians')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (technicianData && !techError) {
+        setTechnicianId(technicianData.id);
+      } else {
+        setTechnicianId(null);
+      }
+    };
+
+    fetchTechnicianId();
+  }, [user?.id]);
 
   /**
    * Fetch jobs from the database based on type (history or current)
@@ -49,22 +74,14 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
         return;
       }
 
-      // First, get the technician ID for the current user
-      const { data: technicianData, error: techError } = await supabase
-        .from('technicians')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (techError || !technicianData) {
-        setError({ message: 'Technician profile not found' });
-        setJobs([]);
-        setLoading(false);
+      // Wait for technicianId to be available - don't treat it as an error during initial load
+      if (!technicianId) {
+        // Keep loading true, don't set error yet - technicianId is being fetched
         return;
       }
 
       // Fetch jobs for this technician using the new function
-      const response = await jobsService.getJobsForTechnician(technicianData.id, isHistory);
+      const response = await jobsService.getJobsForTechnician(technicianId, isHistory);
 
       if (response.error) {
         setError(response.error);
@@ -82,7 +99,7 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isHistory, user?.id]);
+  }, [isHistory, user?.id, technicianId]);
 
   /**
    * Refetch all jobs
@@ -98,26 +115,25 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
 
   // Set up real-time subscription
   useEffect(() => {
-    if (!user?.id) return;
+    if (!technicianId) return;
 
-    const assignmentStatusFilter = isHistory
-      ? ['COMPLETED', 'CANCELLED']
-      : ['ASSIGNED', 'STARTED'];
-
-    // Subscribe to changes on the technician_jobs table for the current user
+    // Subscribe to ALL changes on technician_jobs for this technician
+    // We don't filter by assignment_status here - we listen to all changes
+    // and refetch to get the properly filtered list from the server
     const subscription = supabase
-      .channel(`technician_jobs_${isHistory ? 'history' : 'current'}_${user.id}`)
+      .channel(`technician_jobs_${technicianId}_${isHistory ? 'history' : 'current'}`)
       .on(
         'postgres_changes',
         {
           event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'technician_jobs',
-          filter: `assignment_status=in.(${assignmentStatusFilter.join(',')})`,
+          filter: `technician_id=eq.${technicianId}`, // Filter by technician ID
         },
         (payload) => {
-          console.log('Real-time update received:', payload);
-          // Refetch jobs when any change occurs
+          console.log('Real-time update received for technician_jobs:', payload);
+          // Refetch jobs when any change occurs to this technician's jobs
+          // This will apply the correct status filtering on the server side
           refetch();
         }
       )
@@ -127,7 +143,7 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isHistory, user?.id, refetch]);
+  }, [technicianId, isHistory, refetch]);
 
   return {
     jobs,

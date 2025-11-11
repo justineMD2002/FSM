@@ -323,7 +323,7 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
             <Ionicons name="clipboard-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Tasks</Text>
           </View>
-          {!isHistoryJob && (
+          {!isHistoryJob && !hasSubmittedReport && (
             <TouchableOpacity
               onPress={() => setShowTaskForm(!showTaskForm)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -420,7 +420,7 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
             <Ionicons name="flag-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Follow Ups</Text>
           </View>
-          {!isHistoryJob && (
+          {!isHistoryJob && !hasSubmittedReport && (
             <TouchableOpacity
               onPress={() => setShowFollowUpForm(!showFollowUpForm)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -587,7 +587,7 @@ export default function ServiceTab({ jobId, onSubmit, isHistoryJob }: ServiceTab
             <Ionicons name="camera-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Images</Text>
           </View>
-          {!isHistoryJob && (
+          {!isHistoryJob && !hasSubmittedReport && (
             <TouchableOpacity
               onPress={() => setShowImageModal(true)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"

@@ -220,7 +220,12 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
       >
-        {error ? (
+        {loading ? (
+          <View className="items-center justify-center py-20">
+            <ActivityIndicator size="large" color="#0092ce" />
+            <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
+          </View>
+        ) : error ? (
           <View className="items-center justify-center py-20">
             <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
             <Text className="text-slate-700 text-base font-semibold mt-4">Error Loading Jobs</Text>
@@ -232,11 +237,6 @@ export default function HomeScreen() {
             >
               <Text className="text-white font-semibold">Retry</Text>
             </TouchableOpacity>
-          </View>
-        ) : loading && jobs.length === 0 ? (
-          <View className="items-center justify-center py-20">
-            <ActivityIndicator size="large" color="#0092ce" />
-            <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
           </View>
         ) : filteredJobs.length > 0 ? (
           filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} />)

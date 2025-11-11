@@ -31,7 +31,11 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
 
   // Only show pending/current jobs in map view - memoized to prevent map refresh
   const allJobs = useMemo(() =>
-    currentJobs.filter(job => job.status === 'PENDING'),
+    currentJobs.filter(job =>
+      job.status === 'PENDING' ||
+      job.status === 'UPCOMING' ||
+      job.status === 'IN_PROGRESS'
+    ),
     [currentJobs]
   );
 
@@ -205,7 +209,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
         <View className="flex-1 justify-center items-center px-6">
           <Ionicons name="alert-circle" size={64} color="#ef4444" />
           <Text className="text-slate-800 text-lg font-semibold mt-4">Error Loading Jobs</Text>
-          {/* <Text className="text-slate-600 text-center mt-2">{error}</Text> */}
+          <Text className="text-slate-600 text-center mt-2">{error.message}</Text>
         </View>
       </View>
     );
