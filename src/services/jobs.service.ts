@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { JobDB, Job, ApiResponse } from '@/types';
+import { stripHtmlTags } from '@/utils';
 
 /**
  * Jobs Service
@@ -48,7 +49,7 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     // Use location_name if available, otherwise fall back to customer address
     address: dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided',
     locationName: dbJob.location?.location_name || null,
-    notes: dbJob.description || '',
+    notes: stripHtmlTags(dbJob.description) || '',
     // TODO: Get technician name from technician_jobs table
     // Need to add a join to technician_jobs -> technicians to get full_name
     // For now, using a placeholder value
