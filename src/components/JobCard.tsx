@@ -46,16 +46,9 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
             </View>
 
             {job.locationName && (
-              <View className="flex-row items-center mt-2">
-                <Ionicons name="business-outline" size={16} color="#64748b" />
-                <Text className="text-sm text-slate-600 ml-2">{job.locationName}</Text>
-              </View>
-            )}
-
-            {job.locationAddress && (
               <View className="flex-row items-start mt-2">
                 <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.locationAddress}</Text>
+                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.locationName}</Text>
               </View>
             )}
 

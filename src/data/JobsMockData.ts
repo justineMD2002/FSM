@@ -13,8 +13,7 @@ export const mockHistoryJobs: Job[] = [
     notes: 'Regular maintenance check',
     providerName: 'John Doe',
     status: 'COMPLETED',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   },
   {
     id: '2',
@@ -28,8 +27,7 @@ export const mockHistoryJobs: Job[] = [
     notes: 'Fix lighting issue in lobby',
     providerName: 'Jane Smith',
     status: 'CANCELLED',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   }
 ];
 
@@ -46,8 +44,7 @@ export const mockCurrentJobs: Job[] = [
     notes: 'Check pressure levels',
     providerName: 'Sarah Connor',
     status: 'PENDING',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   },
   {
     id: '5',
@@ -61,8 +58,7 @@ export const mockCurrentJobs: Job[] = [
     notes: 'Quarterly AC maintenance',
     providerName: 'John Doe',
     status: 'PENDING',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   },
   {
     id: '6',
@@ -76,8 +72,7 @@ export const mockCurrentJobs: Job[] = [
     notes: 'Monthly generator check',
     providerName: 'Jane Smith',
     status: 'PENDING',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   },
   {
     id: '7',
@@ -91,8 +86,7 @@ export const mockCurrentJobs: Job[] = [
     notes: 'Annual fire safety inspection',
     providerName: 'Mike Johnson',
     status: 'PENDING',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   },
   {
     id: '8',
@@ -106,8 +100,7 @@ export const mockCurrentJobs: Job[] = [
     notes: 'Fix water leak in basement',
     providerName: 'Sarah Connor',
     status: 'PENDING',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   },
   {
     id: '9',
@@ -121,7 +114,6 @@ export const mockCurrentJobs: Job[] = [
     notes: 'Install new cameras',
     providerName: 'John Doe',
     status: 'PENDING',
-    locationName: null,
-    locationAddress: null
+    locationName: null
   }
 ];

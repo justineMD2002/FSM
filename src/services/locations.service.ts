@@ -153,7 +153,6 @@ export const updateDestinationLocation = async (
  * Create a new location record
  * @param customerId - Customer ID
  * @param locationName - Name of the location
- * @param locationAddress - Address of the location
  * @param destinationLat - Destination latitude (optional)
  * @param destinationLng - Destination longitude (optional)
  * @returns ApiResponse with created location
@@ -161,7 +160,6 @@ export const updateDestinationLocation = async (
 export const createLocation = async (
   customerId: string,
   locationName: string | null,
-  locationAddress: string | null,
   destinationLat?: number,
   destinationLng?: number
 ): Promise<ApiResponse<Location>> => {
@@ -169,7 +167,6 @@ export const createLocation = async (
     const locationData: any = {
       customer_id: customerId,
       location_name: locationName,
-      location_address: locationAddress,
     };
 
     if (destinationLat !== undefined && destinationLng !== undefined) {
