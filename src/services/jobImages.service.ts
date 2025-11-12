@@ -4,31 +4,33 @@ import { decode } from 'base64-arraybuffer';
 
 /**
  * Job Images Service
- * Handles job service image uploads and metadata storage
+ * Handles job service media (images and videos) uploads and metadata storage
  */
 
-const TABLE_NAME = 'job_images';
-const SERVICE_IMAGES_BUCKET = 'job_service_images';
+const TABLE_NAME = 'job_media';
+const SERVICE_IMAGES_BUCKET = 'job_service_media'; // Will be renamed to job_service_media
 
 /**
- * Upload a service image to Supabase Storage
- * @param base64Image - Base64 encoded image string
- * @param fileName - File name for the uploaded image
- * @returns ApiResponse with public URL of uploaded image
+ * Upload a service media file (image or video) to Supabase Storage
+ * @param base64Data - Base64 encoded media string
+ * @param fileName - File name for the uploaded media
+ * @param contentType - MIME type of the media (e.g., 'image/png', 'video/mp4')
+ * @returns ApiResponse with public URL of uploaded media
  */
-export const uploadServiceImage = async (
-  base64Image: string,
-  fileName: string
+export const uploadServiceMedia = async (
+  base64Data: string,
+  fileName: string,
+  contentType: string
 ): Promise<ApiResponse<string>> => {
   try {
-    // Remove data:image/png;base64, prefix if present
-    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
-    const arrayBuffer = decode(base64Data);
+    // Remove data:image/png;base64, or data:video/mp4;base64, prefix if present
+    const cleanBase64Data = base64Data.replace(/^data:(image|video)\/\w+;base64,/, '');
+    const arrayBuffer = decode(cleanBase64Data);
 
     const { data, error } = await supabase.storage
       .from(SERVICE_IMAGES_BUCKET)
       .upload(fileName, arrayBuffer, {
-        contentType: 'image/png',
+        contentType,
         upsert: false,
       });
 
@@ -61,6 +63,12 @@ export const uploadServiceImage = async (
     };
   }
 };
+
+/**
+ * @deprecated Use uploadServiceMedia instead
+ * Upload a service image to Supabase Storage
+ */
+export const uploadServiceImage = uploadServiceMedia;
 
 /**
  * Delete a service image from Supabase Storage
@@ -268,33 +276,45 @@ export const deleteJobImage = async (
 };
 
 /**
- * Upload image to storage and create database record
+ * Upload media (image or video) to storage and create database record
  * @param jobId - Job ID
  * @param technicianJobId - Technician job ID (optional)
- * @param base64Image - Base64 encoded image
- * @param description - Image description
- * @param createdBy - User ID who created the image
+ * @param base64Media - Base64 encoded media
+ * @param description - Media description
+ * @param createdBy - User ID who created the media
+ * @param mediaType - Type of media ('IMAGE' or 'VIDEO')
+ * @param fileExtension - File extension (e.g., 'png', 'jpg', 'mp4', 'mov')
  * @returns ApiResponse with created job image record
  */
-export const uploadImageAndCreateRecord = async (
+export const uploadMediaAndCreateRecord = async (
   jobId: string,
   technicianJobId: string | null,
-  base64Image: string,
+  base64Media: string,
   description: string | null,
-  createdBy: string
+  createdBy: string,
+  mediaType: 'IMAGE' | 'VIDEO',
+  fileExtension: string = 'png'
 ): Promise<ApiResponse<JobImage>> => {
   try {
     // Generate unique file name
-    const fileName = `${jobId}_${Date.now()}.png`;
+    const fileName = `${jobId}_${Date.now()}.${fileExtension}`;
 
-    // Upload image to storage
-    const uploadResult = await uploadServiceImage(base64Image, fileName);
+    // Determine content type
+    let contentType: string;
+    if (mediaType === 'VIDEO') {
+      contentType = fileExtension === 'mov' ? 'video/quicktime' : `video/${fileExtension}`;
+    } else {
+      contentType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
+    }
+
+    // Upload media to storage
+    const uploadResult = await uploadServiceMedia(base64Media, fileName, contentType);
 
     if (uploadResult.error || !uploadResult.data) {
       return {
         data: null,
         error: uploadResult.error || {
-          message: 'Failed to upload image',
+          message: 'Failed to upload media',
         },
       };
     }
@@ -305,6 +325,7 @@ export const uploadImageAndCreateRecord = async (
       technician_job_id: technicianJobId,
       image_url: uploadResult.data,
       description,
+      media_type: mediaType,
       created_by: createdBy,
     };
 
@@ -320,4 +341,18 @@ export const uploadImageAndCreateRecord = async (
       },
     };
   }
+};
+
+/**
+ * @deprecated Use uploadMediaAndCreateRecord instead
+ * Upload image to storage and create database record
+ */
+export const uploadImageAndCreateRecord = async (
+  jobId: string,
+  technicianJobId: string | null,
+  base64Image: string,
+  description: string | null,
+  createdBy: string
+): Promise<ApiResponse<JobImage>> => {
+  return uploadMediaAndCreateRecord(jobId, technicianJobId, base64Image, description, createdBy, 'IMAGE', 'png');
 };

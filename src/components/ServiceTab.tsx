@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { Video, ResizeMode } from 'expo-av';
 import { JobTask, Followup, JobImage } from '@/types';
 import { getTasksByJobId, createJobTask } from '@/services/jobTasks.service';
 import { getFollowupsByJobId, createFollowup } from '@/services/followups.service';
-import { getImagesByJobId, uploadImageAndCreateRecord } from '@/services/jobImages.service';
+import { getImagesByJobId, uploadMediaAndCreateRecord } from '@/services/jobImages.service';
 import { createMessagesBatch } from '@/services/jobMessages.service';
 import { getTechnicianJobById, updateServiceReportSubmission } from '@/services/technicianJobs.service';
 import { useAuthStore } from '@/store';
@@ -19,8 +20,9 @@ interface FollowUp extends Omit<Followup, 'technician'> {
 }
 
 interface ServiceImage extends JobImage {
-  isNew?: boolean; // Flag to identify newly added images (not yet saved to backend)
+  isNew?: boolean; // Flag to identify newly added media (not yet saved to backend)
   base64?: string; // Store base64 for later upload
+  fileExtension?: string; // Store file extension for proper upload
 }
 
 interface ServiceTabProps {
@@ -54,10 +56,11 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [followUpPriority, setFollowUpPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
   const [followUpStatus, setFollowUpStatus] = useState<'OPEN' | 'IN_PROGRESS' | 'RESOLVED'>('OPEN');
 
-  // Image form states
+  // Media form states
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageDescription, setImageDescription] = useState('');
-  const [selectedImage, setSelectedImage] = useState<{ uri: string; base64?: string } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ uri: string; base64?: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string } | null>(null);
+  const [selectedMediaType, setSelectedMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
 
   // Fetch existing data on mount
   useEffect(() => {
@@ -178,33 +181,45 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     ));
   };
 
-  // Image handlers
-  const handlePickImage = async () => {
+  // Media handlers
+  const handlePickMedia = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please grant permission to access your photo library');
+        Alert.alert('Permission Required', 'Please grant permission to access your media library');
         return;
       }
 
+      const mediaTypes = selectedMediaType === 'VIDEO'
+        ? ImagePicker.MediaTypeOptions.Videos
+        : ImagePicker.MediaTypeOptions.Images;
+
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
+        mediaTypes,
+        allowsEditing: selectedMediaType === 'IMAGE', // Only allow editing for images
+        aspect: selectedMediaType === 'IMAGE' ? [4, 3] : undefined,
+        quality: selectedMediaType === 'IMAGE' ? 0.8 : 0.7, // Slightly lower quality for videos
         base64: true, // Get base64 for upload
+        videoMaxDuration: 60, // Max 60 seconds for videos
       });
 
       if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        // Extract file extension from URI
+        const uriParts = asset.uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+
         setSelectedImage({
-          uri: result.assets[0].uri,
-          base64: result.assets[0].base64 ?? undefined,
+          uri: asset.uri,
+          base64: asset.base64 ?? undefined,
+          type: asset.type === 'video' ? 'VIDEO' : 'IMAGE',
+          fileExtension,
         });
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      console.error('Error picking media:', error);
+      Alert.alert('Error', 'Failed to pick media');
     }
   };
 
@@ -218,16 +233,19 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         technician_job_id: null,
         image_url: selectedImage.uri, // Local URI for preview
         description: imageDescription,
+        media_type: selectedImage.type || 'IMAGE', // Set media type
         created_by: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         deleted_at: null,
         isNew: true, // Mark as new (not yet saved to backend)
         base64: selectedImage.base64, // Store base64 for later upload
+        fileExtension: selectedImage.fileExtension, // Store file extension
       };
       setImages([...images, newImage]);
       setImageDescription('');
       setSelectedImage(null);
+      setSelectedMediaType('IMAGE'); // Reset to IMAGE
       setShowImageModal(false);
     }
   };
@@ -278,25 +296,32 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         }
       }
 
-      // Upload new images to backend and save to database
+      // Upload new media (images/videos) to backend and save to database
       const newImages = images.filter(image => image.isNew);
       const uploadedImages: { imageUrl: string; description: string | null }[] = [];
 
       for (const image of newImages) {
         if (image.base64) {
-          const result = await uploadImageAndCreateRecord(
+          const mediaType = image.media_type || 'IMAGE';
+          const fileExtension = image.fileExtension || 'png';
+          const mimeType = mediaType === 'VIDEO' ? 'video' : 'image';
+          const mimeSubtype = fileExtension === 'jpg' ? 'jpeg' : fileExtension;
+
+          const result = await uploadMediaAndCreateRecord(
             jobId,
             null, // technician_job_id - can be set if needed
-            `data:image/png;base64,${image.base64}`,
+            `data:${mimeType}/${mimeSubtype};base64,${image.base64}`,
             image.description,
-            user.id
+            user.id,
+            mediaType,
+            fileExtension
           );
           if (result.error) {
-            console.error('Error uploading image:', result.error);
-            Alert.alert('Error', `Failed to upload image: ${result.error.message}`);
+            console.error(`Error uploading ${mediaType}:`, result.error);
+            Alert.alert('Error', `Failed to upload ${mediaType}: ${result.error.message}`);
             return;
           }
-          console.log('Image uploaded and saved successfully:', result.data);
+          console.log(`${mediaType} uploaded and saved successfully:`, result.data);
 
           // Store uploaded image info for creating chat messages
           if (result.data) {
@@ -642,12 +667,12 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         )}
       </View>
 
-      {/* Images Section */}
+      {/* Media Section */}
       <View className="mb-6">
         <View className="flex-row justify-between items-center mb-4">
           <View className="flex-row items-center">
-            <Ionicons name="camera-outline" size={24} color="#0092ce" />
-            <Text className="text-lg font-semibold text-slate-800 ml-2">Images</Text>
+            <Ionicons name="videocam-outline" size={24} color="#0092ce" />
+            <Text className="text-lg font-semibold text-slate-800 ml-2">Media</Text>
           </View>
           {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
             <TouchableOpacity
@@ -659,33 +684,49 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           )}
         </View>
 
-        {/* Image List */}
+        {/* Media List */}
         {images.length === 0 ? (
           <View className="bg-white rounded-xl p-6 items-center justify-center">
-            <Ionicons name="image-outline" size={48} color="#cbd5e1" />
-            <Text className="text-slate-400 mt-2">No images uploaded yet</Text>
+            <Ionicons name="film-outline" size={48} color="#cbd5e1" />
+            <Text className="text-slate-400 mt-2">No media uploaded yet</Text>
           </View>
         ) : (
           <View className="flex-row flex-wrap">
             {images.map((image) => (
               <View key={image.id} className="w-1/2 p-1">
                 <View className="bg-white rounded-xl overflow-hidden shadow-sm">
-                  {/* Image with Delete Button */}
+                  {/* Media Preview with Delete Button */}
                   <View className="bg-slate-200 h-32 items-center justify-center relative">
                     {image.image_url ? (
-                      <Image
-                        source={{ uri: image.image_url }}
-                        className="w-full h-full"
-                        resizeMode="cover"
-                      />
+                      image.media_type === 'VIDEO' ? (
+                        <Video
+                          source={{ uri: image.image_url }}
+                          className="w-full h-full"
+                          resizeMode={ResizeMode.COVER}
+                          shouldPlay={false}
+                          useNativeControls
+                        />
+                      ) : (
+                        <Image
+                          source={{ uri: image.image_url }}
+                          className="w-full h-full"
+                          resizeMode="cover"
+                        />
+                      )
                     ) : (
-                      <Ionicons name="image" size={48} color="#94a3b8" />
+                      <Ionicons name={image.media_type === 'VIDEO' ? 'videocam' : 'image'} size={48} color="#94a3b8" />
                     )}
-                    {/* Show delete button only for newly added images and report not submitted */}
+                    {/* Media type badge */}
+                    {image.media_type === 'VIDEO' && image.image_url && (
+                      <View className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-1">
+                        <Ionicons name="play" size={12} color="#fff" />
+                      </View>
+                    )}
+                    {/* Show delete button only for newly added media and report not submitted */}
                     {image.isNew && !isHistoryJob && !hasSubmittedReport && (
                       <TouchableOpacity
                         onPress={() => handleDeleteImage(image.id)}
-                        className="absolute top-2 right-2 left-2 bg-red-500 rounded-full p-1"
+                        className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
                         style={{ width: 28, height: 28 }}
                       >
                         <Ionicons name="trash" size={18} color="#fff" />
@@ -740,12 +781,12 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       {!isHistoryJob && !hasSubmittedReport && !hasServiceReportContent && (
         <View className="bg-slate-100 rounded-xl p-4 mb-6 -mt-2">
           <Text className="text-slate-600 text-sm text-center">
-            Add at least one task, follow-up, or image to submit the service report
+            Add at least one task, follow-up, or media to submit the service report
           </Text>
         </View>
       )}
 
-      {/* Image Upload Modal */}
+      {/* Media Upload Modal */}
       <Modal
         visible={showImageModal}
         animationType="slide"
@@ -755,28 +796,65 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white rounded-t-3xl p-6" style={{ maxHeight: '80%' }}>
             <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-xl font-bold text-slate-800">Upload Image</Text>
+              <Text className="text-xl font-bold text-slate-800">Upload Media</Text>
               <TouchableOpacity onPress={() => setShowImageModal(false)}>
                 <Ionicons name="close" size={28} color="#64748b" />
               </TouchableOpacity>
             </View>
 
             <ScrollView>
-              {/* Image Picker */}
+              {/* Media Type Selector */}
+              <Text className="text-sm font-semibold text-slate-700 mb-2">Media Type</Text>
+              <View className="flex-row mb-4">
+                <TouchableOpacity
+                  onPress={() => setSelectedMediaType('IMAGE')}
+                  className={`flex-1 py-3 rounded-lg mr-2 flex-row items-center justify-center ${
+                    selectedMediaType === 'IMAGE' ? 'bg-[#0092ce]' : 'bg-slate-200'
+                  }`}
+                >
+                  <Ionicons name="image" size={20} color={selectedMediaType === 'IMAGE' ? '#fff' : '#64748b'} />
+                  <Text className={`ml-2 font-medium ${
+                    selectedMediaType === 'IMAGE' ? 'text-white' : 'text-slate-700'
+                  }`}>Image</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setSelectedMediaType('VIDEO')}
+                  className={`flex-1 py-3 rounded-lg flex-row items-center justify-center ${
+                    selectedMediaType === 'VIDEO' ? 'bg-[#0092ce]' : 'bg-slate-200'
+                  }`}
+                >
+                  <Ionicons name="videocam" size={20} color={selectedMediaType === 'VIDEO' ? '#fff' : '#64748b'} />
+                  <Text className={`ml-2 font-medium ${
+                    selectedMediaType === 'VIDEO' ? 'text-white' : 'text-slate-700'
+                  }`}>Video</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Media Picker */}
               <TouchableOpacity
-                onPress={handlePickImage}
+                onPress={handlePickMedia}
                 className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl h-48 items-center justify-center mb-4"
               >
                 {selectedImage ? (
-                  <Image
-                    source={{ uri: selectedImage.uri }}
-                    className="w-full h-full rounded-xl"
-                    resizeMode="cover"
-                  />
+                  selectedImage.type === 'VIDEO' ? (
+                    <Video
+                      source={{ uri: selectedImage.uri }}
+                      className="w-full h-full rounded-xl"
+                      resizeMode={ResizeMode.COVER}
+                      shouldPlay={false}
+                      useNativeControls
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: selectedImage.uri }}
+                      className="w-full h-full rounded-xl"
+                      resizeMode="cover"
+                    />
+                  )
                 ) : (
                   <>
                     <Ionicons name="cloud-upload-outline" size={48} color="#94a3b8" />
-                    <Text className="text-slate-500 mt-2">Tap to select image</Text>
+                    <Text className="text-slate-500 mt-2">Tap to select {selectedMediaType.toLowerCase()}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -785,7 +863,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               <Text className="text-sm font-semibold text-slate-700 mb-2">Description</Text>
               <TextInput
                 className="border border-slate-300 rounded-lg px-4 py-3 mb-4"
-                placeholder="Enter image description"
+                placeholder={`Enter ${selectedMediaType.toLowerCase()} description`}
                 value={imageDescription}
                 onChangeText={setImageDescription}
                 multiline
@@ -801,6 +879,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     setShowImageModal(false);
                     setImageDescription('');
                     setSelectedImage(null);
+                    setSelectedMediaType('IMAGE');
                   }}
                   className="px-6 py-3 rounded-lg bg-slate-200 mr-3"
                 >
@@ -814,7 +893,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                   }`}
                 >
                   <Ionicons name="add-circle" size={20} color="#fff" />
-                  <Text className="text-white font-medium ml-2">Add Image</Text>
+                  <Text className="text-white font-medium ml-2">Add Media</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>

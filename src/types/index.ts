@@ -233,13 +233,14 @@ export interface Contact {
   email: string | null;
 }
 
-// Job Image types
+// Job Image types (supports both images and videos)
 export interface JobImage {
   id: string;
   job_id: string;
   technician_job_id: string | null;
-  image_url: string;
+  image_url: string; // URL for both images and videos
   description: string | null;
+  media_type: 'IMAGE' | 'VIDEO' | null; // Type of media
   created_by: string;
   created_at: string;
   updated_at: string;

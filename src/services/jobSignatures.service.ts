@@ -9,59 +9,6 @@ import { decode } from 'base64-arraybuffer';
 
 const TABLE_NAME = 'job_signatures';
 const SIGNATURE_BUCKET = 'job_customer_signatures';
-const SERVICE_IMAGES_BUCKET = 'job_service_images';
-
-/**
- * Upload a service image to Supabase Storage
- * @param base64Image - Base64 encoded image string
- * @param fileName - File name for the uploaded image
- * @returns ApiResponse with public URL of uploaded image
- */
-export const uploadServiceImage = async (
-  base64Image: string,
-  fileName: string
-): Promise<ApiResponse<string>> => {
-  try {
-    // Remove data:image/png;base64, prefix if present
-    const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
-    const arrayBuffer = decode(base64Data);
-
-    const { data, error } = await supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .upload(fileName, arrayBuffer, {
-        contentType: 'image/png',
-        upsert: false,
-      });
-
-    if (error) {
-      return {
-        data: null,
-        error: {
-          message: error.message,
-          details: error,
-        },
-      };
-    }
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .getPublicUrl(data.path);
-
-    return {
-      data: publicUrlData.publicUrl,
-      error: null,
-    };
-  } catch (error: any) {
-    return {
-      data: null,
-      error: {
-        message: error.message || 'An unexpected error occurred',
-        details: error,
-      },
-    };
-  }
-};
 
 /**
  * Upload a signature image to Supabase Storage
@@ -102,44 +49,6 @@ export const uploadSignatureImage = async (
 
     return {
       data: publicUrlData.publicUrl,
-      error: null,
-    };
-  } catch (error: any) {
-    return {
-      data: null,
-      error: {
-        message: error.message || 'An unexpected error occurred',
-        details: error,
-      },
-    };
-  }
-};
-
-/**
- * Delete a service image from Supabase Storage
- * @param filePath - Path to the file in storage
- * @returns ApiResponse with success status
- */
-export const deleteServiceImage = async (
-  filePath: string
-): Promise<ApiResponse<{ success: boolean }>> => {
-  try {
-    const { error } = await supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .remove([filePath]);
-
-    if (error) {
-      return {
-        data: null,
-        error: {
-          message: error.message,
-          details: error,
-        },
-      };
-    }
-
-    return {
-      data: { success: true },
       error: null,
     };
   } catch (error: any) {
