@@ -14,10 +14,15 @@ interface UseCustomersReturn {
  * Provides customers list, loading state, error handling, and refetch functionality
  * Search/filtering should be done client-side on the returned data
  *
+ * @param userId - Optional user ID of the technician to filter customers by jobs assigned to that technician
  * @returns UseCustomersReturn object with customers data and operations
  *
  * @example
+ * // Get all customers
  * const { customers, loading, error, refetch } = useCustomers();
+ *
+ * // Get customers connected to a specific technician by their user ID
+ * const { customers, loading, error, refetch } = useCustomers('user-123');
  *
  * // Refetch all customers
  * await refetch();
@@ -25,20 +30,23 @@ interface UseCustomersReturn {
  * // Filter customers client-side
  * const filtered = customers.filter(c => c.customer_name.includes(query));
  */
-export const useCustomers = (): UseCustomersReturn => {
+export const useCustomers = (userId?: string): UseCustomersReturn => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<ApiError | null>(null);
 
   /**
-   * Fetch all customers from the database
+   * Fetch customers from the database
+   * If userId is provided, fetch only customers connected to that technician
    */
   const fetchCustomers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await customersService.getAllCustomers();
+      const response = userId
+        ? await customersService.getCustomersByTechnicianUserId(userId)
+        : await customersService.getAllCustomers();
 
       if (response.error) {
         setError(response.error);
@@ -56,7 +64,7 @@ export const useCustomers = (): UseCustomersReturn => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   /**
    * Refetch all customers

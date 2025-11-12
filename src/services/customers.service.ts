@@ -270,3 +270,82 @@ export const customerCodeExists = async (
     };
   }
 };
+
+/**
+ * Fetch customers connected to a specific technician through jobs
+ * Returns customers that have jobs assigned to the technician (past, current, or upcoming)
+ * @param userId - User ID of the technician
+ * @param searchQuery - Optional search query to filter customers
+ * @returns ApiResponse with array of customers
+ */
+export const getCustomersByTechnicianUserId = async (
+  userId: string,
+  searchQuery?: string
+): Promise<ApiResponse<Customer[]>> => {
+  try {
+    // Query to get distinct customers connected to the technician through jobs
+    // Using user_id to filter through the technicians table
+    let query = supabase
+      .from(TABLE_NAME)
+      .select(`
+        *,
+        jobs!inner(
+          id,
+          technician_jobs!inner(
+            technician_id,
+            technician:technician_id!inner(
+              user_id
+            )
+          )
+        )
+      `)
+      .eq('jobs.technician_jobs.technician.user_id', userId)
+      .order('customer_name', { ascending: true });
+
+    // Apply search filter if provided
+    if (searchQuery && searchQuery.trim()) {
+      query = query.or(
+        `customer_name.ilike.%${searchQuery}%,customer_code.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%`
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    // Remove duplicates and clean up the response (remove nested jobs data)
+    const uniqueCustomers = data
+      ? Array.from(
+          new Map(
+            data.map((customer: any) => {
+              // Remove the jobs field since we only used it for filtering
+              const { jobs, ...customerData } = customer;
+              return [customerData.id, customerData as Customer];
+            })
+          ).values()
+        )
+      : [];
+
+    return {
+      data: uniqueCustomers,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};

@@ -3,10 +3,14 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Li
 import { Ionicons } from '@expo/vector-icons';
 import { useCustomers } from '@/hooks';
 import { Customer } from '@/types';
+import { useAuthStore } from '@/store';
 
 export default function CustomersScreen() {
+  const user = useAuthStore((state) => state.user);
   const [searchQuery, setSearchQuery] = useState('');
-  const { customers, loading, error, refetch } = useCustomers();
+
+  // Fetch customers connected to the logged-in technician (filtered by user ID)
+  const { customers, loading, error, refetch } = useCustomers(user?.id);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -202,7 +206,7 @@ export default function CustomersScreen() {
             </Text>
             {!searchQuery && (
               <Text className="text-slate-400 text-sm mt-2 text-center px-6">
-                Add customers to your Supabase database to see them here
+                Customers will appear here once you're assigned to jobs
               </Text>
             )}
             <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
