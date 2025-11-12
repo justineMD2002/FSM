@@ -243,3 +243,62 @@ export const getCurrentUserTechnicianJob = async (
     };
   }
 };
+
+/**
+ * Update service report submission status
+ * @param technicianJobId - Technician Job ID
+ * @param isSubmitted - Whether the service report has been submitted
+ * @returns ApiResponse with updated technician job
+ */
+export const updateServiceReportSubmission = async (
+  technicianJobId: string,
+  isSubmitted: boolean
+): Promise<ApiResponse<TechnicianJob>> => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .update({
+        is_service_report_submitted: isSubmitted,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', technicianJobId)
+      .select(`
+        *,
+        technician:technician_id (
+          id,
+          user_id,
+          email,
+          full_name,
+          phone_number,
+          status,
+          is_online,
+          avatar_url
+        )
+      `)
+      .single();
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    return {
+      data: data as TechnicianJob,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};

@@ -7,6 +7,7 @@ import { getTasksByJobId, createJobTask } from '@/services/jobTasks.service';
 import { getFollowupsByJobId, createFollowup } from '@/services/followups.service';
 import { getImagesByJobId, uploadImageAndCreateRecord } from '@/services/jobImages.service';
 import { createMessagesBatch } from '@/services/jobMessages.service';
+import { getTechnicianJobById, updateServiceReportSubmission } from '@/services/technicianJobs.service';
 import { useAuthStore } from '@/store';
 
 interface Task extends JobTask {
@@ -90,13 +91,16 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           setImages(imagesResult.data.map(image => ({ ...image, isNew: false })));
         }
 
-        // Check if service report has been submitted (if there's any saved data)
-    const hasExistingData =
-      Boolean(tasksResult.data?.length) ||
-      Boolean(followupsResult.data?.length) ||
-      Boolean(imagesResult.data?.length);
-
-        setHasSubmittedReport(hasExistingData);
+        // Fetch service report submission status from technician_jobs table
+        if (technicianJobId) {
+          const technicianJobResult = await getTechnicianJobById(technicianJobId);
+          if (!technicianJobResult.error && technicianJobResult.data) {
+            setHasSubmittedReport(technicianJobResult.data.is_service_report_submitted ?? false);
+          }
+        } else {
+          // If no technician job ID, default to false
+          setHasSubmittedReport(false);
+        }
       } catch (error) {
         console.error('Error fetching service data:', error);
       } finally {
@@ -105,7 +109,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     };
 
     fetchData();
-  }, [jobId]);
+  }, [jobId, technicianJobId]);
 
   // Task handlers
   const handleAddTask = () => {
@@ -320,6 +324,17 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           // Don't fail the whole submission if messages fail, just log it
         } else {
           console.log('Chat messages created successfully for uploaded images');
+        }
+      }
+
+      // Update service report submission status in technician_jobs table
+      if (technicianJobId) {
+        const updateResult = await updateServiceReportSubmission(technicianJobId, true);
+        if (updateResult.error) {
+          console.error('Error updating service report submission status:', updateResult.error);
+          Alert.alert('Warning', 'Service report saved but failed to update submission status');
+        } else {
+          console.log('Service report submission status updated successfully');
         }
       }
 

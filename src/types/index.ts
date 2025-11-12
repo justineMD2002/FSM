@@ -106,6 +106,7 @@ export interface TechnicianJob {
   service_notes: string | null;
   started_at: string | null;
   completed_at: string | null;
+  is_service_report_submitted: boolean | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
