@@ -3,7 +3,8 @@ import 'dotenv/config';
 export default {
   expo: {
     name: "FSM",
-    slug: "FSM",
+    slug: "sas-fsm",
+    owner: "pxcdev",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -55,6 +56,12 @@ export default {
             "Allow FSM to use your location for navigation to job sites."
         }
       ]
-    ]
+    ],
+    extra: {
+      eas: {
+        projectId: "385ab948-93a4-44d4-978c-63d2a4b827cf"
+      }
+    },
+    owner: "pxcdev"
   }
 };
