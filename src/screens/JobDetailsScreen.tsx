@@ -70,7 +70,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
             )
           `)
           .eq('id', job.id)
-          .single();
+          .single() as any;
 
         if (dbJob?.location) {
           setDestinationCoords({

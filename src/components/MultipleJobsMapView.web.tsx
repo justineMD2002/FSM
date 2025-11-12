@@ -131,7 +131,7 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
               destination_longitude
             )
           `)
-          .in('id', jobIds);
+          .in('id', jobIds) as any;
 
         // Create a map of job IDs to their coordinates
         const coordsMap = new Map<string, Coordinates>();
@@ -149,7 +149,7 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
         // Build job list with coordinates
         const jobsWithCoordinates: JobWithCoordinates[] = [];
         for (const job of jobs) {
-          let coords = coordsMap.get(job.id);
+          let coords: any = coordsMap.get(job.id);
 
           // If no coordinates from database, geocode the address
           if (!coords) {
