@@ -557,10 +557,10 @@ export default function CompleteTab({
                 <Text className="text-slate-600 mr-2">•</Text>
                 <Text className="text-sm text-slate-600 flex-1">You can view this job in your completed jobs history</Text>
               </View>
-              <View className="flex-row items-start">
+              {/* <View className="flex-row items-start">
                 <Text className="text-slate-600 mr-2">•</Text>
                 <Text className="text-sm text-slate-600 flex-1">A confirmation email will be sent to all relevant parties</Text>
-              </View>
+              </View> */}
             </View>
 
             <TouchableOpacity
