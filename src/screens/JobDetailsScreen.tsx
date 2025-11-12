@@ -48,6 +48,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [showBreakErrorModal, setShowBreakErrorModal] = useState(false);
   const [showJobStatusModal, setShowJobStatusModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
+  const [isStartingJob, setIsStartingJob] = useState(false);
   const [destinationCoords, setDestinationCoords] = useState<{ lat: string | null; lng: string | null }>({ lat: null, lng: null });
 
   const user = useAuthStore((state) => state.user);
@@ -113,52 +114,61 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const statusColor = getStatusColor(job.status);
 
-  const handleStartJob = async () => {
-    // Check if user is clocked in
-    if (!user) {
-      setShowErrorModal(true);
-      return;
-    }
-
-    const { data: attendance, error } = await checkClockInStatus(user.id);
-
-    if (error || !attendance) {
-      // User is not clocked in, show error modal
-      setShowErrorModal(true);
-      return;
-    }
-
-    // Check if user is on break
-    // First get technician ID from user ID
-    const { supabase } = await import('@/lib/supabase');
-    const { data: techData } = await supabase
-      .from('technicians')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (techData) {
-      const { data: statusData } = await getTechnicianStatus(techData.id);
-
-      if (statusData && statusData.status === 'Break') {
-        // User is on break, show break error modal
-        setShowBreakErrorModal(true);
-        return;
-      }
-    }
-
-    // User is clocked in and not on break, proceed with confirmation
+  const handleStartJob = () => {
+    // Show confirmation modal immediately
     setShowConfirmModal(true);
   };
 
   const handleConfirmStart = async () => {
-    if (!technicianJob?.id) {
-      alert('No technician assignment found for this job');
+    // Check if user is clocked in
+    if (!user) {
       setShowConfirmModal(false);
+      setShowErrorModal(true);
       return;
     }
 
+    setIsStartingJob(true);
+
     try {
+      // Check clock-in status
+      const { data: attendance, error } = await checkClockInStatus(user.id);
+
+      if (error || !attendance) {
+        // User is not clocked in, show error modal
+        setIsStartingJob(false);
+        setShowConfirmModal(false);
+        setShowErrorModal(true);
+        return;
+      }
+
+      // Check if user is on break
+      // First get technician ID from user ID
+      const { supabase } = await import('@/lib/supabase');
+      const { data: techData } = await supabase
+        .from('technicians')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (techData) {
+        const { data: statusData } = await getTechnicianStatus(techData.id);
+
+        if (statusData && statusData.status === 'Break') {
+          // User is on break, show break error modal
+          setIsStartingJob(false);
+          setShowConfirmModal(false);
+          setShowBreakErrorModal(true);
+          return;
+        }
+      }
+
+      if (!technicianJob?.id) {
+        alert('No technician assignment found for this job');
+        setIsStartingJob(false);
+        setShowConfirmModal(false);
+        return;
+      }
+
       // Get current location to save as starting point
       let currentLocation = null;
       try {
@@ -182,6 +192,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
       if (result.error) {
         alert(`Error starting job: ${result.error.message}`);
+        setIsStartingJob(false);
         setShowConfirmModal(false);
         return;
       }
@@ -218,10 +229,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
       // Refetch to get updated status
       await refetchTechnicianJob();
 
+      setIsStartingJob(false);
       setShowConfirmModal(false);
       setShowSuccessModal(true);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
+      setIsStartingJob(false);
       setShowConfirmModal(false);
     }
   };
@@ -429,6 +442,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         cancelText="Cancel"
         onConfirm={handleConfirmStart}
         onCancel={() => setShowConfirmModal(false)}
+        isLoading={isStartingJob}
       />
 
       {/* Success Modal */}

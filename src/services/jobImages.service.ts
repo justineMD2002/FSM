@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase';
 import { ApiResponse, JobImage } from '@/types';
-import { decode } from 'base64-arraybuffer';
 
 /**
  * Job Images Service
@@ -12,24 +11,24 @@ const SERVICE_IMAGES_BUCKET = 'job_service_media'; // Will be renamed to job_ser
 
 /**
  * Upload a service media file (image or video) to Supabase Storage
- * @param base64Data - Base64 encoded media string
+ * @param uri - URI of the media file (local file path)
  * @param fileName - File name for the uploaded media
  * @param contentType - MIME type of the media (e.g., 'image/png', 'video/mp4')
  * @returns ApiResponse with public URL of uploaded media
  */
 export const uploadServiceMedia = async (
-  base64Data: string,
+  uri: string,
   fileName: string,
   contentType: string
 ): Promise<ApiResponse<string>> => {
   try {
-    // Remove data:image/png;base64, or data:video/mp4;base64, prefix if present
-    const cleanBase64Data = base64Data.replace(/^data:(image|video)\/\w+;base64,/, '');
-    const arrayBuffer = decode(cleanBase64Data);
+    // Fetch the file from URI and convert to blob
+    const response = await fetch(uri);
+    const blob = await response.blob();
 
     const { data, error } = await supabase.storage
       .from(SERVICE_IMAGES_BUCKET)
-      .upload(fileName, arrayBuffer, {
+      .upload(fileName, blob, {
         contentType,
         upsert: false,
       });
@@ -279,7 +278,7 @@ export const deleteJobImage = async (
  * Upload media (image or video) to storage and create database record
  * @param jobId - Job ID
  * @param technicianJobId - Technician job ID (optional)
- * @param base64Media - Base64 encoded media
+ * @param uri - URI of the media file (local file path)
  * @param description - Media description
  * @param createdBy - User ID who created the media
  * @param mediaType - Type of media ('IMAGE' or 'VIDEO')
@@ -289,7 +288,7 @@ export const deleteJobImage = async (
 export const uploadMediaAndCreateRecord = async (
   jobId: string,
   technicianJobId: string | null,
-  base64Media: string,
+  uri: string,
   description: string | null,
   createdBy: string,
   mediaType: 'IMAGE' | 'VIDEO',
@@ -308,7 +307,7 @@ export const uploadMediaAndCreateRecord = async (
     }
 
     // Upload media to storage
-    const uploadResult = await uploadServiceMedia(base64Media, fileName, contentType);
+    const uploadResult = await uploadServiceMedia(uri, fileName, contentType);
 
     if (uploadResult.error || !uploadResult.data) {
       return {
@@ -350,9 +349,9 @@ export const uploadMediaAndCreateRecord = async (
 export const uploadImageAndCreateRecord = async (
   jobId: string,
   technicianJobId: string | null,
-  base64Image: string,
+  uri: string,
   description: string | null,
   createdBy: string
 ): Promise<ApiResponse<JobImage>> => {
-  return uploadMediaAndCreateRecord(jobId, technicianJobId, base64Image, description, createdBy, 'IMAGE', 'png');
+  return uploadMediaAndCreateRecord(jobId, technicianJobId, uri, description, createdBy, 'IMAGE', 'png');
 };

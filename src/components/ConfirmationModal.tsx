@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 
 interface ConfirmationModalProps {
@@ -16,6 +17,7 @@ interface ConfirmationModalProps {
   confirmStyle?: 'default' | 'destructive';
   onConfirm: () => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }
 
 export default function ConfirmationModal({
@@ -27,6 +29,7 @@ export default function ConfirmationModal({
   confirmStyle = 'default',
   onConfirm,
   onCancel,
+  isLoading = false,
 }: ConfirmationModalProps) {
   const confirmButtonColor =
     confirmStyle === 'destructive' ? 'bg-red-600' : 'bg-blue-600';
@@ -58,24 +61,37 @@ export default function ConfirmationModal({
               <View className="flex-row gap-3">
                 {/* Cancel Button */}
                 <TouchableOpacity
-                  className="flex-1 bg-slate-100 rounded-xl px-4 py-3"
+                  className={`flex-1 rounded-xl px-4 py-3 ${isLoading ? 'bg-slate-200' : 'bg-slate-100'}`}
                   onPress={onCancel}
                   activeOpacity={0.7}
+                  disabled={isLoading}
                 >
-                  <Text className="text-slate-800 font-semibold text-base text-center">
+                  <Text className={`font-semibold text-base text-center ${isLoading ? 'text-slate-400' : 'text-slate-800'}`}>
                     {cancelText}
                   </Text>
                 </TouchableOpacity>
 
                 {/* Confirm Button */}
                 <TouchableOpacity
-                  className={`flex-1 ${confirmButtonColor} rounded-xl px-4 py-3`}
+                  className={`flex-1 ${isLoading ? 'bg-slate-400' : confirmButtonColor} rounded-xl px-4 py-3`}
                   onPress={onConfirm}
                   activeOpacity={0.8}
+                  disabled={isLoading}
                 >
-                  <Text className="text-white font-semibold text-base text-center">
-                    {confirmText}
-                  </Text>
+                  <View className="flex-row items-center justify-center">
+                    {isLoading ? (
+                      <>
+                        <ActivityIndicator size="small" color="#fff" />
+                        <Text className="text-white font-semibold text-base ml-2">
+                          Processing...
+                        </Text>
+                      </>
+                    ) : (
+                      <Text className="text-white font-semibold text-base text-center">
+                        {confirmText}
+                      </Text>
+                    )}
+                  </View>
                 </TouchableOpacity>
               </View>
             </View>

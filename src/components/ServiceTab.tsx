@@ -21,7 +21,7 @@ interface FollowUp extends Omit<Followup, 'technician'> {
 
 interface ServiceImage extends JobImage {
   isNew?: boolean; // Flag to identify newly added media (not yet saved to backend)
-  base64?: string; // Store base64 for later upload
+  localUri?: string; // Store local URI for upload
   fileExtension?: string; // Store file extension for proper upload
 }
 
@@ -59,7 +59,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   // Media form states
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageDescription, setImageDescription] = useState('');
-  const [selectedImage, setSelectedImage] = useState<{ uri: string; base64?: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string } | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ uri: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string } | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
 
   // Fetch existing data on mount
@@ -200,7 +200,6 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         allowsEditing: selectedMediaType === 'IMAGE', // Only allow editing for images
         aspect: selectedMediaType === 'IMAGE' ? [4, 3] : undefined,
         quality: selectedMediaType === 'IMAGE' ? 0.8 : 0.7, // Slightly lower quality for videos
-        base64: true, // Get base64 for upload
         videoMaxDuration: 60, // Max 60 seconds for videos
       });
 
@@ -212,7 +211,6 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
         setSelectedImage({
           uri: asset.uri,
-          base64: asset.base64 ?? undefined,
           type: asset.type === 'video' ? 'VIDEO' : 'IMAGE',
           fileExtension,
         });
@@ -239,7 +237,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         updated_at: new Date().toISOString(),
         deleted_at: null,
         isNew: true, // Mark as new (not yet saved to backend)
-        base64: selectedImage.base64, // Store base64 for later upload
+        localUri: selectedImage.uri, // Store local URI for upload
         fileExtension: selectedImage.fileExtension, // Store file extension
       };
       setImages([...images, newImage]);
@@ -301,16 +299,14 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       const uploadedImages: { imageUrl: string; description: string | null }[] = [];
 
       for (const image of newImages) {
-        if (image.base64) {
+        if (image.localUri) {
           const mediaType = image.media_type || 'IMAGE';
           const fileExtension = image.fileExtension || 'png';
-          const mimeType = mediaType === 'VIDEO' ? 'video' : 'image';
-          const mimeSubtype = fileExtension === 'jpg' ? 'jpeg' : fileExtension;
 
           const result = await uploadMediaAndCreateRecord(
             jobId,
             null, // technician_job_id - can be set if needed
-            `data:${mimeType}/${mimeSubtype};base64,${image.base64}`,
+            image.localUri, // Pass the local URI instead of base64
             image.description,
             user.id,
             mediaType,
