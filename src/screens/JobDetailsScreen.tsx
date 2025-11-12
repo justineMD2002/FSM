@@ -13,7 +13,7 @@ import CompleteTab from '@/components/CompleteTab';
 import ChatTab from '@/components/ChatTab';
 import { useAuthStore, useNavigationStore } from '@/store';
 import { Tab } from '@/enums';
-import { checkClockInStatus } from '@/services/attendance.service';
+import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useCurrentUserTechnicianJob } from '@/hooks';
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
 import { updateCurrentLocation } from '@/services/locations.service';
@@ -45,6 +45,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+  const [showBreakErrorModal, setShowBreakErrorModal] = useState(false);
   const [showJobStatusModal, setShowJobStatusModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
   const [destinationCoords, setDestinationCoords] = useState<{ lat: string | null; lng: string | null }>({ lat: null, lng: null });
@@ -127,7 +128,26 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
       return;
     }
 
-    // User is clocked in, proceed with confirmation
+    // Check if user is on break
+    // First get technician ID from user ID
+    const { supabase } = await import('@/lib/supabase');
+    const { data: techData } = await supabase
+      .from('technicians')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (techData) {
+      const { data: statusData } = await getTechnicianStatus(techData.id);
+
+      if (statusData && statusData.status === 'Break') {
+        // User is on break, show break error modal
+        setShowBreakErrorModal(true);
+        return;
+      }
+    }
+
+    // User is clocked in and not on break, proceed with confirmation
     setShowConfirmModal(true);
   };
 
@@ -213,6 +233,14 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const handleErrorClose = () => {
     setShowErrorModal(false);
+    // Navigate to Profile tab
+    setGlobalActiveTab(Tab.PROFILE);
+    // Clear selected job to return to home view
+    setSelectedJob(null);
+  };
+
+  const handleBreakErrorClose = () => {
+    setShowBreakErrorModal(false);
     // Navigate to Profile tab
     setGlobalActiveTab(Tab.PROFILE);
     // Clear selected job to return to home view
@@ -371,6 +399,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
               technicianJobId={technicianJob?.id || null}
               onSubmit={handleSubmitServiceReport}
               isHistoryJob={isHistoryJob}
+              isJobStarted={isJobStartedByUser}
             />
           )}
 
@@ -418,6 +447,15 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         message="You need to clock in first before you can start a job. Please go to your profile and clock in."
         buttonText="Go to Profile"
         onClose={handleErrorClose}
+      />
+
+      {/* Error Modal - On Break */}
+      <ErrorModal
+        visible={showBreakErrorModal}
+        title="On Break"
+        message="You are currently on a break. Please resume first before starting a job."
+        buttonText="Go to Profile"
+        onClose={handleBreakErrorClose}
       />
 
       {/* Job Status Modal (Completed/Cancelled) */}

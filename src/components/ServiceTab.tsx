@@ -27,9 +27,10 @@ interface ServiceTabProps {
   technicianJobId: string | null;
   onSubmit: () => void;
   isHistoryJob: boolean;
+  isJobStarted: boolean;
 }
 
-export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistoryJob }: ServiceTabProps) {
+export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistoryJob, isJobStarted }: ServiceTabProps) {
   const user = useAuthStore((state) => state.user);
 
   // Service tab states
@@ -347,6 +348,21 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
   return (
     <View>
+      {/* Warning if job not started */}
+      {!isHistoryJob && !isJobStarted && (
+        <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <View className="flex-row items-start">
+            <Ionicons name="warning-outline" size={24} color="#f59e0b" />
+            <View className="ml-3 flex-1">
+              <Text className="text-amber-900 font-semibold mb-1">Job Not Started</Text>
+              <Text className="text-amber-700 text-sm">
+                You must start this job before you can add tasks, follow-ups, or images.
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Tasks Section */}
       <View className="mb-6">
         <View className="flex-row justify-between items-center mb-4">
@@ -354,7 +370,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             <Ionicons name="clipboard-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Tasks</Text>
           </View>
-          {!isHistoryJob && !hasSubmittedReport && (
+          {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
             <TouchableOpacity
               onPress={() => setShowTaskForm(!showTaskForm)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -451,7 +467,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             <Ionicons name="flag-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Follow Ups</Text>
           </View>
-          {!isHistoryJob && !hasSubmittedReport && (
+          {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
             <TouchableOpacity
               onPress={() => setShowFollowUpForm(!showFollowUpForm)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -618,7 +634,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             <Ionicons name="camera-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Images</Text>
           </View>
-          {!isHistoryJob && !hasSubmittedReport && (
+          {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
             <TouchableOpacity
               onPress={() => setShowImageModal(true)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
