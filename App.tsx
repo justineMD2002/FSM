@@ -9,7 +9,12 @@ import MainScreen from '@/screens/MainScreen';
 import SplashScreen from '@/components/SplashScreen';
 
 // Keep the splash screen visible while we fetch resources
-SplashScreenExpo.preventAutoHideAsync();
+// Wrap in try-catch to handle new architecture initialization issues
+try {
+  SplashScreenExpo.preventAutoHideAsync();
+} catch (error) {
+  console.warn('Failed to prevent splash screen from auto-hiding:', error);
+}
 
 export default function App() {
   const { user, loading, initialize } = useAuthStore();
@@ -43,7 +48,11 @@ export default function App() {
       // loading its initial state and rendering its first pixels. So instead,
       // we hide the splash screen once we know the root view has already
       // performed layout.
-      await SplashScreenExpo.hideAsync();
+      try {
+        await SplashScreenExpo.hideAsync();
+      } catch (error) {
+        console.warn('Failed to hide splash screen:', error);
+      }
     }
   }, [appIsReady]);
 
