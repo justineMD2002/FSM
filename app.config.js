@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "FSM",
     slug: "sas-fsm",
-    owner: "keanu_strygwyr",
+    owner: "pxcdev",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/SAS-LOGO.png",
@@ -59,9 +59,9 @@ export default {
     ],
     extra: {
       eas: {
-        projectId: "57a03d9f-bec0-4f3b-ba3a-f3d62cd2db8f"
+        projectId: "592878ce-ab57-440a-a39e-62963179a8a4"
       }
     },
-    owner: "keanu_strygwyr"
+    owner: "pxcdev"
   }
 };
