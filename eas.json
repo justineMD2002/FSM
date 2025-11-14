@@ -6,19 +6,13 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "node": "20.5.1",
-      "npmCiInclude": ["dependencies", "devDependencies"]
+      "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "node": "20.5.1",
-      "npmCiInclude": ["dependencies", "devDependencies"]
+      "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true,
-      "node": "20.5.1",
-      "npmCiInclude": ["dependencies"]
+      "autoIncrement": true
     }
   },
   "submit": {
