@@ -11,7 +11,7 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  initialize: () => void;
+  initialize: () => (() => void);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,6 +36,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   initialize: () => {
+    let subscription: any = null;
+
     // Get initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
@@ -51,17 +53,25 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
     // Listen to auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      set({
-        session,
-        user: session?.user ?? null,
-        loading: false,
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        set({
+          session,
+          user: session?.user ?? null,
+          loading: false,
+        });
       });
-    });
+      subscription = data.subscription;
+    } catch (error) {
+      console.error('Failed to set up auth listener:', error);
+      set({ loading: false });
+    }
 
     // Return cleanup function
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   },
 }));

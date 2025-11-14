@@ -21,17 +21,17 @@ export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
+
     async function prepare() {
       try {
         // Initialize auth store
-        const cleanup = initialize();
+        cleanup = initialize();
 
         // Artificially delay for at least 1 second to show splash screen
         await new Promise(resolve => setTimeout(resolve, 1000));
-
-        return cleanup;
       } catch (e) {
-        console.warn(e);
+        console.warn('Error during app initialization:', e);
       } finally {
         // Tell the application to render
         setAppIsReady(true);
@@ -39,6 +39,13 @@ export default function App() {
     }
 
     prepare();
+
+    // Return cleanup function for useEffect
+    return () => {
+      if (cleanup) {
+        cleanup();
+      }
+    };
   }, [initialize]);
 
   const onLayoutRootView = useCallback(async () => {
