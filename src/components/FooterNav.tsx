@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tab } from '@/enums';
 
 interface FooterNavProps {
@@ -9,6 +10,8 @@ interface FooterNavProps {
 }
 
 export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
+  const insets = useSafeAreaInsets();
+
   const tabs = [
     { id: Tab.HOME, label: 'Home', icon: 'briefcase' as const },
     { id: Tab.CUSTOMERS, label: 'Customers', icon: 'people-outline' as const },
@@ -16,8 +19,8 @@ export default function FooterNav({ activeTab, onTabChange }: FooterNavProps) {
   ];
 
   return (
-    <View className="bg-white border-t border-slate-200 shadow-lg">
-      <View className="flex-row justify-around items-center px-4 py-4 pb-4">
+    <View className="bg-white border-t border-slate-200 shadow-lg" style={{ paddingBottom: insets.bottom }}>
+      <View className="flex-row justify-around items-center px-4 py-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (

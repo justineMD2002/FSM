@@ -1,8 +1,10 @@
 import './global.css';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import { useEffect, useCallback, useState } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreenExpo from 'expo-splash-screen';
+import * as NavigationBar from 'expo-navigation-bar';
 import { useAuthStore } from '@/store';
 import LoginScreen from '@/screens/LoginScreen';
 import MainScreen from '@/screens/MainScreen';
@@ -19,6 +21,14 @@ try {
 export default function App() {
   const { user, loading, initialize } = useAuthStore();
   const [appIsReady, setAppIsReady] = useState(false);
+
+  // Set Android navigation bar to match footer color (white)
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#ffffff');
+      NavigationBar.setButtonStyleAsync('dark');
+    }
+  }, []);
 
   useEffect(() => {
     let cleanup: (() => void) | undefined;
@@ -69,11 +79,11 @@ export default function App() {
   }
 
   return (
-    <>
+    <SafeAreaProvider>
       <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
         {user ? <MainScreen /> : <LoginScreen />}
       </View>
       <StatusBar style="auto" />
-    </>
+    </SafeAreaProvider>
   );
 }
