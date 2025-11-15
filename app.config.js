@@ -55,7 +55,8 @@ export default {
           locationAlwaysAndWhenInUsePermission:
             "Allow FSM to use your location for navigation to job sites."
         }
-      ]
+      ],
+      "expo-navigation-bar"
     ],
     extra: {
       eas: {
