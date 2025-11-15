@@ -182,7 +182,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         task_description: taskDescription || null,
         task_order: tasks.length,
         is_required: false,
-        status: null,
+        is_completed: false,
         isNew: true, // Mark as new (not yet saved to backend)
       };
       setTasks([...tasks, newTask]);
@@ -571,12 +571,23 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               className="bg-white rounded-xl p-4 mb-3 shadow-sm"
             >
               <View className="flex-row items-start justify-between">
+                {task.is_completed && (
+                  <View className="mr-3 mt-0.5">
+                    <Ionicons name="checkmark-circle" size={24} color="#22c55e" />
+                  </View>
+                )}
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-slate-800 mb-1">
+                  <Text
+                    className="text-base font-semibold text-slate-800 mb-1"
+                    style={task.is_completed ? { textDecorationLine: 'line-through', color: '#94a3b8' } : undefined}
+                  >
                     {task.task_name}
                   </Text>
                   {task.task_description && (
-                    <Text className="text-sm text-slate-600 mb-2">
+                    <Text
+                      className="text-sm text-slate-600 mb-2"
+                      style={task.is_completed ? { textDecorationLine: 'line-through', color: '#94a3b8' } : undefined}
+                    >
                       {task.task_description}
                     </Text>
                   )}

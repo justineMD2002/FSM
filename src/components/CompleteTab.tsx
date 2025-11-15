@@ -8,7 +8,6 @@ import { useJobTasks, useTaskCompletions, useJobEquipments, useJobSignature } fr
 import { uploadSignatureAndCreateRecord } from '@/services/jobSignatures.service';
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
 import { updateJob } from '@/services/jobs.service';
-import { updateTaskStatuses } from '@/services/jobTasks.service';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useAuthStore } from '@/store';
 
@@ -75,9 +74,9 @@ export default function CompleteTab({
   useEffect(() => {
     const initialCompletions: { [taskId: string]: boolean } = {};
     tasks.forEach(task => {
-      // Check if task status is 'COMPLETED' or if there's a completion record
+      // Priority order: task.is_completed > completion record
       const completion = completions.find(c => c.job_task_id === task.id);
-      initialCompletions[task.id] = task.status === 'COMPLETED' || completion?.is_completed || false;
+      initialCompletions[task.id] = task.is_completed || completion?.is_completed || false;
     });
     setLocalTaskCompletions(initialCompletions);
   }, [tasks, completions]);
@@ -228,7 +227,7 @@ export default function CompleteTab({
 
     setCompleting(true);
     try {
-      // Upload pending signature to database if exists
+      // Upload pending signature to database if exists (will create or update)
       if (pendingSignature) {
         const signatureResult = await uploadSignatureAndCreateRecord(
           technicianJobId,
@@ -239,17 +238,28 @@ export default function CompleteTab({
         if (signatureResult.error) {
           throw new Error(`Error saving signature: ${signatureResult.error.message}`);
         }
+
+        // Clear pending signature after successful upload
+        setPendingSignature(null);
+        setLocalSignature(signatureResult.data?.signature_image_url || null);
       }
 
-      // Update task statuses in the database
-      const taskUpdates = tasks.map(task => ({
-        taskId: task.id,
-        status: localTaskCompletions[task.id] ? 'COMPLETED' : 'PENDING'
-      }));
+      // Update is_completed field in the database
+      const { supabase } = await import('@/lib/supabase');
+      const taskUpdatePromises = tasks.map(task =>
+        supabase
+          .from('job_tasks')
+          .update({
+            is_completed: localTaskCompletions[task.id]
+          })
+          .eq('id', task.id)
+      );
 
-      const taskStatusResult = await updateTaskStatuses(taskUpdates);
-      if (taskStatusResult.error) {
-        throw new Error(taskStatusResult.error.message);
+      const taskUpdateResults = await Promise.all(taskUpdatePromises);
+      const taskUpdateErrors = taskUpdateResults.filter(result => result.error);
+
+      if (taskUpdateErrors.length > 0) {
+        throw new Error('Failed to update task completion status');
       }
 
       // Update technician job status to COMPLETED

@@ -184,17 +184,10 @@ export const getTaskCompletionsByTechnicianJobId = async (
   technicianJobId: string
 ): Promise<ApiResponse<TaskCompletion[]>> => {
   try {
+    // Fetch task completions without the foreign key join
     const { data, error } = await supabase
       .from(TASK_COMPLETIONS_TABLE)
-      .select(`
-        *,
-        job_task:job_task_id (
-          id,
-          task_name,
-          task_description,
-          is_required
-        )
-      `)
+      .select('*')
       .eq('technician_job_id', technicianJobId);
 
     if (error) {
@@ -224,19 +217,21 @@ export const getTaskCompletionsByTechnicianJobId = async (
 };
 
 /**
- * Update task status in batch
- * @param taskUpdates - Array of task IDs and their statuses
+ * Update task completion status in batch
+ * @param taskUpdates - Array of task IDs and their completion status
  * @returns ApiResponse with success status
  */
 export const updateTaskStatuses = async (
-  taskUpdates: { taskId: string; status: string }[]
+  taskUpdates: { taskId: string; isCompleted: boolean }[]
 ): Promise<ApiResponse<{ success: boolean }>> => {
   try {
-    // Update each task's status
+    // Update each task's is_completed field
     const promises = taskUpdates.map((update) =>
       supabase
         .from(JOB_TASKS_TABLE)
-        .update({ status: update.status })
+        .update({
+          is_completed: update.isCompleted
+        })
         .eq('id', update.taskId)
     );
 
@@ -248,7 +243,7 @@ export const updateTaskStatuses = async (
       return {
         data: null,
         error: {
-          message: 'Failed to update some task statuses',
+          message: 'Failed to update some task completion statuses',
           details: errors,
         },
       };
@@ -314,15 +309,7 @@ export const toggleTaskCompletion = async (
           completed_at: isCompleted ? new Date().toISOString() : null,
         })
         .eq('id', existing.id)
-        .select(`
-          *,
-          job_task:job_task_id (
-            id,
-            task_name,
-            task_description,
-            is_required
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
@@ -351,15 +338,7 @@ export const toggleTaskCompletion = async (
           completion_notes: notes,
           completed_at: isCompleted ? new Date().toISOString() : null,
         }])
-        .select(`
-          *,
-          job_task:job_task_id (
-            id,
-            task_name,
-            task_description,
-            is_required
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {

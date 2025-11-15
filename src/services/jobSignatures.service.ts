@@ -183,12 +183,12 @@ export const getJobSignatureByTechnicianJobId = async (
 };
 
 /**
- * Upload signature and create signature record
+ * Upload signature and create or update signature record
  * @param technicianJobId - Technician job ID
  * @param base64Signature - Base64 encoded signature image
  * @param customerName - Customer name
  * @param customerFeedback - Optional customer feedback
- * @returns ApiResponse with created signature record
+ * @returns ApiResponse with created/updated signature record
  */
 export const uploadSignatureAndCreateRecord = async (
   technicianJobId: string,
@@ -197,6 +197,9 @@ export const uploadSignatureAndCreateRecord = async (
   customerFeedback?: string
 ): Promise<ApiResponse<JobSignature>> => {
   try {
+    // Check if signature already exists
+    const existingSignatureResult = await getJobSignatureByTechnicianJobId(technicianJobId);
+
     // Generate unique file name
     const fileName = `${technicianJobId}_${Date.now()}.png`;
 
@@ -212,18 +215,50 @@ export const uploadSignatureAndCreateRecord = async (
       };
     }
 
-    // Create signature record
-    const signatureRecord: Omit<JobSignature, 'id' | 'created_at'> = {
-      technician_job_id: technicianJobId,
-      signature_image_url: uploadResult.data,
-      customer_name: customerName,
-      customer_feedback: customerFeedback || null,
-      signed_at: new Date().toISOString(),
-    };
+    // If signature exists, update it; otherwise create new one
+    if (existingSignatureResult.data) {
+      // Update existing signature
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .update({
+          signature_image_url: uploadResult.data,
+          customer_name: customerName,
+          customer_feedback: customerFeedback || null,
+          signed_at: new Date().toISOString(),
+        })
+        .eq('technician_job_id', technicianJobId)
+        .select()
+        .single();
 
-    const createResult = await createJobSignature(signatureRecord);
+      if (error) {
+        return {
+          data: null,
+          error: {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+          },
+        };
+      }
 
-    return createResult;
+      return {
+        data: data as JobSignature,
+        error: null,
+      };
+    } else {
+      // Create new signature record
+      const signatureRecord: Omit<JobSignature, 'id' | 'created_at'> = {
+        technician_job_id: technicianJobId,
+        signature_image_url: uploadResult.data,
+        customer_name: customerName,
+        customer_feedback: customerFeedback || null,
+        signed_at: new Date().toISOString(),
+      };
+
+      const createResult = await createJobSignature(signatureRecord);
+
+      return createResult;
+    }
   } catch (error: any) {
     return {
       data: null,
