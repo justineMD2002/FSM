@@ -9,6 +9,8 @@ import { uploadSignatureAndCreateRecord } from '@/services/jobSignatures.service
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
 import { updateJob } from '@/services/jobs.service';
 import { updateTaskStatuses } from '@/services/jobTasks.service';
+import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
+import { useAuthStore } from '@/store';
 
 interface CompleteTabProps {
   jobId: string;
@@ -29,6 +31,8 @@ export default function CompleteTab({
   assignmentStatus,
   onJobCompleted,
 }: CompleteTabProps) {
+  const user = useAuthStore((state) => state.user);
+
   const [localSignature, setLocalSignature] = useState<string | null>(null);
   const [signatureDate, setSignatureDate] = useState<Date | null>(null);
   const [showSignaturePad, setShowSignaturePad] = useState(false);
@@ -38,6 +42,10 @@ export default function CompleteTab({
   const [localJobCompleted, setLocalJobCompleted] = useState(false); // Track if job was completed in this session
   const signatureRef = useRef<any>(null);
   const isWeb = Platform.OS === 'web';
+
+  // Attendance states
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [isOnBreak, setIsOnBreak] = useState(false);
 
   // Modal states
   const [showSignatureSavedModal, setShowSignatureSavedModal] = useState(false);
@@ -74,17 +82,70 @@ export default function CompleteTab({
     setLocalTaskCompletions(initialCompletions);
   }, [tasks, completions]);
 
+  // Check clock-in and break status
+  useEffect(() => {
+    const checkAttendanceStatus = async () => {
+      if (!user) {
+        setIsClockedIn(false);
+        setIsOnBreak(false);
+        return;
+      }
+
+      try {
+        // Check clock-in status
+        const { data: attendance, error: clockError } = await checkClockInStatus(user.id);
+
+        if (clockError || !attendance) {
+          setIsClockedIn(false);
+          setIsOnBreak(false);
+          return;
+        }
+
+        setIsClockedIn(true);
+
+        // Check break status - get technician ID from user ID
+        const { supabase } = await import('@/lib/supabase');
+        const { data: techData } = await supabase
+          .from('technicians')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (techData) {
+          const { data: statusData } = await getTechnicianStatus(techData.id);
+
+          if (statusData && statusData.status === 'Break') {
+            setIsOnBreak(true);
+          } else {
+            setIsOnBreak(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking attendance status:', error);
+        setIsClockedIn(false);
+        setIsOnBreak(false);
+      }
+    };
+
+    checkAttendanceStatus();
+
+    // Check status periodically (every 30 seconds)
+    const interval = setInterval(checkAttendanceStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Check if all required tasks are completed (using local state)
   const allRequiredTasksCompleted = tasks
     .filter(task => task.is_required)
     .every(task => localTaskCompletions[task.id] === true);
 
-  // Can save signature if job started and not completed
-  const canSaveSignature = jobStarted && !jobCompleted;
+  // Can save signature if job started, not completed, clocked in, and not on break
+  const canSaveSignature = jobStarted && !jobCompleted && isClockedIn && !isOnBreak;
 
-  // Can complete job if signature exists (either saved to DB or pending), job started, and all required tasks done
+  // Can complete job if signature exists (either saved to DB or pending), job started, not completed, all required tasks done, clocked in, and not on break
   const hasSignature = localSignature || pendingSignature;
-  const canCompleteJob = hasSignature && jobStarted && !jobCompleted && allRequiredTasksCompleted;
+  const canCompleteJob = hasSignature && jobStarted && !jobCompleted && allRequiredTasksCompleted && isClockedIn && !isOnBreak;
 
   const handleSignatureOK = (signatureData: string) => {
     if (!canSaveSignature) return;
@@ -220,6 +281,60 @@ export default function CompleteTab({
     }
   };
 
+  // Determine which error to show (prioritized)
+  const getErrorMessage = () => {
+    if (jobCompleted) return null;
+
+    // Priority 1: Not clocked in
+    if (!isClockedIn) {
+      return {
+        icon: 'time-outline',
+        title: 'Not Clocked In',
+        message: 'You must clock in before you can add a signature or complete the job.',
+      };
+    }
+
+    // Priority 2: On break
+    if (isOnBreak) {
+      return {
+        icon: 'cafe-outline',
+        title: 'On Break',
+        message: 'You cannot add a signature or complete the job while on break.',
+      };
+    }
+
+    // Priority 3: Job not started
+    if (!jobStarted) {
+      return {
+        icon: 'warning-outline',
+        title: 'Job Not Started',
+        message: 'You must start this job before you can add a signature or complete it.',
+      };
+    }
+
+    // Priority 4: Missing signature (only if job is started)
+    if (!hasSignature) {
+      return {
+        icon: 'create-outline',
+        title: 'Signature Required',
+        message: 'Customer signature is required to complete the job.',
+      };
+    }
+
+    // Priority 5: Incomplete required tasks
+    if (!allRequiredTasksCompleted) {
+      return {
+        icon: 'checkmark-done-outline',
+        title: 'Required Tasks Incomplete',
+        message: 'Please complete all required tasks before finishing the job.',
+      };
+    }
+
+    return null;
+  };
+
+  const errorMessage = getErrorMessage();
+
   const style = `.m-signature-pad {
     box-shadow: none;
     border: none;
@@ -246,15 +361,15 @@ export default function CompleteTab({
 
   return (
     <View>
-      {/* Warning if job not started (and not completed) */}
-      {!jobStarted && !jobCompleted && (
+      {/* Error Message (Prioritized - Only one at a time) */}
+      {errorMessage && (
         <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
           <View className="flex-row items-start">
-            <Ionicons name="warning-outline" size={24} color="#f59e0b" />
+            <Ionicons name={errorMessage.icon as any} size={24} color="#f59e0b" />
             <View className="ml-3 flex-1">
-              <Text className="text-amber-900 font-semibold mb-1">Job Not Started</Text>
+              <Text className="text-amber-900 font-semibold mb-1">{errorMessage.title}</Text>
               <Text className="text-amber-700 text-sm">
-                You must start this job before you can add a signature or complete it.
+                {errorMessage.message}
               </Text>
             </View>
           </View>
@@ -456,15 +571,6 @@ export default function CompleteTab({
         <Ionicons name="checkmark-done-circle" size={24} color="#fff" />
         <Text className="text-white font-semibold text-lg ml-2">Complete Job</Text>
       </TouchableOpacity>
-
-      {!canCompleteJob && jobStarted && (
-        <View className="bg-slate-100 rounded-xl p-4 mb-6">
-          <Text className="text-slate-600 text-sm text-center">
-            {!hasSignature && 'Customer signature is required. '}
-            {!allRequiredTasksCompleted && 'Complete all required tasks. '}
-          </Text>
-        </View>
-      )}
 
       {/* Signature Saved Modal */}
       <SuccessModal
