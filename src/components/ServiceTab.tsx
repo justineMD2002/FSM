@@ -431,6 +431,51 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     }
   };
 
+  // Determine which error to show (prioritized)
+  const getErrorMessage = () => {
+    if (isHistoryJob || hasSubmittedReport) return null;
+
+    // Priority 1: Not clocked in
+    if (!isClockedIn) {
+      return {
+        icon: 'time-outline',
+        title: 'Not Clocked In',
+        message: 'You must clock in before submitting a service report',
+      };
+    }
+
+    // Priority 2: On break
+    if (isOnBreak) {
+      return {
+        icon: 'cafe-outline',
+        title: 'On Break',
+        message: 'You cannot submit a service report while on break',
+      };
+    }
+
+    // Priority 3: Job not started
+    if (!isJobStarted) {
+      return {
+        icon: 'warning-outline',
+        title: 'Job Not Started',
+        message: 'You must start this job before you can add tasks, follow-ups, or images.',
+      };
+    }
+
+    // Priority 4: No content
+    if (!hasServiceReportContent) {
+      return {
+        icon: 'information-circle-outline',
+        title: 'No Content',
+        message: 'Add at least one task, follow-up, or media to submit the service report',
+      };
+    }
+
+    return null;
+  };
+
+  const errorMessage = getErrorMessage();
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center py-20">
@@ -442,15 +487,15 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
   return (
     <View>
-      {/* Warning if job not started */}
-      {!isHistoryJob && !isJobStarted && (
+      {/* Error Message (Prioritized - Only one at a time) */}
+      {errorMessage && (
         <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
           <View className="flex-row items-start">
-            <Ionicons name="warning-outline" size={24} color="#f59e0b" />
+            <Ionicons name={errorMessage.icon as any} size={24} color="#f59e0b" />
             <View className="ml-3 flex-1">
-              <Text className="text-amber-900 font-semibold mb-1">Job Not Started</Text>
+              <Text className="text-amber-900 font-semibold mb-1">{errorMessage.title}</Text>
               <Text className="text-amber-700 text-sm">
-                You must start this job before you can add tasks, follow-ups, or images.
+                {errorMessage.message}
               </Text>
             </View>
           </View>
@@ -829,49 +874,6 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             </>
           )}
         </TouchableOpacity>
-      )}
-
-      {/* Info messages when button is disabled */}
-      {!isHistoryJob && !hasSubmittedReport && (
-        <>
-          {!hasServiceReportContent && (
-            <View className="bg-slate-100 rounded-xl p-4 mb-6 -mt-2">
-              <Text className="text-slate-600 text-sm text-center">
-                Add at least one task, follow-up, or media to submit the service report
-              </Text>
-            </View>
-          )}
-          {!isClockedIn && (
-            <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 -mt-2">
-              <View className="flex-row items-start justify-center">
-                <Ionicons name="time-outline" size={20} color="#f59e0b" />
-                <Text className="text-amber-700 text-sm text-center ml-2">
-                  You must clock in before submitting a service report
-                </Text>
-              </View>
-            </View>
-          )}
-          {isOnBreak && (
-            <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 -mt-2">
-              <View className="flex-row items-start justify-center">
-                <Ionicons name="cafe-outline" size={20} color="#f59e0b" />
-                <Text className="text-amber-700 text-sm text-center ml-2">
-                  You cannot submit a service report while on break
-                </Text>
-              </View>
-            </View>
-          )}
-          {!isJobStarted && (
-            <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 -mt-2">
-              <View className="flex-row items-start justify-center">
-                <Ionicons name="play-outline" size={20} color="#f59e0b" />
-                <Text className="text-amber-700 text-sm text-center ml-2">
-                  You must start the job before submitting a service report
-                </Text>
-              </View>
-            </View>
-          )}
-        </>
       )}
 
       {/* Media Upload Modal */}
