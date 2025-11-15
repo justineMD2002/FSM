@@ -9,6 +9,7 @@ import { getFollowupsByJobId, createFollowup } from '@/services/followups.servic
 import { getImagesByJobId, uploadMediaAndCreateRecord } from '@/services/jobImages.service';
 import { createMessagesBatch } from '@/services/jobMessages.service';
 import { getTechnicianJobById, updateServiceReportSubmission } from '@/services/technicianJobs.service';
+import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useAuthStore } from '@/store';
 
 interface Task extends JobTask {
@@ -43,6 +44,10 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasSubmittedReport, setHasSubmittedReport] = useState(false);
+
+  // Attendance states
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [isOnBreak, setIsOnBreak] = useState(false);
 
   // Task form states
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -113,6 +118,59 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
     fetchData();
   }, [jobId, technicianJobId]);
+
+  // Check clock-in and break status
+  useEffect(() => {
+    const checkAttendanceStatus = async () => {
+      if (!user) {
+        setIsClockedIn(false);
+        setIsOnBreak(false);
+        return;
+      }
+
+      try {
+        // Check clock-in status
+        const { data: attendance, error: clockError } = await checkClockInStatus(user.id);
+
+        if (clockError || !attendance) {
+          setIsClockedIn(false);
+          setIsOnBreak(false);
+          return;
+        }
+
+        setIsClockedIn(true);
+
+        // Check break status - get technician ID from user ID
+        const { supabase } = await import('@/lib/supabase');
+        const { data: techData } = await supabase
+          .from('technicians')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (techData) {
+          const { data: statusData } = await getTechnicianStatus(techData.id);
+
+          if (statusData && statusData.status === 'Break') {
+            setIsOnBreak(true);
+          } else {
+            setIsOnBreak(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking attendance status:', error);
+        setIsClockedIn(false);
+        setIsOnBreak(false);
+      }
+    };
+
+    checkAttendanceStatus();
+
+    // Optionally, check status periodically (every 30 seconds)
+    const interval = setInterval(checkAttendanceStatus, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Task handlers
   const handleAddTask = () => {
@@ -749,9 +807,9 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       {!isHistoryJob && (
         <TouchableOpacity
           onPress={handleSubmitServiceReport}
-          disabled={submitting || hasSubmittedReport || !hasServiceReportContent}
+          disabled={submitting || hasSubmittedReport || !hasServiceReportContent || !isClockedIn || isOnBreak || !isJobStarted}
           className={`rounded-xl py-4 items-center justify-center flex-row mb-6 ${
-            submitting || hasSubmittedReport || !hasServiceReportContent ? 'bg-slate-400' : 'bg-[#0092ce]'
+            submitting || hasSubmittedReport || !hasServiceReportContent || !isClockedIn || isOnBreak || !isJobStarted ? 'bg-slate-400' : 'bg-[#0092ce]'
           }`}
         >
           {submitting ? (
@@ -773,13 +831,47 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         </TouchableOpacity>
       )}
 
-      {/* Info message when button is disabled due to empty content */}
-      {!isHistoryJob && !hasSubmittedReport && !hasServiceReportContent && (
-        <View className="bg-slate-100 rounded-xl p-4 mb-6 -mt-2">
-          <Text className="text-slate-600 text-sm text-center">
-            Add at least one task, follow-up, or media to submit the service report
-          </Text>
-        </View>
+      {/* Info messages when button is disabled */}
+      {!isHistoryJob && !hasSubmittedReport && (
+        <>
+          {!hasServiceReportContent && (
+            <View className="bg-slate-100 rounded-xl p-4 mb-6 -mt-2">
+              <Text className="text-slate-600 text-sm text-center">
+                Add at least one task, follow-up, or media to submit the service report
+              </Text>
+            </View>
+          )}
+          {!isClockedIn && (
+            <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 -mt-2">
+              <View className="flex-row items-start justify-center">
+                <Ionicons name="time-outline" size={20} color="#f59e0b" />
+                <Text className="text-amber-700 text-sm text-center ml-2">
+                  You must clock in before submitting a service report
+                </Text>
+              </View>
+            </View>
+          )}
+          {isOnBreak && (
+            <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 -mt-2">
+              <View className="flex-row items-start justify-center">
+                <Ionicons name="cafe-outline" size={20} color="#f59e0b" />
+                <Text className="text-amber-700 text-sm text-center ml-2">
+                  You cannot submit a service report while on break
+                </Text>
+              </View>
+            </View>
+          )}
+          {!isJobStarted && (
+            <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 -mt-2">
+              <View className="flex-row items-start justify-center">
+                <Ionicons name="play-outline" size={20} color="#f59e0b" />
+                <Text className="text-amber-700 text-sm text-center ml-2">
+                  You must start the job before submitting a service report
+                </Text>
+              </View>
+            </View>
+          )}
+        </>
       )}
 
       {/* Media Upload Modal */}
