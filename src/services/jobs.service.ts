@@ -434,9 +434,13 @@ export const getJobsForTechnician = async (
 
     // Transform the data to extract jobs and transform to UI format
     const jobs = (data || [])
-      .map((item: any) => item.job)
-      .filter((job: any) => job !== null) // Filter out null jobs
-      .map((job: JobDB) => transformJobToUI(job));
+      .filter((item: any) => item.job !== null) // Filter out null jobs
+      .map((item: any) => {
+        const job = transformJobToUI(item.job);
+        // Add technician assignment status to the job
+        job.technicianAssignmentStatus = item.assignment_status;
+        return job;
+      });
 
     return {
       data: jobs,

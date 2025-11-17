@@ -3,6 +3,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
 export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) => {
+  // Get display status based on technician assignment status
+  const getDisplayStatus = (): { status: Job['status']; text: string } => {
+    if (job.technicianAssignmentStatus === 'STARTED') {
+      return { status: 'IN_PROGRESS', text: 'Job Started' };
+    }
+    if (job.technicianAssignmentStatus === 'COMPLETED') {
+      return { status: 'COMPLETED', text: 'Completed' };
+    }
+    if (job.technicianAssignmentStatus === 'CANCELLED') {
+      return { status: 'CANCELLED', text: 'Cancelled' };
+    }
+    if (job.technicianAssignmentStatus === 'ASSIGNED') {
+      return { status: 'PENDING', text: 'Pending' };
+    }
+    // Fallback to job status
+    return {
+      status: job.status,
+      text: job.status.replace('_', ' ').split(' ').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ')
+    };
+  };
+
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
     COMPLETED: { bg: '#dcfce7', text: '#16a34a', border: '#22c55e' },
     CANCELLED: { bg: '#fee2e2', text: '#dc2626', border: '#ef4444' },
@@ -11,7 +34,8 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
     IN_PROGRESS: { bg: '#e0e7ff', text: '#4f46e5', border: '#6366f1' }
   };
 
-  const colors = statusColors[job.status];
+  const displayInfo = getDisplayStatus();
+  const colors = statusColors[displayInfo.status];
 
   return (
     <View className="bg-white rounded-xl shadow-md mb-4 w-full">
@@ -29,7 +53,7 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
                 </View>
                 <View className="px-3 py-1 rounded-full" style={{ backgroundColor: colors.bg }}>
                   <Text className="text-xs font-semibold" style={{ color: colors.text }}>
-                    {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                    {displayInfo.text}
                   </Text>
                 </View>
               </View>

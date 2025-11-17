@@ -70,6 +70,7 @@ export interface Job {
   providerName: string;
   status: 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'UPCOMING' | 'IN_PROGRESS';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  technicianAssignmentStatus?: 'ASSIGNED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
 }
 
 export interface Technician {

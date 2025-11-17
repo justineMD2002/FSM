@@ -20,6 +20,24 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   const { equipments, loading: equipmentsLoading } = useCustomerEquipments(customerId);
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
 
+  // Get display status based on technician assignment status
+  const getDisplayStatus = (): string => {
+    if (job.technicianAssignmentStatus === 'STARTED') {
+      return 'JOB STARTED';
+    }
+    if (job.technicianAssignmentStatus === 'COMPLETED') {
+      return 'COMPLETED';
+    }
+    if (job.technicianAssignmentStatus === 'CANCELLED') {
+      return 'CANCELLED';
+    }
+    if (job.technicianAssignmentStatus === 'ASSIGNED') {
+      return 'PENDING';
+    }
+    // Fallback to job status
+    return job.status.replace('_', ' ');
+  };
+
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case 'URGENT':
@@ -84,7 +102,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                     alignItems: 'center',
                   }}
                 >
-                  <Text className="text-xs font-medium text-slate-500">{job.status}</Text>
+                  <Text className="text-xs font-medium text-slate-500">{getDisplayStatus()}</Text>
                 </View>
 
                 {job.priority && (
@@ -304,7 +322,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                             className="px-2 py-1 rounded-lg mr-3"
                           >
                             <Text className="text-xs font-medium text-[#0092ce]">
-                              {techJob.assignment_status}
+                              {techJob.assignment_status === 'STARTED' ? 'IN PROGRESS' : techJob.assignment_status}
                             </Text>
                           </View>
                           <TechnicianStatusBadge technicianId={tech.id} />
@@ -332,7 +350,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
           <>
             <Ionicons name="checkmark-circle-outline" size={24} color="#94a3b8" />
             <Text className="text-slate-500 font-semibold text-lg ml-2">
-              Job Started
+              In Progress
             </Text>
           </>
         ) : (
