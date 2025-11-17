@@ -12,10 +12,11 @@ interface DetailsTabProps {
   statusColor: string;
   canStartJob: boolean;
   isJobStartedByUser: boolean;
+  isHistoryJob?: boolean;
   onStartJob: () => void;
 }
 
-export default function DetailsTab({ job, jobId, customerId, statusColor, canStartJob, isJobStartedByUser, onStartJob }: DetailsTabProps) {
+export default function DetailsTab({ job, jobId, customerId, statusColor, canStartJob, isJobStartedByUser, isHistoryJob, onStartJob }: DetailsTabProps) {
   const { technicians, loading: techniciansLoading } = useJobTechnicians(jobId);
   const { equipments, loading: equipmentsLoading } = useCustomerEquipments(customerId);
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
@@ -41,15 +42,15 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case 'URGENT':
-        return { bg: '#fee2e2', text: '#dc2626' };
+        return { bg: '#FFEBEE', text: '#C62828' };
       case 'HIGH':
-        return { bg: '#fed7aa', text: '#ea580c' };
+        return { bg: '#FFF3E0', text: '#E65100' };
       case 'MEDIUM':
-        return { bg: '#e0f4fb', text: '#0092ce' };
+        return { bg: '#E3F2FD', text: '#1565C0' };
       case 'LOW':
-        return { bg: '#dbeafe', text: '#2563eb' };
+        return { bg: '#E8F5E9', text: '#2E7D32' };
       default:
-        return { bg: '#e0f4fb', text: '#0092ce' };
+        return { bg: '#E3F2FD', text: '#1565C0' };
     }
   };
 
@@ -76,7 +77,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   };
 
   const getAvatarColor = (index: number) => {
-    const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+    const colors = ['#6A89CC', '#8b5cf6', '#ec4899', '#FFD580', '#77DD77'];
     return colors[index % colors.length];
   };
 
@@ -342,31 +343,33 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
         </>
       ) : null}
 
-      {/* Start Job Button */}
-      <TouchableOpacity
-        className={`rounded-xl py-4 items-center justify-center flex-row mt-2 mb-6 ${
-          canStartJob ? 'bg-[#0092ce]' : 'bg-slate-300'
-        }`}
-        activeOpacity={canStartJob ? 0.8 : 1}
-        onPress={canStartJob ? onStartJob : undefined}
-        disabled={!canStartJob}
-      >
-        {isJobStartedByUser ? (
-          <>
-            <Ionicons name="checkmark-circle-outline" size={24} color="#94a3b8" />
-            <Text className="text-slate-500 font-semibold text-lg ml-2">
-              In Progress
-            </Text>
-          </>
-        ) : (
-          <>
-            <Ionicons name="play-circle-outline" size={24} color={canStartJob ? '#fff' : '#94a3b8'} />
-            <Text className={`font-semibold text-lg ml-2 ${canStartJob ? 'text-white' : 'text-slate-500'}`}>
-              Start Job
-            </Text>
-          </>
-        )}
-      </TouchableOpacity>
+      {/* Start Job Button - Only show for non-history jobs */}
+      {!isHistoryJob && (
+        <TouchableOpacity
+          className={`rounded-xl py-4 items-center justify-center flex-row mt-2 mb-6 ${
+            canStartJob ? 'bg-[#0092ce]' : 'bg-slate-300'
+          }`}
+          activeOpacity={canStartJob ? 0.8 : 1}
+          onPress={canStartJob ? onStartJob : undefined}
+          disabled={!canStartJob}
+        >
+          {isJobStartedByUser ? (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={24} color="#94a3b8" />
+              <Text className="text-slate-500 font-semibold text-lg ml-2">
+                In Progress
+              </Text>
+            </>
+          ) : (
+            <>
+              <Ionicons name="play-circle-outline" size={24} color={canStartJob ? '#fff' : '#94a3b8'} />
+              <Text className={`font-semibold text-lg ml-2 ${canStartJob ? 'text-white' : 'text-slate-500'}`}>
+                Start Job
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

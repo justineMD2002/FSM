@@ -93,17 +93,17 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const getStatusColor = (status: Job['status']): string => {
     switch (status) {
       case 'PENDING':
-        return '#0092ce';
+        return '#CCCCCC';
       case 'COMPLETED':
-        return '#22c55e';
+        return '#77DD77';
       case 'CANCELLED':
-        return '#ef4444';
+        return '#FF6961';
       case 'UPCOMING':
-        return '#f59e0b';
+        return '#FFD580';
       case 'IN_PROGRESS':
-        return '#6366f1';
+        return '#6A89CC';
       default:
-        return '#0092ce';
+        return '#CCCCCC';
     }
   };
 
@@ -436,6 +436,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
               statusColor={statusColor}
               canStartJob={canStartJob}
               isJobStartedByUser={isJobStartedByUser}
+              isHistoryJob={isHistoryJob}
               onStartJob={handleStartJob}
             />
           )}
@@ -535,7 +536,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
               <Ionicons
                 name={job.status === 'COMPLETED' ? "checkmark-circle" : "close-circle"}
                 size={64}
-                color={job.status === 'COMPLETED' ? "#22c55e" : "#ef4444"}
+                color={job.status === 'COMPLETED' ? "#77DD77" : "#FF6961"}
               />
             </View>
             <Text className="text-2xl font-bold text-slate-800 mb-4 text-center">

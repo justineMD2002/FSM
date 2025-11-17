@@ -27,11 +27,11 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
   };
 
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
-    COMPLETED: { bg: '#dcfce7', text: '#16a34a', border: '#22c55e' },
-    CANCELLED: { bg: '#fee2e2', text: '#dc2626', border: '#ef4444' },
-    PENDING: { bg: '#dbeafe', text: '#1d4ed8', border: '#3b82f6' },
-    UPCOMING: { bg: '#fef3c7', text: '#d97706', border: '#f59e0b' },
-    IN_PROGRESS: { bg: '#e0e7ff', text: '#4f46e5', border: '#6366f1' }
+    COMPLETED: { bg: '#E8F5E9', text: '#2E7D32', border: '#77DD77' },
+    CANCELLED: { bg: '#FFEBEE', text: '#C62828', border: '#FF6961' },
+    PENDING: { bg: '#FFF9E6', text: '#9E9E9E', border: '#CCCCCC' },
+    UPCOMING: { bg: '#FFF3E0', text: '#E65100', border: '#FFD580' },
+    IN_PROGRESS: { bg: '#E3F2FD', text: '#1565C0', border: '#6A89CC' }
   };
 
   const displayInfo = getDisplayStatus();

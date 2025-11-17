@@ -408,7 +408,7 @@ export default function CompleteTab({
                     <Ionicons
                       name={isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
                       size={24}
-                      color={isCompleted ? '#22c55e' : '#94a3b8'}
+                      color={isCompleted ? '#77DD77' : '#94a3b8'}
                     />
                   </TouchableOpacity>
                   <View className="flex-1">
@@ -574,9 +574,9 @@ export default function CompleteTab({
       {/* Complete Job Button */}
       <TouchableOpacity
         onPress={handleCompleteJob}
-        className="bg-[#22c55e] rounded-xl py-4 items-center justify-center flex-row mb-6"
+        className="rounded-xl py-4 items-center justify-center flex-row mb-6"
         disabled={!canCompleteJob}
-        style={{ opacity: canCompleteJob ? 1 : 0.5 }}
+        style={{ opacity: canCompleteJob ? 1 : 0.5, backgroundColor: '#77DD77' }}
       >
         <Ionicons name="checkmark-done-circle" size={24} color="#fff" />
         <Text className="text-white font-semibold text-lg ml-2">Complete Job</Text>
@@ -631,9 +631,9 @@ export default function CompleteTab({
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleConfirmComplete}
-                className="flex-1 bg-[#22c55e] rounded-xl py-3 items-center"
+                className="flex-1 rounded-xl py-3 items-center"
                 disabled={completing}
-                style={{ opacity: completing ? 0.5 : 1 }}
+                style={{ opacity: completing ? 0.5 : 1, backgroundColor: '#77DD77' }}
               >
                 {completing ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -656,7 +656,7 @@ export default function CompleteTab({
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
           <View className="bg-white rounded-2xl p-6 w-full max-w-md">
             <View className="items-center mb-4">
-              <Ionicons name="checkmark-circle" size={64} color="#22c55e" />
+              <Ionicons name="checkmark-circle" size={64} color="#77DD77" />
             </View>
             <Text className="text-2xl font-bold text-slate-800 mb-4 text-center">Congratulations!</Text>
             <Text className="text-base text-slate-600 mb-4 text-center">

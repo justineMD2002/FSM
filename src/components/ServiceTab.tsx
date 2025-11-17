@@ -793,10 +793,11 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     <View className="flex-row flex-wrap">
                       {/* Status Badge */}
                       <View
-                        className={`px-3 py-1.5 rounded-lg mr-2 mb-2 ${
-                          followUp.status === 'RESOLVED' ? 'bg-green-500' :
-                          followUp.status === 'IN_PROGRESS' ? 'bg-blue-500' : 'bg-orange-500'
-                        }`}
+                        style={{
+                          backgroundColor: followUp.status === 'RESOLVED' ? '#77DD77' :
+                            followUp.status === 'IN_PROGRESS' ? '#6A89CC' : '#FFD580'
+                        }}
+                        className="px-3 py-1.5 rounded-lg mr-2 mb-2"
                       >
                         <Text className="text-xs font-medium text-white">
                           {followUp.status || 'OPEN'}
@@ -804,10 +805,12 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                       </View>
                       {/* Priority Badge */}
                       <View
-                        className={`px-3 py-1.5 rounded-lg mb-2 ${
-                          followUp.priority === 'HIGH' ? 'bg-red-500' :
-                          followUp.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
+                        style={{
+                          backgroundColor: followUp.priority === 'URGENT' ? '#FF6961' :
+                            followUp.priority === 'HIGH' ? '#FF6961' :
+                            followUp.priority === 'NORMAL' ? '#6A89CC' : '#77DD77'
+                        }}
+                        className="px-3 py-1.5 rounded-lg mb-2"
                       >
                         <Text className="text-xs font-medium text-white">
                           {followUp.priority || 'MEDIUM'}
