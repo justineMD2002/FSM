@@ -9,6 +9,16 @@ import { TechnicianJob, ApiResponse } from '@/types';
 const TABLE_NAME = 'technician_jobs';
 
 /**
+ * Minimal type for ongoing job check (only fetches what's needed)
+ */
+interface OngoingJobInfo {
+  id: string;
+  job: {
+    job_number: string;
+  } | null;
+}
+
+/**
  * Fetch all technicians assigned to a job
  * @param jobId - Job ID
  * @returns ApiResponse with array of technician jobs
@@ -290,6 +300,73 @@ export const updateServiceReportSubmission = async (
 
     return {
       data: data as TechnicianJob,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
+ * Check if a technician has any ongoing (started) jobs
+ * @param userId - User ID
+ * @returns ApiResponse with array of ongoing jobs (minimal info), empty array if none found
+ */
+export const checkOngoingJobs = async (
+  userId: string
+): Promise<ApiResponse<OngoingJobInfo[]>> => {
+  try {
+    // First get the technician ID from user ID
+    const { data: techData, error: techError } = await supabase
+      .from('technicians')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (techError || !techData) {
+      return {
+        data: null,
+        error: {
+          message: techError?.message || 'Technician not found',
+          code: techError?.code,
+          details: techError?.details,
+        },
+      };
+    }
+
+    // Check for any jobs with STARTED status
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .select(`
+        id,
+        job:job_id (
+          job_number
+        )
+      `)
+      .eq('technician_id', techData.id)
+      .eq('assignment_status', 'STARTED')
+      .is('deleted_at', null)
+      .order('started_at', { ascending: true });
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    return {
+      data: (data as any) || [],
       error: null,
     };
   } catch (error: any) {

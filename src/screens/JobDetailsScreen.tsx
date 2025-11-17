@@ -15,7 +15,7 @@ import { useAuthStore, useNavigationStore } from '@/store';
 import { Tab } from '@/enums';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useCurrentUserTechnicianJob } from '@/hooks';
-import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
+import { updateTechnicianJobStatus, checkOngoingJobs } from '@/services/technicianJobs.service';
 import { updateCurrentLocation } from '@/services/locations.service';
 import { getJobById } from '@/services/jobs.service';
 
@@ -46,10 +46,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showBreakErrorModal, setShowBreakErrorModal] = useState(false);
+  const [showOngoingJobErrorModal, setShowOngoingJobErrorModal] = useState(false);
   const [showJobStatusModal, setShowJobStatusModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
   const [isStartingJob, setIsStartingJob] = useState(false);
   const [destinationCoords, setDestinationCoords] = useState<{ lat: string | null; lng: string | null }>({ lat: null, lng: null });
+  const [ongoingJobNumbers, setOngoingJobNumbers] = useState<string[]>([]);
 
   const user = useAuthStore((state) => state.user);
   const { setActiveTab: setGlobalActiveTab, setSelectedJob } = useNavigationStore();
@@ -114,9 +116,40 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const statusColor = getStatusColor(job.status);
 
-  const handleStartJob = () => {
-    // Show confirmation modal immediately
-    setShowConfirmModal(true);
+  const handleStartJob = async () => {
+    // Check if user exists
+    if (!user) {
+      setShowErrorModal(true);
+      return;
+    }
+
+    setIsStartingJob(true);
+
+    try {
+      // Check if user has any ongoing jobs
+      const { data: ongoingJobs, error: ongoingError } = await checkOngoingJobs(user.id);
+
+      if (ongoingError) {
+        console.error('Error checking ongoing jobs:', ongoingError);
+        // Continue anyway - this is not a critical check
+      } else if (ongoingJobs && ongoingJobs.length > 0) {
+        // User has ongoing jobs, show error modal
+        const jobNumbers = ongoingJobs.map((tj: any) => tj.job?.job_number || 'Unknown');
+        setOngoingJobNumbers(jobNumbers);
+        setIsStartingJob(false);
+        setShowOngoingJobErrorModal(true);
+        return;
+      }
+
+      // If no ongoing jobs, show confirmation modal
+      setIsStartingJob(false);
+      setShowConfirmModal(true);
+    } catch (error: any) {
+      console.error('Error checking ongoing jobs:', error);
+      setIsStartingJob(false);
+      // Show confirmation modal anyway if check fails
+      setShowConfirmModal(true);
+    }
   };
 
   const handleConfirmStart = async () => {
@@ -256,6 +289,14 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
     setShowBreakErrorModal(false);
     // Navigate to Profile tab
     setGlobalActiveTab(Tab.PROFILE);
+    // Clear selected job to return to home view
+    setSelectedJob(null);
+  };
+
+  const handleOngoingJobErrorClose = () => {
+    setShowOngoingJobErrorModal(false);
+    // Navigate back to home
+    setGlobalActiveTab(Tab.HOME);
     // Clear selected job to return to home view
     setSelectedJob(null);
   };
@@ -470,6 +511,19 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         message="You are currently on a break. Please resume first before starting a job."
         buttonText="Go to Profile"
         onClose={handleBreakErrorClose}
+      />
+
+      {/* Error Modal - Ongoing Job */}
+      <ErrorModal
+        visible={showOngoingJobErrorModal}
+        title={ongoingJobNumbers.length > 1 ? "Jobs Already in Progress" : "Job Already in Progress"}
+        message={
+          ongoingJobNumbers.length > 1
+            ? `You already have ${ongoingJobNumbers.length} ongoing jobs (${ongoingJobNumbers.join(', ')}). Please complete or cancel them before starting a new job.`
+            : `You already have an ongoing job (${ongoingJobNumbers[0]}). Please complete or cancel it before starting a new job.`
+        }
+        buttonText="Go to Home"
+        onClose={handleOngoingJobErrorClose}
       />
 
       {/* Job Status Modal (Completed/Cancelled) */}
