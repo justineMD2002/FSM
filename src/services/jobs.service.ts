@@ -22,6 +22,19 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     hour12: true
   });
 
+  // Parse scheduled_end to get end date and time
+  let endDate: string | undefined;
+  let endTime: string | undefined;
+  if (dbJob.scheduled_end) {
+    const scheduledEndDate = new Date(dbJob.scheduled_end);
+    endDate = scheduledEndDate.toISOString().split('T')[0]; // YYYY-MM-DD
+    endTime = scheduledEndDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
   // Map status to UI status (COMPLETED, CANCELLED, PENDING, UPCOMING, IN_PROGRESS)
   let uiStatus: 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'UPCOMING' | 'IN_PROGRESS' = 'PENDING';
 
@@ -44,6 +57,8 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     jobCode: dbJob.job_number,
     date,
     time,
+    endDate,
+    endTime,
     customer: dbJob.customer?.customer_name || 'Unknown Customer',
     customerId: dbJob.customer_id,
     // Use location_name if available, otherwise fall back to customer address

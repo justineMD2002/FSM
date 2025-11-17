@@ -62,6 +62,8 @@ export interface Job {
   jobCode: string;
   date: string;
   time: string;
+  endDate?: string;
+  endTime?: string;
   customer: string;
   customerId: string; // Add customer ID for lookups
   address: string;

@@ -66,6 +66,11 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
               <Ionicons name="calendar-outline" size={16} color="#64748b" />
               <Text className="text-sm text-slate-600 ml-2">
                 {job.date} at {job.time}
+                {job.endTime && (
+                  job.endDate && job.endDate !== job.date
+                    ? ` - ${job.endDate} at ${job.endTime}`
+                    : ` - ${job.endTime}`
+                )}
               </Text>
             </View>
 

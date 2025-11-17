@@ -155,6 +155,11 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                   <Text className="text-xs text-slate-500 mb-0.5 font-semibold">Schedule</Text>
                   <Text className="text-sm text-slate-700">
                     {job.date} | {job.time}
+                    {job.endTime && (
+                      job.endDate && job.endDate !== job.date
+                        ? ` - ${job.endDate} | ${job.endTime}`
+                        : ` - ${job.endTime}`
+                    )}
                   </Text>
                 </View>
               </View>
