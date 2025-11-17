@@ -206,6 +206,7 @@ export interface Followup {
   type: string | null;
   status: string | null;
   priority: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

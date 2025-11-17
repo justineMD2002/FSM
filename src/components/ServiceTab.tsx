@@ -209,6 +209,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         type: followUpType || null,
         status: followUpStatus || null,
         priority: followUpPriority || null,
+        notes: followUpTitle.trim() || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         deleted_at: null,
@@ -760,6 +761,17 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     <View className="flex-row items-center mb-2">
                       <Ionicons name="pricetag-outline" size={16} color="#64748b" />
                       <Text className="text-sm text-slate-600 ml-1">Type: {followUp.type}</Text>
+                    </View>
+                  )}
+
+                  {/* Notes */}
+                  {followUp.notes && (
+                    <View className="mb-2 bg-slate-50 rounded-lg p-3">
+                      <View className="flex-row items-start mb-1">
+                        <Ionicons name="document-text-outline" size={16} color="#64748b" />
+                        <Text className="text-xs font-semibold text-slate-700 ml-1">Notes:</Text>
+                      </View>
+                      <Text className="text-sm text-slate-600 ml-5">{followUp.notes}</Text>
                     </View>
                   )}
 
