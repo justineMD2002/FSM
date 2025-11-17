@@ -33,13 +33,6 @@ interface TabConfig {
   label: string;
 }
 
-const tabs: TabConfig[] = [
-  { id: 'Details', icon: 'document-text-outline', label: 'Details' },
-  { id: 'Navigate', icon: 'navigate-outline', label: 'Navigate' },
-  { id: 'Service', icon: 'build-outline', label: 'Service' },
-  { id: 'Complete', icon: 'checkmark-circle-outline', label: 'Complete' },
-];
-
 export default function JobDetailsScreen({ job, onBack, showBackButton = false }: JobDetailsScreenProps) {
   const [activeTab, setActiveTab] = useState<TabType>('Details');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -331,17 +324,17 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const canStartJob = isJobPending && (!technicianJob || technicianJob.assignment_status === 'ASSIGNED');
 
   // Define tabs based on whether it's a history job
-  const baseTabs: TabConfig[] = [
-    { id: 'Details', icon: 'document-text-outline', label: 'Details' },
-    { id: 'Navigate', icon: 'navigate-outline', label: 'Navigate' },
-    { id: 'Service', icon: 'build-outline', label: 'Service' },
-    { id: 'Complete', icon: 'checkmark-circle-outline', label: 'Complete' },
-  ];
-
-  // Add Chat tab for history jobs only
   const tabs: TabConfig[] = isHistoryJob
-    ? [...baseTabs, { id: 'Chat', icon: 'chatbubbles-outline', label: 'Chat' }]
-    : baseTabs;
+    ? [
+        { id: 'Details', icon: 'document-text-outline', label: 'Details' },
+        { id: 'Chat', icon: 'chatbubbles-outline', label: 'Chat' },
+      ]
+    : [
+        { id: 'Details', icon: 'document-text-outline', label: 'Details' },
+        { id: 'Navigate', icon: 'navigate-outline', label: 'Navigate' },
+        { id: 'Service', icon: 'build-outline', label: 'Service' },
+        { id: 'Complete', icon: 'checkmark-circle-outline', label: 'Complete' },
+      ];
 
   const activeTabIndex = tabs.findIndex(tab => tab.id === activeTab);
 
