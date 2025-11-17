@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { JobTask, Followup, JobImage } from '@/types';
 import { getTasksByJobId, createJobTask } from '@/services/jobTasks.service';
 import { getFollowupsByJobId, createFollowup } from '@/services/followups.service';
@@ -58,8 +59,11 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [showFollowUpForm, setShowFollowUpForm] = useState(false);
   const [followUpTitle, setFollowUpTitle] = useState('');
   const [followUpType, setFollowUpType] = useState('');
-  const [followUpPriority, setFollowUpPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
+  const [followUpDueDate, setFollowUpDueDate] = useState('');
+  const [followUpPriority, setFollowUpPriority] = useState<'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'>('NORMAL');
   const [followUpStatus, setFollowUpStatus] = useState<'OPEN' | 'IN_PROGRESS' | 'RESOLVED'>('OPEN');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   // Media form states
   const [showImageModal, setShowImageModal] = useState(false);
@@ -210,6 +214,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         status: followUpStatus || null,
         priority: followUpPriority || null,
         notes: followUpTitle.trim() || null,
+        due_date: followUpDueDate || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         deleted_at: null,
@@ -218,8 +223,11 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       setFollowUps([...followUps, newFollowUp]);
       setFollowUpTitle('');
       setFollowUpType('');
-      setFollowUpPriority('MEDIUM');
+      setFollowUpDueDate('');
+      setFollowUpPriority('NORMAL');
       setFollowUpStatus('OPEN');
+      setShowDatePicker(false);
+      setSelectedDate(new Date());
       setShowFollowUpForm(false);
     }
   };
@@ -637,25 +645,81 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               value={followUpTitle}
               onChangeText={setFollowUpTitle}
             />
-            <TextInput
-              className="border border-slate-300 rounded-lg px-4 py-3 mb-3"
-              placeholder="Type (e.g., Repair, Maintenance)"
-              value={followUpType}
-              onChangeText={setFollowUpType}
-            />
+            <View className="mb-3">
+              <Text className="text-sm text-slate-600 mb-2">Type</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                {[
+                  'appointment',
+                  'repair',
+                  'contract',
+                  'verify customer',
+                  'closed',
+                  'done',
+                  'a new task is created!',
+                  'new!',
+                  'break'
+                ].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => setFollowUpType(type)}
+                    className={`px-4 py-2 rounded-full mr-2 ${
+                      followUpType === type ? 'bg-[#0092ce]' : 'bg-slate-200'
+                    }`}
+                  >
+                    <Text
+                      className={`font-medium text-sm ${
+                        followUpType === type ? 'text-white' : 'text-slate-700'
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+            <View className="mb-3">
+              <Text className="text-sm text-slate-600 mb-2">Due Date</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                className="border border-slate-300 rounded-lg px-4 py-3 flex-row justify-between items-center"
+              >
+                <Text className={followUpDueDate ? 'text-slate-800' : 'text-slate-400'}>
+                  {followUpDueDate || 'Select date...'}
+                </Text>
+                <Ionicons name="calendar-outline" size={20} color="#64748b" />
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, date) => {
+                    setShowDatePicker(Platform.OS === 'ios');
+                    if (date) {
+                      setSelectedDate(date);
+                      // Format date as YYYY-MM-DD
+                      const year = date.getFullYear();
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const day = String(date.getDate()).padStart(2, '0');
+                      setFollowUpDueDate(`${year}-${month}-${day}`);
+                    }
+                  }}
+                />
+              )}
+            </View>
             <View className="mb-3">
               <Text className="text-sm text-slate-600 mb-2">Priority</Text>
               <View className="flex-row space-x-2">
-                {(['LOW', 'MEDIUM', 'HIGH'] as const).map((priority) => (
+                {(['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const).map((priority) => (
                   <TouchableOpacity
                     key={priority}
-                    onPress={() => setFollowUpPriority(priority)}
+                    onPress={() => setFollowUpPriority(priority as any)}
                     className={`flex-1 py-2 rounded-lg ${
                       followUpPriority === priority ? 'bg-[#0092ce]' : 'bg-slate-200'
                     }`}
                   >
                     <Text
-                      className={`text-center font-medium ${
+                      className={`text-center font-medium text-xs ${
                         followUpPriority === priority ? 'text-white' : 'text-slate-700'
                       }`}
                     >
@@ -693,6 +757,11 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                   setShowFollowUpForm(false);
                   setFollowUpTitle('');
                   setFollowUpType('');
+                  setFollowUpDueDate('');
+                  setFollowUpPriority('NORMAL');
+                  setFollowUpStatus('OPEN');
+                  setShowDatePicker(false);
+                  setSelectedDate(new Date());
                 }}
                 className="px-4 py-2 rounded-lg bg-slate-200 mr-2"
               >
@@ -772,6 +841,16 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                         <Text className="text-xs font-semibold text-slate-700 ml-1">Notes:</Text>
                       </View>
                       <Text className="text-sm text-slate-600 ml-5">{followUp.notes}</Text>
+                    </View>
+                  )}
+
+                  {/* Due Date */}
+                  {followUp.due_date && (
+                    <View className="flex-row items-center mb-2">
+                      <Ionicons name="calendar-outline" size={16} color="#64748b" />
+                      <Text className="text-sm text-slate-600 ml-1">
+                        Due: {new Date(followUp.due_date).toLocaleDateString()}
+                      </Text>
                     </View>
                   )}
 
