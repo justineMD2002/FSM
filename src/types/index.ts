@@ -258,7 +258,8 @@ export interface JobTechnicianAdminMessage {
   job_id: string;
   technician_job_id: string;
   sender_type: 'TECHNICIAN' | 'ADMIN';
-  message_text: string | null;
+  message: string | null; // For pure text messages
+  message_text: string | null; // For image captions/descriptions
   image_url: string | null;
   created_at: string;
   updated_at: string;

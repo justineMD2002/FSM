@@ -402,7 +402,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           job_id: jobId,
           technician_job_id: technicianJobId,
           sender_type: 'TECHNICIAN' as const,
-          message_text: img.description,
+          message: null, // Pure text messages only
+          message_text: img.description, // Image caption
           image_url: img.imageUrl,
         }));
 

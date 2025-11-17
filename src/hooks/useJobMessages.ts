@@ -60,6 +60,8 @@ export const useJobMessages = (
 
   /**
    * Send a new message
+   * - If imageUrl is provided, messageText goes into message_text (caption)
+   * - If no imageUrl, messageText goes into message (pure text message)
    */
   const sendMessage = useCallback(
     async (messageText: string, imageUrl?: string) => {
@@ -71,7 +73,8 @@ export const useJobMessages = (
         job_id: jobId,
         technician_job_id: technicianJobId,
         sender_type: 'TECHNICIAN',
-        message_text: messageText || null,
+        message: imageUrl ? null : (messageText || null), // Pure text message
+        message_text: imageUrl ? (messageText || null) : null, // Image caption
         image_url: imageUrl || null,
       });
 

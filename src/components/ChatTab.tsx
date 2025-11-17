@@ -115,13 +115,13 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
               />
             )}
 
-            {/* Text message */}
-            {message.message_text && (
+            {/* Text message - show 'message' for pure text, 'message_text' for image captions */}
+            {(message.message || message.message_text) && (
               <View className="px-4 py-3">
                 <Text
                   className={`text-base ${isUser ? 'text-white' : 'text-slate-800'}`}
                 >
-                  {message.message_text}
+                  {message.message || message.message_text}
                 </Text>
               </View>
             )}
