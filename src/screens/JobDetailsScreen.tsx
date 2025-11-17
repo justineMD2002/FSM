@@ -460,7 +460,10 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
               assignmentStatus={technicianJob?.assignment_status || null}
               onJobCompleted={() => {
                 refetchTechnicianJob();
-                // Optionally navigate back or refresh
+                // Navigate to My Jobs (HOME tab)
+                setGlobalActiveTab(Tab.HOME);
+                // Clear selected job to return to jobs list
+                setSelectedJob(null);
               }}
             />
           )}
