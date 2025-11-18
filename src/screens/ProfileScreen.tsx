@@ -528,9 +528,9 @@ export default function ProfileScreen() {
             name={isOnBreak ? 'play-outline' : 'pause-outline'}
             size={20}
             color="#ffffff"
-            style={{ marginRight: 8 }}
+            style={{ marginRight: 8, flexShrink: 0 }}
           />
-          <Text className="text-white text-center font-bold text-base">
+          <Text className="text-white font-bold text-base" numberOfLines={1} style={{ flexShrink: 0 }}>
             {isOnBreak ? 'Resume' : 'Take a Break'}
           </Text>
         </TouchableOpacity>

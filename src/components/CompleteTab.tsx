@@ -19,6 +19,7 @@ interface CompleteTabProps {
   jobStatus: string;
   assignmentStatus: string | null;
   onJobCompleted?: () => void;
+  onSignatureDrawingChange?: (isDrawing: boolean) => void;
 }
 
 export default function CompleteTab({
@@ -29,6 +30,7 @@ export default function CompleteTab({
   jobStatus,
   assignmentStatus,
   onJobCompleted,
+  onSignatureDrawingChange,
 }: CompleteTabProps) {
   const user = useAuthStore((state) => state.user);
 
@@ -176,6 +178,7 @@ export default function CompleteTab({
 
   const handleSignatureBegin = () => {
     setIsSignatureEmpty(false);
+    onSignatureDrawingChange?.(true);
   };
 
   const handleSignatureEnd = () => {
@@ -183,6 +186,7 @@ export default function CompleteTab({
     if (isWeb && signatureRef.current) {
       setIsSignatureEmpty(signatureRef.current.isEmpty());
     }
+    onSignatureDrawingChange?.(false);
   };
 
   const handleSaveSignature = () => {

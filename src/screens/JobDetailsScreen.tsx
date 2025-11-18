@@ -45,6 +45,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [isStartingJob, setIsStartingJob] = useState(false);
   const [destinationCoords, setDestinationCoords] = useState<{ lat: string | null; lng: string | null }>({ lat: null, lng: null });
   const [ongoingJobNumbers, setOngoingJobNumbers] = useState<string[]>([]);
+  const [isSignatureDrawing, setIsSignatureDrawing] = useState(false);
 
   const user = useAuthStore((state) => state.user);
   const { setActiveTab: setGlobalActiveTab, setSelectedJob } = useNavigationStore();
@@ -432,7 +433,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
           <ChatTab jobId={job.id} technicianJobId={technicianJob?.id || null} />
         </View>
       ) : (
-        <ScrollView className="flex-1 px-4 py-4">
+        <ScrollView className="flex-1 px-4 py-4" scrollEnabled={!isSignatureDrawing}>
           {activeTab === 'Details' && (
             <DetailsTab
               job={job}
@@ -464,6 +465,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
               technicianJobId={technicianJob?.id || null}
               jobStatus={job.status}
               assignmentStatus={technicianJob?.assignment_status || null}
+              onSignatureDrawingChange={setIsSignatureDrawing}
               onJobCompleted={() => {
                 refetchTechnicianJob();
                 // Navigate to My Jobs (HOME tab)

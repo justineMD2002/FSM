@@ -444,19 +444,22 @@ export default function HomeScreen() {
 
             <View className="px-6 py-4 border-t border-slate-200">
               <View className="flex-row" style={{ gap: 8 }}>
-                {(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) && (
-                  <TouchableOpacity
-                    onPress={handleClearFilters}
-                    className="flex-1 bg-slate-200 rounded-xl items-center justify-center"
-                    style={{ height: 44 }}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-slate-700 font-semibold text-base">Clear All</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  onPress={handleClearFilters}
+                  className="flex-1 rounded-xl items-center justify-center"
+                  style={{
+                    height: 44,
+                    backgroundColor: (tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? '#e2e8f0' : '#f1f5f9',
+                    opacity: (tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? 1 : 0.5
+                  }}
+                  activeOpacity={0.7}
+                  disabled={tempDateFilter === 'ALL' && tempStatusFilters.length === 0}
+                >
+                  <Text className="text-slate-700 font-semibold text-base">Clear All</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleApplyFilters}
-                  className={`${(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl items-center justify-center`}
+                  className="flex-1 bg-[#0092ce] rounded-xl items-center justify-center"
                   style={{ height: 44 }}
                   activeOpacity={0.7}
                 >
