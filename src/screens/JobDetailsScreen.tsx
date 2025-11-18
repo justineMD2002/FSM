@@ -390,6 +390,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
                     className={`text-xs text-center ${
                       activeTab === tab.id ? 'text-[#0092ce] font-semibold' : 'text-slate-500'
                     }`}
+                    numberOfLines={1}
                   >
                     {tab.label}
                   </Text>

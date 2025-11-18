@@ -313,27 +313,27 @@ export default function HomeScreen() {
                         }
                       }
                     }}
-                    className={`flex-row items-center justify-between p-3 rounded-lg ${
+                    className={`flex-row items-center p-3 rounded-lg ${
                       tempDateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
                     }`}
                     activeOpacity={0.7}
                   >
-                    <View className="flex-row items-center">
-                      <Ionicons
-                        name={option.icon as keyof typeof Ionicons.glyphMap}
-                        size={18}
-                        color={tempDateFilter === option.value ? '#ffffff' : '#64748b'}
-                      />
-                      <Text
-                        className={`ml-3 text-sm font-semibold ${
-                          tempDateFilter === option.value ? 'text-white' : 'text-slate-800'
-                        }`}
-                      >
-                        {option.label}
-                      </Text>
-                    </View>
+                    <Ionicons
+                      name={option.icon as keyof typeof Ionicons.glyphMap}
+                      size={18}
+                      color={tempDateFilter === option.value ? '#ffffff' : '#64748b'}
+                      style={{ marginRight: 12 }}
+                    />
+                    <Text
+                      className={`flex-1 text-sm font-semibold ${
+                        tempDateFilter === option.value ? 'text-white' : 'text-slate-800'
+                      }`}
+                      numberOfLines={1}
+                    >
+                      {option.label}
+                    </Text>
                     {tempDateFilter === option.value && (
-                      <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                      <Ionicons name="checkmark-circle" size={20} color="#ffffff" style={{ marginLeft: 8 }} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -359,27 +359,27 @@ export default function HomeScreen() {
                             setTempStatusFilters([...tempStatusFilters, status.value]);
                           }
                         }}
-                        className={`flex-row items-center justify-between p-3 rounded-lg ${
+                        className={`flex-row items-center p-3 rounded-lg ${
                           isSelected ? 'bg-slate-800' : 'bg-slate-100'
                         }`}
                         activeOpacity={0.7}
                       >
-                        <View className="flex-row items-center">
-                          <Ionicons
-                            name={status.icon as keyof typeof Ionicons.glyphMap}
-                            size={18}
-                            color={isSelected ? '#ffffff' : status.color}
-                          />
-                          <Text
-                            className={`ml-3 text-sm font-semibold ${
-                              isSelected ? 'text-white' : 'text-slate-800'
-                            }`}
-                          >
-                            {status.label}
-                          </Text>
-                        </View>
+                        <Ionicons
+                          name={status.icon as keyof typeof Ionicons.glyphMap}
+                          size={18}
+                          color={isSelected ? '#ffffff' : status.color}
+                          style={{ marginRight: 12 }}
+                        />
+                        <Text
+                          className={`flex-1 text-sm font-semibold ${
+                            isSelected ? 'text-white' : 'text-slate-800'
+                          }`}
+                          numberOfLines={1}
+                        >
+                          {status.label}
+                        </Text>
                         {isSelected && (
-                          <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+                          <Ionicons name="checkmark-circle" size={20} color="#ffffff" style={{ marginLeft: 8 }} />
                         )}
                       </TouchableOpacity>
                     );
@@ -447,22 +447,20 @@ export default function HomeScreen() {
                 {(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) && (
                   <TouchableOpacity
                     onPress={handleClearFilters}
-                    className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
+                    className="flex-1 bg-slate-200 rounded-xl items-center justify-center"
+                    style={{ paddingVertical: 12 }}
                     activeOpacity={0.7}
                   >
-                    <Text className="text-slate-700 font-semibold text-base">
-                      Clear All
-                    </Text>
+                    <Text className="text-slate-700 font-semibold text-base" style={{ lineHeight: 20 }}>Clear All</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={handleApplyFilters}
-                  className={`${(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl py-3 items-center`}
+                  className={`${(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl items-center justify-center`}
+                  style={{ paddingVertical: 12 }}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-white font-semibold text-base">
-                    Apply Filters
-                  </Text>
+                  <Text className="text-white font-semibold text-base" style={{ lineHeight: 20 }}>Apply Filters</Text>
                 </TouchableOpacity>
               </View>
             </View>

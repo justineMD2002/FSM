@@ -358,6 +358,10 @@ export default function CompleteTab({
   body,html {
     width: 100%;
     height: 100%;
+    touch-action: none;
+  }
+  canvas {
+    touch-action: none;
   }`;
 
   if (tasksLoading || completionsLoading || equipmentsLoading || signatureLoading) {
@@ -495,9 +499,13 @@ export default function CompleteTab({
                     ref={signatureRef}
                     onBegin={handleSignatureBegin}
                     onEnd={handleSignatureEnd}
+                    penColor="black"
+                    minWidth={1}
+                    maxWidth={3}
+                    velocityFilterWeight={0.7}
                     canvasProps={{
                       className: 'signature-canvas',
-                      style: { width: '100%', height: '100%' }
+                      style: { width: '100%', height: '100%', touchAction: 'none' }
                     }}
                   />
                 ) : (
@@ -508,6 +516,9 @@ export default function CompleteTab({
                     onClear={handleSignatureClear}
                     webStyle={style}
                     descriptionText="Sign above"
+                    minWidth={1}
+                    maxWidth={3}
+                    penColor="black"
                   />
                 )}
               </View>
@@ -522,17 +533,15 @@ export default function CompleteTab({
                   <Ionicons name="trash-outline" size={18} color="#475569" />
                   <Text className="text-slate-700 font-medium ml-2">Clear</Text>
                 </TouchableOpacity>
-                {isWeb && (
-                  <TouchableOpacity
-                    onPress={handleSaveSignature}
-                    className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
-                    disabled={!canSaveSignature || isSignatureEmpty}
-                    style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
-                  >
-                    <Ionicons name="checkmark" size={18} color="#fff" />
-                    <Text className="text-white font-medium ml-2">Save</Text>
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  onPress={isWeb ? handleSaveSignature : () => signatureRef.current?.readSignature()}
+                  className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
+                  disabled={!canSaveSignature || isSignatureEmpty}
+                  style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
+                >
+                  <Ionicons name="checkmark" size={18} color="#fff" />
+                  <Text className="text-white font-medium ml-2">Save</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ) : (
