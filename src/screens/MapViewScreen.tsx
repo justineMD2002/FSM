@@ -530,6 +530,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                           className={`ml-3 text-sm font-semibold ${
                             dateFilter === option.value ? 'text-white' : 'text-slate-800'
                           }`}
+                          numberOfLines={1}
                         >
                           {option.label}
                         </Text>
@@ -588,7 +589,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                     activeOpacity={0.7}
                     disabled={!startDate || !endDate}
                   >
-                    <Text className="text-white font-semibold text-base">
+                    <Text className="text-white font-semibold text-base" numberOfLines={1}>
                       Apply Date Range
                     </Text>
                   </TouchableOpacity>
@@ -609,7 +610,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                     className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
                     activeOpacity={0.7}
                   >
-                    <Text className="text-slate-700 font-semibold text-base">
+                    <Text className="text-slate-700 font-semibold text-base" numberOfLines={1}>
                       Clear
                     </Text>
                   </TouchableOpacity>
@@ -619,7 +620,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                   className={`${dateFilter !== 'ALL' ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl py-3 items-center`}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-white font-semibold text-base">
+                  <Text className="text-white font-semibold text-base" numberOfLines={1}>
                     Apply
                   </Text>
                 </TouchableOpacity>

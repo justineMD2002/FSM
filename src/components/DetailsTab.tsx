@@ -307,8 +307,10 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
             const tech = techJob.technician;
             if (!tech) return null;
 
+            const isLastTechnician = index === technicians.length - 1;
+
             return (
-              <View key={techJob.id} className="bg-white rounded-xl shadow-sm mb-3">
+              <View key={techJob.id} className={`bg-white rounded-xl shadow-sm ${isHistoryJob && isLastTechnician ? 'mb-20' : 'mb-3'}`}>
                 <View className="flex-row">
                   <View className="w-1 rounded-l-xl" style={{ backgroundColor: statusColor }} />
                   <View className="flex-1 p-4">

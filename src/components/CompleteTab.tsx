@@ -637,10 +637,10 @@ export default function CompleteTab({
               </View>
             </View>
 
-            <View className="flex-row space-x-3">
+            <View className="flex-row">
               <TouchableOpacity
                 onPress={() => setShowCompleteJobModal(false)}
-                className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
+                className="flex-1 bg-slate-200 rounded-xl py-3 items-center mr-3"
                 disabled={completing}
               >
                 <Text className="text-slate-700 font-semibold">Cancel</Text>

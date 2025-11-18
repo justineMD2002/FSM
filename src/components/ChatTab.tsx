@@ -200,7 +200,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
       </ScrollView>
 
       {/* Message Input - Fixed */}
-      <View className="bg-white rounded-xl p-3 shadow-sm">
+      <View className="bg-white rounded-xl p-3 shadow-sm mb-6">
         <View className="flex-row items-center">
           <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
             <TextInput
