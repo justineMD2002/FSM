@@ -176,6 +176,8 @@ export default function CompleteTab({
       signatureRef.current?.clearSignature();
     }
     setIsSignatureEmpty(true);
+    // Re-enable scrolling after clearing signature
+    onSignatureDrawingChange?.(false);
   };
 
   const handleSignatureBegin = () => {
@@ -521,7 +523,7 @@ export default function CompleteTab({
                     ref={signatureRef}
                     onOK={handleSignatureOK}
                     onBegin={handleSignatureBegin}
-                    onClear={handleSignatureClear}
+                    onEnd={handleSignatureEnd}
                     webStyle={style}
                     descriptionText="Sign above"
                     minWidth={0.5}
