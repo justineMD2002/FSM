@@ -15,7 +15,7 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
       return { status: 'CANCELLED', text: 'Cancelled' };
     }
     if (job.technicianAssignmentStatus === 'ASSIGNED') {
-      return { status: 'PENDING', text: 'Pending' };
+      return { status: 'CREATED', text: 'Created' };
     }
     // Fallback to job status
     return {
@@ -29,8 +29,9 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
     COMPLETED: { bg: '#E8F5E9', text: '#2E7D32', border: '#77DD77' },
     CANCELLED: { bg: '#FFEBEE', text: '#C62828', border: '#FF6961' },
-    PENDING: { bg: '#FFF9E6', text: '#9E9E9E', border: '#CCCCCC' },
-    UPCOMING: { bg: '#FFF3E0', text: '#E65100', border: '#FFD580' },
+    CREATED: { bg: '#FFF9E6', text: '#9E9E9E', border: '#CCCCCC' },
+    SCHEDULED: { bg: '#FFF3E0', text: '#E65100', border: '#FFD580' },
+    RESCHEDULED: { bg: '#FFF3E0', text: '#E65100', border: '#FFD580' },
     IN_PROGRESS: { bg: '#E3F2FD', text: '#1565C0', border: '#6A89CC' }
   };
 

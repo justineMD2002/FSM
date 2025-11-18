@@ -32,8 +32,9 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
   // Only show pending/current jobs in map view - memoized to prevent map refresh
   const allJobs = useMemo(() =>
     currentJobs.filter(job =>
-      job.status === 'PENDING' ||
-      job.status === 'UPCOMING' ||
+      job.status === 'CREATED' ||
+      job.status === 'SCHEDULED' ||
+      job.status === 'RESCHEDULED' ||
       job.status === 'IN_PROGRESS'
     ),
     [currentJobs]

@@ -33,7 +33,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
       return 'CANCELLED';
     }
     if (job.technicianAssignmentStatus === 'ASSIGNED') {
-      return 'PENDING';
+      return 'CREATED';
     }
     // Fallback to job status
     return job.status.replace('_', ' ');

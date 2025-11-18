@@ -235,7 +235,7 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
     mapRef.current = map;
   }, []);
 
-  // All jobs in this view are PENDING status only
+  // All jobs in this view are current jobs (CREATED, SCHEDULED, RESCHEDULED, IN_PROGRESS)
   const getMarkerIcon = () => 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
 
   if (!GOOGLE_MAPS_API_KEY) {

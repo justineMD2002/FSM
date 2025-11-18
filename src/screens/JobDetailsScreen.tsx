@@ -92,13 +92,14 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
   const getStatusColor = (status: Job['status']): string => {
     switch (status) {
-      case 'PENDING':
+      case 'CREATED':
         return '#CCCCCC';
       case 'COMPLETED':
         return '#77DD77';
       case 'CANCELLED':
         return '#FF6961';
-      case 'UPCOMING':
+      case 'SCHEDULED':
+      case 'RESCHEDULED':
         return '#FFD580';
       case 'IN_PROGRESS':
         return '#6A89CC';
@@ -314,7 +315,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
     }
   }, [showArrivalModal]);
 
-  const isJobPending = job.status === 'PENDING';
+  const isJobPending = job.status === 'CREATED';
   const isHistoryJob = job.status === 'COMPLETED' || job.status === 'CANCELLED';
 
   // Check if THIS specific job has been started by the current user

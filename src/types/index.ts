@@ -14,7 +14,7 @@ export interface JobDB {
   title: string;
   description: string | null;
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  status: 'PENDING' | 'IN_PROGRESS' | 'UPCOMING' | 'OVERDUE' | 'WAITING' | 'COMPLETED' | 'CANCELLED';
+  status: 'CREATED' | 'IN_PROGRESS' | 'SCHEDULED' | 'RESCHEDULED' | 'OVERDUE' | 'WAITING' | 'COMPLETED' | 'CANCELLED';
   scheduled_start: string | null;
   scheduled_end: string | null;
   created_at: string;
@@ -70,7 +70,7 @@ export interface Job {
   locationName: string | null;
   notes: string;
   providerName: string;
-  status: 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'UPCOMING' | 'IN_PROGRESS';
+  status: 'COMPLETED' | 'CANCELLED' | 'CREATED' | 'SCHEDULED' | 'RESCHEDULED' | 'IN_PROGRESS';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   technicianAssignmentStatus?: 'ASSIGNED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
 }

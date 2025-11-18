@@ -181,7 +181,7 @@ export default function MultipleJobsMapView({ jobs, onJobMarkerPress, focusedJob
     }
   }, [focusedJobId, jobsWithCoords]);
 
-  // All jobs in this view are PENDING status only
+  // All jobs in this view are current jobs (CREATED, SCHEDULED, RESCHEDULED, IN_PROGRESS)
   const getMarkerColor = () => '#0092ce';
 
   if (!GOOGLE_MAPS_API_KEY) {

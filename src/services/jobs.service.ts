@@ -35,8 +35,8 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     });
   }
 
-  // Map status to UI status (COMPLETED, CANCELLED, PENDING, UPCOMING, IN_PROGRESS)
-  let uiStatus: 'COMPLETED' | 'CANCELLED' | 'PENDING' | 'UPCOMING' | 'IN_PROGRESS' = 'PENDING';
+  // Map status to UI status (COMPLETED, CANCELLED, CREATED, SCHEDULED, RESCHEDULED, IN_PROGRESS)
+  let uiStatus: 'COMPLETED' | 'CANCELLED' | 'CREATED' | 'SCHEDULED' | 'RESCHEDULED' | 'IN_PROGRESS' = 'CREATED';
 
   if (dbJob.status === 'COMPLETED') {
     uiStatus = 'COMPLETED';
@@ -44,11 +44,13 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     uiStatus = 'CANCELLED';
   } else if (dbJob.status === 'IN_PROGRESS') {
     uiStatus = 'IN_PROGRESS';
-  } else if (dbJob.status === 'UPCOMING') {
-    uiStatus = 'UPCOMING';
+  } else if (dbJob.status === 'SCHEDULED') {
+    uiStatus = 'SCHEDULED';
+  } else if (dbJob.status === 'RESCHEDULED') {
+    uiStatus = 'RESCHEDULED';
   } else {
-    // PENDING, OVERDUE, WAITING all map to PENDING in UI
-    uiStatus = 'PENDING';
+    // CREATED, OVERDUE, WAITING all map to CREATED in UI
+    uiStatus = 'CREATED';
   }
 
   return {
@@ -145,7 +147,7 @@ export const getAllJobs = async (
 
 /**
  * Fetch jobs by status (for History vs Current tabs)
- * @param isHistory - true for COMPLETED/CANCELLED jobs, false for PENDING/UPCOMING/IN_PROGRESS
+ * @param isHistory - true for COMPLETED/CANCELLED jobs, false for CREATED/SCHEDULED/RESCHEDULED/IN_PROGRESS
  * @returns ApiResponse with array of jobs in UI format
  */
 export const getJobsByType = async (
@@ -153,7 +155,7 @@ export const getJobsByType = async (
 ): Promise<ApiResponse<Job[]>> => {
   const statusFilter = isHistory
     ? ['COMPLETED', 'CANCELLED']
-    : ['PENDING', 'UPCOMING', 'IN_PROGRESS', 'OVERDUE', 'WAITING'];
+    : ['CREATED', 'SCHEDULED', 'RESCHEDULED', 'IN_PROGRESS', 'OVERDUE', 'WAITING'];
 
   return getAllJobs(statusFilter);
 };
