@@ -334,6 +334,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         { id: 'Navigate', icon: 'navigate-outline', label: 'Navigate' },
         { id: 'Service', icon: 'build-outline', label: 'Service' },
         { id: 'Complete', icon: 'checkmark-circle-outline', label: 'Complete' },
+        { id: 'Chat', icon: 'chatbubbles-outline', label: 'Chat' },
       ];
 
   const activeTabIndex = tabs.findIndex(tab => tab.id === activeTab);
