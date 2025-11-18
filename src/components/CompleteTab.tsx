@@ -500,9 +500,11 @@ export default function CompleteTab({
                     onBegin={handleSignatureBegin}
                     onEnd={handleSignatureEnd}
                     penColor="black"
-                    minWidth={1}
-                    maxWidth={3}
-                    velocityFilterWeight={0.7}
+                    minWidth={0.5}
+                    maxWidth={2.5}
+                    dotSize={1}
+                    velocityFilterWeight={0.5}
+                    throttle={8}
                     canvasProps={{
                       className: 'signature-canvas',
                       style: { width: '100%', height: '100%', touchAction: 'none' }
@@ -516,9 +518,10 @@ export default function CompleteTab({
                     onClear={handleSignatureClear}
                     webStyle={style}
                     descriptionText="Sign above"
-                    minWidth={1}
-                    maxWidth={3}
+                    minWidth={0.5}
+                    maxWidth={2.5}
                     penColor="black"
+                    throttle={8}
                   />
                 )}
               </View>

@@ -103,13 +103,13 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
-      case 'PENDING':
+      case 'CREATED':
         return '#0092ce';
       case 'COMPLETED':
         return '#22c55e';
       case 'CANCELLED':
         return '#ef4444';
-      case 'UPCOMING':
+      case 'SCHEDULED':
         return '#f59e0b';
       case 'IN_PROGRESS':
         return '#6366f1';
@@ -120,18 +120,18 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
 
   const getStatusText = (status: Job['status']) => {
     switch (status) {
-      case 'PENDING':
-        return 'Pending';
+      case 'CREATED':
+        return 'Created';
       case 'COMPLETED':
         return 'Completed';
       case 'CANCELLED':
         return 'Cancelled';
-      case 'UPCOMING':
-        return 'Upcoming';
+      case 'SCHEDULED':
+        return 'Scheduled';
       case 'IN_PROGRESS':
         return 'In Progress';
       default:
-        return 'Pending';
+        return 'Created';
     }
   };
 

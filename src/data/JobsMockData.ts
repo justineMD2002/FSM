@@ -43,7 +43,7 @@ export const mockCurrentJobs: Job[] = [
     address: '426 Cebu South Coastal Road, South Road Properties, Cebu City 6000, Cebu, Philippines',
     notes: 'Check pressure levels',
     providerName: 'Sarah Connor',
-    status: 'PENDING',
+    status: 'CREATED',
     locationName: null
   },
   {
@@ -57,7 +57,7 @@ export const mockCurrentJobs: Job[] = [
     address: 'Panasonic Building, C.D. Seno St., Tipolo, Mandaue City (near Cebu City), Cebu, Philippines',
     notes: 'Quarterly AC maintenance',
     providerName: 'John Doe',
-    status: 'PENDING',
+    status: 'CREATED',
     locationName: null
   },
   {
@@ -71,7 +71,7 @@ export const mockCurrentJobs: Job[] = [
     address: '429 Asiatown IT Park, Lahug, Cebu City 6000, Cebu, Philippines',
     notes: 'Monthly generator check',
     providerName: 'Jane Smith',
-    status: 'PENDING',
+    status: 'CREATED',
     locationName: null
   },
   {
@@ -85,7 +85,7 @@ export const mockCurrentJobs: Job[] = [
     address: '426 Cebu South Coastal Road, SM Seaside City Cebu, South Road Properties, Cebu City 6000, Cebu, Philippines',
     notes: 'Annual fire safety inspection',
     providerName: 'Mike Johnson',
-    status: 'PENDING',
+    status: 'CREATED',
     locationName: null
   },
   {
@@ -99,7 +99,7 @@ export const mockCurrentJobs: Job[] = [
     address: 'Panasonic Building, C.D. Seno St., Tipolo, Mandaue City, Cebu, Philippines',
     notes: 'Fix water leak in basement',
     providerName: 'Sarah Connor',
-    status: 'PENDING',
+    status: 'CREATED',
     locationName: null
   },
   {
@@ -113,7 +113,7 @@ export const mockCurrentJobs: Job[] = [
     address: 'G/F Teleperformance Tower (beside Skyrise 2), I Villa St., Brgy. Apas, Cebu IT Park, Cebu City 6000, Cebu, Philippines',
     notes: 'Install new cameras',
     providerName: 'John Doe',
-    status: 'PENDING',
+    status: 'CREATED',
     locationName: null
   }
 ];

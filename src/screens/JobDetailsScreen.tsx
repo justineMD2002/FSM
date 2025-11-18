@@ -365,7 +365,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
       )}
 
       {/* Timeline Tabs */}
-      <View className="bg-white px-4 py-6 border-b border-slate-200">
+      <View className="bg-white px-2 py-5 border-b border-slate-200">
         <View className="flex-row justify-between items-center">
           {tabs.map((tab, index) => {
             const isLineCompleted = index < activeTabIndex;
@@ -375,33 +375,35 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
                 <TouchableOpacity
                   onPress={() => setActiveTab(tab.id)}
                   className="items-center"
-                  style={{ flex: 1 }}
+                  style={{ minWidth: 50 }}
                 >
                   <View
-                    className={`w-12 h-12 rounded-full items-center justify-center mb-2 ${
+                    className={`w-10 h-10 rounded-full items-center justify-center mb-1.5 ${
                       activeTab === tab.id ? 'bg-[#0092ce]' : 'bg-slate-200'
                     }`}
                   >
                     <Ionicons
                       name={tab.icon}
-                      size={24}
+                      size={20}
                       color={activeTab === tab.id ? '#fff' : '#64748b'}
                     />
                   </View>
                   <Text
-                    className={`text-xs text-center ${
+                    className={`text-[10px] text-center ${
                       activeTab === tab.id ? 'text-[#0092ce] font-semibold' : 'text-slate-500'
                     }`}
                     numberOfLines={1}
+                    style={{ maxWidth: 60 }}
                   >
                     {tab.label}
                   </Text>
                 </TouchableOpacity>
                 {index < tabs.length - 1 && (
                   <View
-                    className="h-0.5 flex-1 mb-6"
+                    className="h-0.5 mb-5"
                     style={{
-                      marginHorizontal: 4,
+                      width: 20,
+                      marginHorizontal: 2,
                       backgroundColor: isLineCompleted ? '#0092ce' : '#cbd5e1'
                     }}
                   />

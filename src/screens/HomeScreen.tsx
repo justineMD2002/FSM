@@ -443,24 +443,24 @@ export default function HomeScreen() {
             </ScrollView>
 
             <View className="px-6 py-4 border-t border-slate-200">
-              <View className="flex-row gap-2">
+              <View className="flex-row" style={{ gap: 8 }}>
                 {(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) && (
                   <TouchableOpacity
                     onPress={handleClearFilters}
                     className="flex-1 bg-slate-200 rounded-xl items-center justify-center"
-                    style={{ paddingVertical: 12 }}
+                    style={{ height: 44 }}
                     activeOpacity={0.7}
                   >
-                    <Text className="text-slate-700 font-semibold text-base" style={{ lineHeight: 20 }}>Clear All</Text>
+                    <Text className="text-slate-700 font-semibold text-base">Clear All</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={handleApplyFilters}
                   className={`${(tempDateFilter !== 'ALL' || tempStatusFilters.length > 0) ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl items-center justify-center`}
-                  style={{ paddingVertical: 12 }}
+                  style={{ height: 44 }}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-white font-semibold text-base" style={{ lineHeight: 20 }}>Apply Filters</Text>
+                  <Text className="text-white font-semibold text-base">Apply Filters</Text>
                 </TouchableOpacity>
               </View>
             </View>
