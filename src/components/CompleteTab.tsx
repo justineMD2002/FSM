@@ -156,6 +156,8 @@ export default function CompleteTab({
     setSignatureDate(new Date());
     setShowSignaturePad(false);
     setShowSignatureSavedModal(true);
+    // Re-enable scrolling after saving signature
+    onSignatureDrawingChange?.(false);
   };
 
   const handleToggleTask = (taskId: string) => {

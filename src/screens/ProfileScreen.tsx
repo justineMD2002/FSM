@@ -492,7 +492,7 @@ export default function ProfileScreen() {
                 {isOnBreak && (
                   <View className="flex-row items-center bg-orange-100 px-2 py-1 rounded-full">
                     <Ionicons name="pause" size={12} color="#f59e0b" style={{ marginRight: 4, flexShrink: 0 }} />
-                    <Text className="text-orange-600 text-xs font-semibold" style={{ flexShrink: 0 }}>On Break</Text>
+                    <Text className="text-orange-600 text-xs font-semibold" numberOfLines={1} style={{ flexShrink: 0 }}>On Break</Text>
                   </View>
                 )}
               </View>
