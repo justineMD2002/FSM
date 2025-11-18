@@ -21,7 +21,13 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
   const [dateFilter, setDateFilter] = useState<DateFilter>('ALL');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Temporary filter states for the modal (not applied until user clicks Apply)
+  const [tempDateFilter, setTempDateFilter] = useState<DateFilter>('ALL');
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempEndDate, setTempEndDate] = useState('');
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [currentJobIndex, setCurrentJobIndex] = useState(0);
   const scrollViewRef = React.useRef<ScrollView>(null);
@@ -100,6 +106,31 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
     })),
     [filteredJobs]
   );
+
+  // Initialize temporary filters with current values when opening modal
+  const handleOpenFilterModal = () => {
+    setTempDateFilter(dateFilter);
+    setTempStartDate(startDate);
+    setTempEndDate(endDate);
+    setShowFilterModal(true);
+  };
+
+  // Apply temporary filters
+  const handleApplyFilters = () => {
+    setDateFilter(tempDateFilter);
+    setStartDate(tempStartDate);
+    setEndDate(tempEndDate);
+    setShowFilterModal(false);
+    setShowCustomDatePicker(false);
+  };
+
+  // Clear temporary filters
+  const handleClearFilters = () => {
+    setTempDateFilter('ALL');
+    setTempStartDate('');
+    setTempEndDate('');
+    setShowCustomDatePicker(false);
+  };
 
   const getStatusColor = (status: Job['status']) => {
     switch (status) {
@@ -241,7 +272,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
       {/* Date Filter Bar */}
       <View className="bg-white px-6 py-3 border-b border-slate-200">
         <TouchableOpacity
-          onPress={() => setShowFilterModal(true)}
+          onPress={handleOpenFilterModal}
           className="flex-row items-center justify-between bg-slate-100 rounded-lg px-4 py-3"
           activeOpacity={0.7}
         >
@@ -507,16 +538,16 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                       onPress={() => {
                         if (option.value === 'CUSTOM') {
                           setShowCustomDatePicker(true);
-                          setDateFilter('CUSTOM');
+                          setTempDateFilter('CUSTOM');
                         } else {
-                          setDateFilter(option.value as DateFilter);
+                          setTempDateFilter(option.value as DateFilter);
                           if (option.value !== 'CUSTOM') {
                             setShowCustomDatePicker(false);
                           }
                         }
                       }}
                       className={`flex-row items-center justify-between p-3 rounded-lg ${
-                        dateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
+                        tempDateFilter === option.value ? 'bg-[#0092ce]' : 'bg-slate-100'
                       }`}
                       activeOpacity={0.7}
                     >
@@ -524,18 +555,18 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                         <Ionicons
                           name={option.icon as keyof typeof Ionicons.glyphMap}
                           size={18}
-                          color={dateFilter === option.value ? '#ffffff' : '#64748b'}
+                          color={tempDateFilter === option.value ? '#ffffff' : '#64748b'}
                         />
                         <Text
                           className={`ml-3 text-sm font-semibold ${
-                            dateFilter === option.value ? 'text-white' : 'text-slate-800'
+                            tempDateFilter === option.value ? 'text-white' : 'text-slate-800'
                           }`}
                           numberOfLines={1}
                         >
                           {option.label}
                         </Text>
                       </View>
-                      {dateFilter === option.value && (
+                      {tempDateFilter === option.value && (
                         <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
                       )}
                     </TouchableOpacity>
@@ -557,8 +588,8 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                         className="flex-1 ml-2 text-slate-800"
                         placeholder="YYYY-MM-DD"
                         placeholderTextColor="#94a3b8"
-                        value={startDate}
-                        onChangeText={setStartDate}
+                        value={tempStartDate}
+                        onChangeText={setTempStartDate}
                       />
                     </View>
                   </View>
@@ -571,23 +602,23 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                         className="flex-1 ml-2 text-slate-800"
                         placeholder="YYYY-MM-DD"
                         placeholderTextColor="#94a3b8"
-                        value={endDate}
-                        onChangeText={setEndDate}
+                        value={tempEndDate}
+                        onChangeText={setTempEndDate}
                       />
                     </View>
                   </View>
 
                   <TouchableOpacity
                     onPress={() => {
-                      if (startDate && endDate) {
+                      if (tempStartDate && tempEndDate) {
                         setShowCustomDatePicker(false);
                       }
                     }}
                     className={`rounded-lg py-3 items-center ${
-                      startDate && endDate ? 'bg-[#0092ce]' : 'bg-slate-300'
+                      tempStartDate && tempEndDate ? 'bg-[#0092ce]' : 'bg-slate-300'
                     }`}
                     activeOpacity={0.7}
-                    disabled={!startDate || !endDate}
+                    disabled={!tempStartDate || !tempEndDate}
                   >
                     <Text className="text-white font-semibold text-base" numberOfLines={1}>
                       Apply Date Range
@@ -598,31 +629,27 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
             </ScrollView>
 
             <View className="px-6 py-4 border-t border-slate-200">
-              <View className="flex-row gap-2">
-                {dateFilter !== 'ALL' && (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setDateFilter('ALL');
-                      setStartDate('');
-                      setEndDate('');
-                      setShowCustomDatePicker(false);
-                    }}
-                    className="flex-1 bg-slate-200 rounded-xl py-3 items-center"
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-slate-700 font-semibold text-base" numberOfLines={1}>
-                      Clear
-                    </Text>
-                  </TouchableOpacity>
-                )}
+              <View className="flex-row" style={{ gap: 8 }}>
                 <TouchableOpacity
-                  onPress={() => setShowFilterModal(false)}
-                  className={`${dateFilter !== 'ALL' ? 'flex-1' : 'w-full'} bg-[#0092ce] rounded-xl py-3 items-center`}
+                  onPress={handleClearFilters}
+                  className="flex-1 rounded-xl items-center justify-center"
+                  style={{
+                    height: 44,
+                    backgroundColor: tempDateFilter !== 'ALL' ? '#e2e8f0' : '#f1f5f9',
+                    opacity: tempDateFilter !== 'ALL' ? 1 : 0.5
+                  }}
+                  activeOpacity={0.7}
+                  disabled={tempDateFilter === 'ALL'}
+                >
+                  <Text className="text-slate-700 font-semibold text-base">Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleApplyFilters}
+                  className="flex-1 bg-[#0092ce] rounded-xl items-center justify-center"
+                  style={{ height: 44 }}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-white font-semibold text-base" numberOfLines={1}>
-                    Apply
-                  </Text>
+                  <Text className="text-white font-semibold text-base">Apply</Text>
                 </TouchableOpacity>
               </View>
             </View>
