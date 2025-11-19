@@ -395,10 +395,8 @@ export const getJobsForTechnician = async (
   isHistory: boolean
 ): Promise<ApiResponse<Job[]>> => {
   try {
-    // Define assignment status filter based on history flag
-    const assignmentStatusFilter = isHistory
-      ? ['COMPLETED', 'CANCELLED']
-      : ['ASSIGNED', 'STARTED'];
+    // Fetch all assignment statuses, then filter by job.status for cancelled/rescheduled
+    const assignmentStatusFilter = ['ASSIGNED', 'STARTED', 'COMPLETED', 'CANCELLED'];
 
     const { data, error } = await supabase
       .from('technician_jobs')
@@ -452,6 +450,19 @@ export const getJobsForTechnician = async (
     // Transform the data to extract jobs and transform to UI format
     const jobs = (data || [])
       .filter((item: any) => item.job !== null) // Filter out null jobs
+      .filter((item: any) => {
+        const jobStatus = item.job.status;
+        const assignmentStatus = item.assignment_status;
+        const isJobCancelledOrRescheduled = ['CANCELLED', 'RESCHEDULED'].includes(jobStatus);
+
+        if (isHistory) {
+          // History: completed assignments OR jobs that are cancelled/rescheduled
+          return assignmentStatus === 'COMPLETED' || isJobCancelledOrRescheduled;
+        } else {
+          // Current: assigned/started assignments AND job is NOT cancelled/rescheduled
+          return ['ASSIGNED', 'STARTED'].includes(assignmentStatus) && !isJobCancelledOrRescheduled;
+        }
+      })
       .map((item: any) => {
         const job = transformJobToUI(item.job);
         // Add technician assignment status to the job
