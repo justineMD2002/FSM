@@ -113,7 +113,7 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Set up real-time subscription
+  // Set up real-time subscription for technician_jobs
   useEffect(() => {
     if (!technicianId) return;
 
@@ -144,6 +144,39 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
       subscription.unsubscribe();
     };
   }, [technicianId, isHistory, refetch]);
+
+  // Set up real-time subscription for jobs table (for 3rd party status updates)
+  useEffect(() => {
+    if (!technicianId || jobs.length === 0) return;
+
+    // Get job IDs from current jobs list
+    const jobIds = jobs.map(job => job.id);
+
+    // Subscribe to changes on the jobs table for jobs assigned to this technician
+    const subscription = supabase
+      .channel(`jobs_status_${technicianId}_${isHistory ? 'history' : 'current'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'jobs',
+        },
+        (payload) => {
+          // Check if the updated job is in our current list
+          if (jobIds.includes(payload.new.id)) {
+            console.log('Real-time update received for jobs table:', payload);
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [technicianId, isHistory, jobs, refetch]);
 
   return {
     jobs,
