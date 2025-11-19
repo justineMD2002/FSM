@@ -53,6 +53,24 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     uiStatus = 'CREATED';
   }
 
+  // Build address with location_name, country_name, and zip_code from customer_location
+  const baseAddress = dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided';
+
+  // Get customer_location data (first record if available)
+  const customerLocation = dbJob.customer?.customer_location?.[0];
+
+  // Build address parts
+  const addressParts: string[] = [baseAddress];
+
+  if (customerLocation?.country_name) {
+    addressParts.push(customerLocation.country_name);
+  }
+  if (customerLocation?.zip_code) {
+    addressParts.push(customerLocation.zip_code);
+  }
+
+  const address = addressParts.join(', ');
+
   return {
     id: dbJob.id,
     jobName: dbJob.title,
@@ -63,8 +81,8 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     endTime,
     customer: dbJob.customer?.customer_name || 'Unknown Customer',
     customerId: dbJob.customer_id,
-    // Use location_name if available, otherwise fall back to customer address
-    address: dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided',
+    // Use location_name with country_name and zip_code if available
+    address,
     locationName: dbJob.location?.location_name || null,
     notes: stripHtmlTags(dbJob.description) || '',
     // TODO: Get technician name from technician_jobs table
@@ -95,7 +113,11 @@ export const getAllJobs = async (
           customer_name,
           customer_address,
           phone_number,
-          email
+          email,
+          customer_location (
+            country_name,
+            zip_code
+          )
         ),
         location:location_id (
           id,
@@ -179,7 +201,11 @@ export const getJobById = async (
           customer_name,
           customer_address,
           phone_number,
-          email
+          email,
+          customer_location (
+            country_name,
+            zip_code
+          )
         ),
         location:location_id (
           id,
@@ -240,7 +266,11 @@ export const createJob = async (
           customer_name,
           customer_address,
           phone_number,
-          email
+          email,
+          customer_location (
+            country_name,
+            zip_code
+          )
         ),
         location:location_id (
           id,
@@ -303,7 +333,11 @@ export const updateJob = async (
           customer_name,
           customer_address,
           phone_number,
-          email
+          email,
+          customer_location (
+            country_name,
+            zip_code
+          )
         ),
         location:location_id (
           id,
@@ -419,7 +453,11 @@ export const getJobsForTechnician = async (
             customer_name,
             customer_address,
             phone_number,
-            email
+            email,
+            customer_location (
+              country_name,
+              zip_code
+            )
           ),
           location:location_id (
             id,

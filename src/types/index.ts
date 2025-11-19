@@ -138,6 +138,8 @@ export interface Customer {
   email: string;
   created_at?: string;
   updated_at?: string;
+  // Relations
+  customer_location?: CustomerLocation[];
 }
 
 // Equipment types
