@@ -3,8 +3,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
 export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) => {
-  // Get display status based on technician assignment status
+  // Get display status based on job status and technician assignment status
   const getDisplayStatus = (): { status: Job['status']; text: string } => {
+    // Check job-level status first for cancelled/rescheduled
+    if (job.status === 'CANCELLED') {
+      return { status: 'CANCELLED', text: 'Cancelled' };
+    }
+    if (job.status === 'RESCHEDULED') {
+      return { status: 'RESCHEDULED', text: 'Rescheduled' };
+    }
     if (job.technicianAssignmentStatus === 'STARTED') {
       return { status: 'IN_PROGRESS', text: 'Job Started' };
     }
