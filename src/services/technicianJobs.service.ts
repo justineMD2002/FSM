@@ -182,6 +182,25 @@ export const updateTechnicianJobStatus = async (
       };
     }
 
+    // When a technician starts a job, update the jobs table status to IN_PROGRESS
+    // Only update if the job is not already IN_PROGRESS (first technician to start)
+    if (status === 'STARTED' && data?.job_id) {
+      // Check current job status
+      const { data: jobData } = await supabase
+        .from('jobs')
+        .select('status')
+        .eq('id', data.job_id)
+        .single();
+
+      // Only update if not already IN_PROGRESS
+      if (jobData && jobData.status !== 'IN_PROGRESS') {
+        await supabase
+          .from('jobs')
+          .update({ status: 'IN_PROGRESS' })
+          .eq('id', data.job_id);
+      }
+    }
+
     return {
       data: data as TechnicianJob,
       error: null,
