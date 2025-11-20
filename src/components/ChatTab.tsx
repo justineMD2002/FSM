@@ -1,9 +1,50 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { useJobMessages } from '@/hooks';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+// Component for rendering message images with proper loading and error states
+const MessageImage = ({ imageUrl }: { imageUrl: string }) => {
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <View style={{ width: '100%', height: 192, backgroundColor: '#f1f5f9' }}>
+      {imageLoading && !imageError && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="small" color="#0092ce" />
+        </View>
+      )}
+      {imageError ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Ionicons name="image-outline" size={48} color="#94a3b8" />
+          <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>Failed to load image</Text>
+        </View>
+      ) : (
+        <Image
+          source={{ uri: imageUrl }}
+          style={{ width: '100%', height: 192, resizeMode: 'cover' }}
+          onLoadStart={() => setImageLoading(true)}
+          onLoadEnd={() => setImageLoading(false)}
+          onError={(error) => {
+            console.error('Image load error:', error.nativeEvent.error);
+            console.log('Failed image URL:', imageUrl);
+            setImageError(true);
+            setImageLoading(false);
+          }}
+          onLoad={() => {
+            console.log('Image loaded successfully:', imageUrl);
+            setImageError(false);
+          }}
+        />
+      )}
+    </View>
+  );
+};
 
 interface ChatTabProps {
   jobId: string;
@@ -108,11 +149,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           >
             {/* Image if available */}
             {message.image_url && (
-              <Image
-                source={{ uri: message.image_url }}
-                className="w-full h-48"
-                style={{ resizeMode: 'cover' }}
-              />
+              <MessageImage imageUrl={message.image_url} />
             )}
 
             {/* Text message - show 'message' for pure text, 'message_text' for image captions */}
