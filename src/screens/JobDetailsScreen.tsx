@@ -48,7 +48,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [isSignatureDrawing, setIsSignatureDrawing] = useState(false);
 
   const user = useAuthStore((state) => state.user);
-  const { setActiveTab: setGlobalActiveTab, setSelectedJob } = useNavigationStore();
+  const { setActiveTab: setGlobalActiveTab, setSelectedJob, setShowMapView } = useNavigationStore();
 
   // Fetch current user's technician job assignment
   const { technicianJob, refetch: refetchTechnicianJob } = useCurrentUserTechnicianJob(job.id, user?.id || null);
@@ -487,6 +487,8 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
                 setGlobalActiveTab(Tab.HOME);
                 // Clear selected job to return to jobs list
                 setSelectedJob(null);
+                // Clear map view to return to home screen (in case user came from map view)
+                setShowMapView(false);
               }}
             />
           )}

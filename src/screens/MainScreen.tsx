@@ -37,8 +37,9 @@ export default function MainScreen() {
 
   const currentTab = tabConfig[activeTab];
 
-  // Show header/footer when viewing job details even from map view
-  const shouldShowHeaderFooter = !showMapView || selectedJob !== null;
+  // Show header/footer except when in map view (map view screens have their own headers)
+  // When a job is selected from map view, JobDetailsScreen has its own header, so hide DashboardHeader
+  const shouldShowHeaderFooter = !showMapView;
 
   return (
     <View className="flex-1 bg-slate-50">
