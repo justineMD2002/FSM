@@ -182,9 +182,11 @@ export const updateTechnicianJobStatus = async (
       };
     }
 
-    // Note: Job status updates are now handled by database triggers
+    // Note: Job status updates are handled by database triggers
     // - When first technician starts: trigger updates job status to IN_PROGRESS
     // - When all technicians complete: trigger updates job status to COMPLETED
+    //
+    // Job cards display the technician's assignment_status for accurate per-technician views
 
     return {
       data: data as TechnicianJob,

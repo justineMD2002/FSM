@@ -145,14 +145,13 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     };
   }, [technicianId, isHistory, refetch]);
 
-  // Set up real-time subscription for jobs table (for 3rd party status updates)
+  // Set up real-time subscription for jobs table (for status updates from triggers)
   useEffect(() => {
-    if (!technicianId || jobs.length === 0) return;
+    if (!technicianId) return;
 
-    // Get job IDs from current jobs list
-    const jobIds = jobs.map(job => job.id);
-
-    // Subscribe to changes on the jobs table for jobs assigned to this technician
+    // Subscribe to ALL job status changes - we'll refetch to get properly filtered results
+    // This is important because when a trigger updates job status to COMPLETED,
+    // the job needs to move from current to history tab
     const subscription = supabase
       .channel(`jobs_status_${technicianId}_${isHistory ? 'history' : 'current'}`)
       .on(
@@ -162,10 +161,20 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
           schema: 'public',
           table: 'jobs',
         },
-        (payload) => {
-          // Check if the updated job is in our current list
-          if (jobIds.includes(payload.new.id)) {
-            console.log('Real-time update received for jobs table:', payload);
+        async (payload) => {
+          console.log('Real-time update received for jobs table:', payload);
+
+          // Check if this job is assigned to this technician
+          const { data: techJob } = await supabase
+            .from('technician_jobs')
+            .select('id')
+            .eq('technician_id', technicianId)
+            .eq('job_id', payload.new.id)
+            .single();
+
+          // If this job belongs to this technician, refetch to update the list
+          if (techJob) {
+            console.log(`Job ${payload.new.id} belongs to technician ${technicianId}, refetching...`);
             refetch();
           }
         }
@@ -176,7 +185,7 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [technicianId, isHistory, jobs, refetch]);
+  }, [technicianId, isHistory, refetch]);
 
   return {
     jobs,

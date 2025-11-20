@@ -444,7 +444,7 @@ export const getJobsForTechnician = async (
       .from('technician_jobs')
       .select(`
         assignment_status,
-        job:job_id (
+        job:job_id!inner (
           id,
           job_number,
           title,
@@ -480,6 +480,7 @@ export const getJobsForTechnician = async (
       `)
       .eq('technician_id', technicianId)
       .in('assignment_status', assignmentStatusFilter)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -505,20 +506,24 @@ export const getJobsForTechnician = async (
 
         console.log(`[Job ${item.job.job_number}] jobStatus=${jobStatus}, assignmentStatus=${assignmentStatus}`);
 
-        // Active job statuses that should appear in current tab
-        const isActiveJobStatus = ['CREATED', 'SCHEDULED', 'IN_PROGRESS', 'RESCHEDULED'].includes(jobStatus);
-        // Completed job statuses that should appear in history tab
-        const isCompletedJobStatus = ['COMPLETED', 'CANCELLED'].includes(jobStatus);
+        // For technicians, we filter based on THEIR assignment_status, not the main job status
+        // This allows each technician to see their own completed jobs in history
+        // even if other technicians haven't completed yet
+        const isAssignmentCompleted = ['COMPLETED', 'CANCELLED'].includes(assignmentStatus);
+        const isAssignmentActive = ['ASSIGNED', 'STARTED'].includes(assignmentStatus);
+
+        // Also check if the main job is cancelled (then it should be in history for everyone)
+        const isJobCancelled = jobStatus === 'CANCELLED';
 
         let shouldIncludeInCurrent = false;
         let shouldIncludeInHistory = false;
 
-        // Determine which tab this job belongs to
-        if (isCompletedJobStatus) {
-          // COMPLETED and CANCELLED jobs go to history
+        // Determine which tab this job belongs to based on technician's assignment status
+        if (isAssignmentCompleted || isJobCancelled) {
+          // This technician completed their assignment OR the job was cancelled
           shouldIncludeInHistory = true;
-        } else if (isActiveJobStatus) {
-          // CREATED, SCHEDULED, IN_PROGRESS, RESCHEDULED jobs go to current
+        } else if (isAssignmentActive) {
+          // This technician's assignment is still active
           shouldIncludeInCurrent = true;
         }
 
