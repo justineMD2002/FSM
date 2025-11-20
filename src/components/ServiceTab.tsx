@@ -64,6 +64,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [followUpStatus, setFollowUpStatus] = useState<'OPEN' | 'IN_PROGRESS' | 'RESOLVED'>('OPEN');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [editingFollowUpId, setEditingFollowUpId] = useState<string | null>(null);
 
   // Media form states
   const [showImageModal, setShowImageModal] = useState(false);
@@ -205,22 +206,41 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     if (followUpTitle.trim()) {
       if (!user) return;
 
-      const newFollowUp: FollowUp = {
-        id: `temp_${Date.now()}`, // Temporary ID for frontend
-        job_id: jobId,
-        user_id: user.id,
-        technician_id: null,
-        type: followUpType || null,
-        status: followUpStatus || null,
-        priority: followUpPriority || null,
-        notes: followUpTitle.trim() || null,
-        due_date: followUpDueDate || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        deleted_at: null,
-        isNew: true, // Mark as new (not yet saved to backend)
-      };
-      setFollowUps([...followUps, newFollowUp]);
+      if (editingFollowUpId) {
+        // Update existing follow-up
+        setFollowUps(followUps.map(followUp =>
+          followUp.id === editingFollowUpId
+            ? {
+                ...followUp,
+                type: followUpType || null,
+                status: followUpStatus || null,
+                priority: followUpPriority || null,
+                notes: followUpTitle.trim() || null,
+                due_date: followUpDueDate || null,
+                updated_at: new Date().toISOString(),
+              }
+            : followUp
+        ));
+        setEditingFollowUpId(null);
+      } else {
+        // Add new follow-up
+        const newFollowUp: FollowUp = {
+          id: `temp_${Date.now()}`, // Temporary ID for frontend
+          job_id: jobId,
+          user_id: user.id,
+          technician_id: null,
+          type: followUpType || null,
+          status: followUpStatus || null,
+          priority: followUpPriority || null,
+          notes: followUpTitle.trim() || null,
+          due_date: followUpDueDate || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+          isNew: true, // Mark as new (not yet saved to backend)
+        };
+        setFollowUps([...followUps, newFollowUp]);
+      }
       setFollowUpTitle('');
       setFollowUpType('');
       setFollowUpDueDate('');
@@ -230,6 +250,21 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       setSelectedDate(new Date());
       setShowFollowUpForm(false);
     }
+  };
+
+  const handleEditFollowUp = (followUp: FollowUp) => {
+    setEditingFollowUpId(followUp.id);
+    setFollowUpTitle(followUp.notes || '');
+    setFollowUpType(followUp.type || '');
+    setFollowUpDueDate(followUp.due_date || '');
+    setFollowUpPriority(followUp.priority || 'NORMAL');
+    setFollowUpStatus(followUp.status || 'OPEN');
+    if (followUp.due_date) {
+      setSelectedDate(new Date(followUp.due_date));
+    } else {
+      setSelectedDate(new Date());
+    }
+    setShowFollowUpForm(true);
   };
 
   const handleDeleteFollowUp = (followUpId: string) => {
@@ -763,6 +798,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                   setFollowUpStatus('OPEN');
                   setShowDatePicker(false);
                   setSelectedDate(new Date());
+                  setEditingFollowUpId(null);
                 }}
                 className="px-4 py-2 rounded-lg bg-slate-200 mr-2"
               >
@@ -772,7 +808,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 onPress={handleAddFollowUp}
                 className="px-4 py-2 rounded-lg bg-[#0092ce]"
               >
-                <Text className="text-white font-medium">Add Follow-up</Text>
+                <Text className="text-white font-medium">{editingFollowUpId ? 'Update Follow-up' : 'Add Follow-up'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -818,14 +854,22 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                         </Text>
                       </View>
                     </View>
-                    {/* Show delete button only for newly added followups and report not submitted */}
+                    {/* Show edit and delete buttons only for newly added followups and report not submitted */}
                     {followUp.isNew && !isHistoryJob && !hasSubmittedReport && (
-                      <TouchableOpacity
-                        onPress={() => handleDeleteFollowUp(followUp.id)}
-                        className="bg-red-500 rounded-full p-2"
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#fff" />
-                      </TouchableOpacity>
+                      <View className="flex-row">
+                        <TouchableOpacity
+                          onPress={() => handleEditFollowUp(followUp)}
+                          className="bg-[#0092ce] rounded-full p-2 mr-2"
+                        >
+                          <Ionicons name="pencil-outline" size={18} color="#fff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDeleteFollowUp(followUp.id)}
+                          className="bg-red-500 rounded-full p-2"
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
                     )}
                   </View>
 
