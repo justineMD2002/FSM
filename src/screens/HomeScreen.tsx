@@ -72,6 +72,8 @@ export default function HomeScreen() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
+    // Clear search query when switching tabs
+    setSearchQuery('');
   };
 
   // Initialize temporary filters with current tab's values when opening modal
