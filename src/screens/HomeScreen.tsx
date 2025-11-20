@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { JobCard } from '@/components/JobCard';
@@ -56,6 +56,19 @@ export default function HomeScreen() {
       await refetchCurrent();
     }
   }, [activeTab, refetchHistory, refetchCurrent]);
+
+  // Track previous showMapView value to detect when we return from map view
+  const prevShowMapView = useRef(showMapView);
+
+  // Refetch jobs when returning from map view (e.g., after completing a job)
+  useEffect(() => {
+    if (prevShowMapView.current === true && showMapView === false) {
+      // Just returned from map view, refetch both job lists
+      refetchHistory();
+      refetchCurrent();
+    }
+    prevShowMapView.current = showMapView;
+  }, [showMapView, refetchHistory, refetchCurrent]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);

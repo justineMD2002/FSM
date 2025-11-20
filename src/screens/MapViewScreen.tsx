@@ -33,7 +33,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
   const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Fetch current jobs from database
-  const { jobs: currentJobs, loading, error } = useJobs(false);
+  const { jobs: currentJobs, loading, error, refetch } = useJobs(false);
 
   // Only show pending/current jobs in map view - memoized to prevent map refresh
   const allJobs = useMemo(() =>
@@ -201,7 +201,11 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
   };
 
   if (selectedJob) {
-    return <JobDetailsScreen job={selectedJob} onBack={() => setSelectedJob(null)} showBackButton={true} />;
+    return <JobDetailsScreen job={selectedJob} onBack={() => {
+      setSelectedJob(null);
+      // Refetch jobs to update the list after job completion
+      refetch();
+    }} showBackButton={true} />;
   }
 
   // Loading state

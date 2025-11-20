@@ -485,10 +485,10 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
                 refetchTechnicianJob();
                 // Navigate to My Jobs (HOME tab)
                 setGlobalActiveTab(Tab.HOME);
-                // Clear selected job to return to jobs list
-                setSelectedJob(null);
                 // Clear map view to return to home screen (in case user came from map view)
                 setShowMapView(false);
+                // Call onBack to trigger refetch in parent screen (HomeScreen or MapViewScreen)
+                onBack();
               }}
             />
           )}
