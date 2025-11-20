@@ -607,15 +607,15 @@ export const getJobsForTechnician = async (
         const isAssignmentCompleted = ['COMPLETED', 'CANCELLED'].includes(assignmentStatus);
         const isAssignmentActive = ['ASSIGNED', 'STARTED'].includes(assignmentStatus);
 
-        // Also check if the main job is cancelled (then it should be in history for everyone)
-        const isJobCancelled = jobStatus === 'CANCELLED';
+        // Also check if the main job is cancelled or rescheduled (then it should be in history for everyone)
+        const isJobCancelledOrRescheduled = jobStatus === 'CANCELLED' || jobStatus === 'RESCHEDULED';
 
         let shouldIncludeInCurrent = false;
         let shouldIncludeInHistory = false;
 
         // Determine which tab this job belongs to based on technician's assignment status
-        if (isAssignmentCompleted || isJobCancelled) {
-          // This technician completed their assignment OR the job was cancelled
+        if (isAssignmentCompleted || isJobCancelledOrRescheduled) {
+          // This technician completed their assignment OR the job was cancelled/rescheduled
           shouldIncludeInHistory = true;
         } else if (isAssignmentActive) {
           // This technician's assignment is still active

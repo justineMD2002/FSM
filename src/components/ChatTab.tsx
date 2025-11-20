@@ -27,7 +27,8 @@ const MessageImage = ({ imageUrl }: { imageUrl: string }) => {
       ) : (
         <Image
           source={{ uri: imageUrl }}
-          style={{ width: '100%', height: 192, resizeMode: 'cover' }}
+          style={{ width: '100%', height: 192 }}
+          resizeMode="cover"
           onLoadStart={() => setImageLoading(true)}
           onLoadEnd={() => setImageLoading(false)}
           onError={(error) => {

@@ -22,8 +22,17 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
 
   // Get display status based on whether this is a history job or current job
+  // EXCEPTION: For CANCELLED/RESCHEDULED jobs, always show the job-level status
   const getDisplayStatus = (): string => {
-    // For history jobs, use technician assignment status if available
+    // Priority 1: If job is CANCELLED or RESCHEDULED, always show job-level status
+    if (job.status === 'CANCELLED') {
+      return 'CANCELLED';
+    }
+    if (job.status === 'RESCHEDULED') {
+      return 'RESCHEDULED';
+    }
+
+    // Priority 2: For history jobs, use technician assignment status if available
     if (isHistoryJob && job.technicianAssignmentStatus) {
       switch (job.technicianAssignmentStatus) {
         case 'COMPLETED':
@@ -37,18 +46,14 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
       }
     }
 
-    // For current jobs, use job-level status
+    // Priority 3: For current jobs, use job-level status
     switch (job.status) {
       case 'COMPLETED':
         return 'COMPLETED';
-      case 'CANCELLED':
-        return 'CANCELLED';
       case 'IN_PROGRESS':
         return 'IN PROGRESS';
       case 'SCHEDULED':
         return 'SCHEDULED';
-      case 'RESCHEDULED':
-        return 'RESCHEDULED';
       case 'CREATED':
         return 'CREATED';
     }
@@ -324,6 +329,18 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
 
             const isLastTechnician = index === technicians.length - 1;
 
+            // Get technician status display
+            // If job is CANCELLED or RESCHEDULED, show job-level status instead of assignment status
+            const getTechnicianStatusDisplay = () => {
+              if (job.status === 'CANCELLED') {
+                return 'CANCELLED';
+              }
+              if (job.status === 'RESCHEDULED') {
+                return 'RESCHEDULED';
+              }
+              return techJob.assignment_status === 'STARTED' ? 'IN PROGRESS' : techJob.assignment_status;
+            };
+
             return (
               <View key={techJob.id} className={`bg-white rounded-xl shadow-sm ${isHistoryJob && isLastTechnician ? 'mb-20' : 'mb-3'}`}>
                 <View className="flex-row">
@@ -345,7 +362,7 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                             className="px-2 py-1 rounded-lg mr-3"
                           >
                             <Text className="text-xs font-medium text-[#0092ce]">
-                              {techJob.assignment_status === 'STARTED' ? 'IN PROGRESS' : techJob.assignment_status}
+                              {getTechnicianStatusDisplay()}
                             </Text>
                           </View>
                           <TechnicianStatusBadge technicianId={tech.id} />

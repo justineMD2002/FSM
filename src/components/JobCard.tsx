@@ -5,8 +5,17 @@ import { Job } from '@/types';
 export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: () => void; isHistoryTab?: boolean }) => {
   // Get display status based on which tab is active
   // History tab uses technician assignment status, Current Jobs tab uses job status
+  // EXCEPTION: For CANCELLED/RESCHEDULED jobs, always show the job-level status
   const getDisplayStatus = (): { status: Job['status']; text: string } => {
-    // For History tab, use technician assignment status if available
+    // Priority 1: If job is CANCELLED or RESCHEDULED, always show job-level status
+    if (job.status === 'CANCELLED') {
+      return { status: 'CANCELLED', text: 'Cancelled' };
+    }
+    if (job.status === 'RESCHEDULED') {
+      return { status: 'RESCHEDULED', text: 'Rescheduled' };
+    }
+
+    // Priority 2: For History tab, use technician assignment status if available
     if (isHistoryTab && job.technicianAssignmentStatus) {
       switch (job.technicianAssignmentStatus) {
         case 'COMPLETED':
@@ -22,18 +31,14 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
       }
     }
 
-    // For Current Jobs tab, always use job-level status
+    // Priority 3: For Current Jobs tab, use job-level status
     switch (job.status) {
       case 'COMPLETED':
         return { status: 'COMPLETED', text: 'Completed' };
-      case 'CANCELLED':
-        return { status: 'CANCELLED', text: 'Cancelled' };
       case 'IN_PROGRESS':
         return { status: 'IN_PROGRESS', text: 'In Progress' };
       case 'SCHEDULED':
         return { status: 'SCHEDULED', text: 'Scheduled' };
-      case 'RESCHEDULED':
-        return { status: 'RESCHEDULED', text: 'Rescheduled' };
       case 'CREATED':
         return { status: 'CREATED', text: 'Created' };
       default:
