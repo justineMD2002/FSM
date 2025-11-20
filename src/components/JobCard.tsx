@@ -22,7 +22,7 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
       default:
         return {
           status: job.status,
-          text: job.status.replace('_', ' ').split(' ').map(word =>
+          text: (job.status as any).replace('_', ' ').split(' ').map((word: any) =>
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ')
         };

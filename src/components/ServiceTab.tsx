@@ -257,8 +257,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     setFollowUpTitle(followUp.notes || '');
     setFollowUpType(followUp.type || '');
     setFollowUpDueDate(followUp.due_date || '');
-    setFollowUpPriority(followUp.priority || 'NORMAL');
-    setFollowUpStatus(followUp.status || 'OPEN');
+    setFollowUpPriority((followUp as any).priority || 'NORMAL');
+    setFollowUpStatus((followUp as any).status || 'OPEN');
     if (followUp.due_date) {
       setSelectedDate(new Date(followUp.due_date));
     } else {

@@ -182,50 +182,9 @@ export const updateTechnicianJobStatus = async (
       };
     }
 
-    // When a technician starts a job, update the jobs table status to IN_PROGRESS
-    // Only update if the job is not already IN_PROGRESS (first technician to start)
-    if (status === 'STARTED' && data?.job_id) {
-      // Check current job status
-      const { data: jobData } = await supabase
-        .from('jobs')
-        .select('status')
-        .eq('id', data.job_id)
-        .single();
-
-      // Only update if not already IN_PROGRESS
-      if (jobData && jobData.status !== 'IN_PROGRESS') {
-        await supabase
-          .from('jobs')
-          .update({ status: 'IN_PROGRESS' })
-          .eq('id', data.job_id);
-      }
-    }
-
-    // When a technician completes a job, check if all technicians have completed
-    // If all have completed, update the jobs table status to COMPLETED
-    if (status === 'COMPLETED' && data?.job_id) {
-      // Get all technician assignments for this job (excluding cancelled ones)
-      const { data: allAssignments } = await supabase
-        .from(TABLE_NAME)
-        .select('assignment_status')
-        .eq('job_id', data.job_id)
-        .is('deleted_at', null)
-        .neq('assignment_status', 'CANCELLED');
-
-      if (allAssignments && allAssignments.length > 0) {
-        // Check if all assignments are completed
-        const allCompleted = allAssignments.every(
-          (assignment) => assignment.assignment_status === 'COMPLETED'
-        );
-
-        if (allCompleted) {
-          await supabase
-            .from('jobs')
-            .update({ status: 'COMPLETED' })
-            .eq('id', data.job_id);
-        }
-      }
-    }
+    // Note: Job status updates are now handled by database triggers
+    // - When first technician starts: trigger updates job status to IN_PROGRESS
+    // - When all technicians complete: trigger updates job status to COMPLETED
 
     return {
       data: data as TechnicianJob,
