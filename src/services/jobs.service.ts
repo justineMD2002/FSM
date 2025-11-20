@@ -426,6 +426,101 @@ export const deleteJob = async (
 };
 
 /**
+ * Fetch a single job by ID for a specific technician (includes assignment status)
+ * @param jobId - Job ID
+ * @param technicianId - Technician ID
+ * @returns ApiResponse with job data in UI format including technicianAssignmentStatus
+ */
+export const getJobByIdForTechnician = async (
+  jobId: string,
+  technicianId: string
+): Promise<ApiResponse<Job>> => {
+  try {
+    const { data, error } = await supabase
+      .from('technician_jobs')
+      .select(`
+        assignment_status,
+        job:job_id!inner (
+          id,
+          job_number,
+          title,
+          description,
+          priority,
+          status,
+          scheduled_start,
+          scheduled_end,
+          customer_id,
+          location_id,
+          customer:customer_id (
+            id,
+            customer_code,
+            customer_name,
+            customer_address,
+            phone_number,
+            email,
+            customer_location (
+              country_name,
+              zip_code
+            )
+          ),
+          location:location_id (
+            id,
+            customer_id,
+            location_name,
+            current_longitude,
+            current_latitude,
+            destination_longitude,
+            destination_latitude
+          )
+        )
+      `)
+      .eq('technician_id', technicianId)
+      .eq('job_id', jobId)
+      .is('deleted_at', null)
+      .single();
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    if (!data || !data.job) {
+      return {
+        data: null,
+        error: {
+          message: 'Job not found or not assigned to technician',
+        },
+      };
+    }
+
+    // Transform job and add technician assignment status
+    // data.job comes as an array from Supabase, get first element
+    const jobData: any = Array.isArray(data.job) ? data.job[0] : data.job;
+    const job = transformJobToUI(jobData);
+    job.technicianAssignmentStatus = data.assignment_status;
+
+    return {
+      data: job,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
  * Fetch jobs assigned to a specific technician
  * Filters by technician_jobs.assignment_status instead of jobs.status
  * @param technicianId - Technician ID

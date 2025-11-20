@@ -21,11 +21,6 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   const { equipments, loading: equipmentsLoading } = useCustomerEquipments(customerId);
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
 
-  // Debug logging
-  console.log('[DetailsTab] isHistoryJob:', isHistoryJob);
-  console.log('[DetailsTab] job.status:', job.status);
-  console.log('[DetailsTab] job.technicianAssignmentStatus:', job.technicianAssignmentStatus);
-
   // Get display status based on whether this is a history job or current job
   const getDisplayStatus = (): string => {
     // For history jobs, use technician assignment status if available

@@ -17,7 +17,7 @@ import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.s
 import { useCurrentUserTechnicianJob } from '@/hooks';
 import { updateTechnicianJobStatus, checkOngoingJobs } from '@/services/technicianJobs.service';
 import { updateCurrentLocation } from '@/services/locations.service';
-import { getJobById } from '@/services/jobs.service';
+import { getJobById, getJobByIdForTechnician } from '@/services/jobs.service';
 
 interface JobDetailsScreenProps {
   job: Job;
@@ -256,6 +256,16 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
 
       // Refetch to get updated status
       await refetchTechnicianJob();
+
+      // Refetch the job to get updated status and technicianAssignmentStatus
+      // Use the technician-specific function to get assignment status
+      if (techData?.id) {
+        const updatedJobResult = await getJobByIdForTechnician(job.id, techData.id);
+        if (!updatedJobResult.error && updatedJobResult.data) {
+          // Update the job in navigation store so the UI reflects the new status
+          setSelectedJob(updatedJobResult.data);
+        }
+      }
 
       setIsStartingJob(false);
       setShowConfirmModal(false);
