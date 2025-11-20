@@ -21,22 +21,25 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   const { equipments, loading: equipmentsLoading } = useCustomerEquipments(customerId);
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
 
-  // Get display status based on technician assignment status
+  // Get display status based on job status
   const getDisplayStatus = (): string => {
-    if (job.technicianAssignmentStatus === 'STARTED') {
-      return 'JOB STARTED';
+    // Check job-level status first
+    switch (job.status) {
+      case 'COMPLETED':
+        return 'COMPLETED';
+      case 'CANCELLED':
+        return 'CANCELLED';
+      case 'IN_PROGRESS':
+        return 'IN PROGRESS';
+      case 'SCHEDULED':
+        return 'SCHEDULED';
+      case 'RESCHEDULED':
+        return 'RESCHEDULED';
+      case 'CREATED':
+        return 'CREATED';
+      // default:
+      //   return job.status.replace('_', ' ');
     }
-    if (job.technicianAssignmentStatus === 'COMPLETED') {
-      return 'COMPLETED';
-    }
-    if (job.technicianAssignmentStatus === 'CANCELLED') {
-      return 'CANCELLED';
-    }
-    if (job.technicianAssignmentStatus === 'ASSIGNED') {
-      return 'CREATED';
-    }
-    // Fallback to job status
-    return job.status.replace('_', ' ');
   };
 
   const getPriorityColor = (priority?: string) => {
