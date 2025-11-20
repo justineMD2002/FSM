@@ -1,19 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { useJobMessages } from '@/hooks';
 
-const { width: screenWidth } = Dimensions.get('window');
+const IMAGE_SIZE = Dimensions.get('window').width * 0.4;
 
 // Component for rendering message images with proper loading and error states
-const MessageImage = ({ imageUrl }: { imageUrl: string }) => {
+const MessageImage = ({ imageUrl, onPress }: { imageUrl: string; onPress: () => void }) => {
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
   return (
-    <View style={{ width: '100%', height: 192, backgroundColor: '#f1f5f9' }}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={{ width: IMAGE_SIZE, height: IMAGE_SIZE, backgroundColor: '#f1f5f9' }}
+    >
       {imageLoading && !imageError && (
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="small" color="#0092ce" />
@@ -43,7 +47,7 @@ const MessageImage = ({ imageUrl }: { imageUrl: string }) => {
           }}
         />
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -56,6 +60,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   const user = useAuthStore((state) => state.user);
   const [newMessage, setNewMessage] = useState('');
   const [userName, setUserName] = useState('You');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Fetch messages using the hook
@@ -146,31 +151,40 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             {displayName}
           </Text>
 
-          <View
-            className={`rounded-2xl overflow-hidden ${
-              isCurrentUser ? 'bg-[#0092ce]' : 'bg-white'
-            }`}
-            style={{
-              borderBottomRightRadius: isCurrentUser ? 4 : 16,
-              borderBottomLeftRadius: isCurrentUser ? 16 : 4,
-            }}
-          >
-            {/* Image if available */}
-            {message.image_url && (
-              <MessageImage imageUrl={message.image_url} />
-            )}
+          {/* Image bubble - separate from text */}
+          {message.image_url && (
+            <View
+              className="rounded-2xl overflow-hidden bg-slate-200 mb-2"
+              style={{
+                borderBottomRightRadius: isCurrentUser ? 4 : 16,
+                borderBottomLeftRadius: isCurrentUser ? 16 : 4,
+              }}
+            >
+              <MessageImage
+                imageUrl={message.image_url}
+                onPress={() => setSelectedImage(message.image_url)}
+              />
+            </View>
+          )}
 
-            {/* Text message - show 'message' for pure text, 'message_text' for image captions */}
-            {(message.message || message.message_text) && (
-              <View className="px-4 py-3">
-                <Text
-                  className={`text-base ${isCurrentUser ? 'text-white' : 'text-slate-800'}`}
-                >
-                  {message.message || message.message_text}
-                </Text>
-              </View>
-            )}
-          </View>
+          {/* Text message - separate bubble below image */}
+          {(message.message || message.message_text) && (
+            <View
+              className={`rounded-2xl px-4 py-3 ${
+                isCurrentUser ? 'bg-[#0092ce]' : 'bg-white'
+              }`}
+              style={{
+                borderBottomRightRadius: isCurrentUser ? 4 : 16,
+                borderBottomLeftRadius: isCurrentUser ? 16 : 4,
+              }}
+            >
+              <Text
+                className={`text-base ${isCurrentUser ? 'text-white' : 'text-slate-800'}`}
+              >
+                {message.message || message.message_text}
+              </Text>
+            </View>
+          )}
 
           {/* Timestamp */}
           <Text className="text-xs text-slate-500 mt-1 px-1">
@@ -212,63 +226,102 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   }
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-    >
-      {/* Chat Header - Fixed */}
-      <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
-        <View className="flex-row items-center">
-          <Ionicons name="chatbubbles-outline" size={24} color="#0092ce" />
-          <Text className="text-lg font-semibold text-slate-800 ml-2">
-            Job Chat
-          </Text>
-        </View>
-        <Text className="text-sm text-slate-500 mt-2">
-          Chat with Admin about this job
-        </Text>
-      </View>
-
-      {/* Messages - Scrollable */}
-      <ScrollView ref={scrollViewRef} className="flex-1 mb-4">
-        {messages.length === 0 ? (
-          <View className="flex-1 justify-center items-center py-12">
-            <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
-            <Text className="text-slate-500 text-center mt-4">
-              No messages yet. Start a conversation!
+    <>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+        {/* Chat Header - Fixed */}
+        <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
+          <View className="flex-row items-center">
+            <Ionicons name="chatbubbles-outline" size={24} color="#0092ce" />
+            <Text className="text-lg font-semibold text-slate-800 ml-2">
+              Job Chat
             </Text>
           </View>
-        ) : (
-          messages.map((message) => renderMessage(message))
-        )}
-      </ScrollView>
-
-      {/* Message Input - Fixed */}
-      <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
-        <View className="flex-row items-center">
-          <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
-            <TextInput
-              className="text-slate-800"
-              placeholder="Type a message..."
-              placeholderTextColor="#94a3b8"
-              value={newMessage}
-              onChangeText={setNewMessage}
-              multiline
-              maxLength={500}
-            />
-          </View>
-          <TouchableOpacity
-            onPress={handleSendMessage}
-            className="w-12 h-12 rounded-full items-center justify-center"
-            style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
-            disabled={!newMessage.trim() || !technicianJobId}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="send" size={20} color="#ffffff" />
-          </TouchableOpacity>
+          <Text className="text-sm text-slate-500 mt-2">
+            Chat with Admin about this job
+          </Text>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+
+        {/* Messages - Scrollable */}
+        <ScrollView ref={scrollViewRef} className="flex-1 mb-4">
+          {messages.length === 0 ? (
+            <View className="flex-1 justify-center items-center py-12">
+              <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
+              <Text className="text-slate-500 text-center mt-4">
+                No messages yet. Start a conversation!
+              </Text>
+            </View>
+          ) : (
+            messages.map((message) => renderMessage(message))
+          )}
+        </ScrollView>
+
+        {/* Message Input - Fixed */}
+        <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+          <View className="flex-row items-center">
+            <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
+              <TextInput
+                className="text-slate-800"
+                placeholder="Type a message..."
+                placeholderTextColor="#94a3b8"
+                value={newMessage}
+                onChangeText={setNewMessage}
+                multiline
+                maxLength={500}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={handleSendMessage}
+              className="w-12 h-12 rounded-full items-center justify-center"
+              style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
+              disabled={!newMessage.trim() || !technicianJobId}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="send" size={20} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* Full-screen Image Viewer Modal */}
+      <Modal
+        visible={selectedImage !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <Pressable
+          className="flex-1 bg-black/90"
+          onPress={() => setSelectedImage(null)}
+        >
+          <View className="flex-1 justify-center items-center">
+            {/* Close button */}
+            <TouchableOpacity
+              className="absolute top-12 right-4 z-10 bg-white/20 rounded-full p-2"
+              onPress={() => setSelectedImage(null)}
+            >
+              <Ionicons name="close" size={32} color="#ffffff" />
+            </TouchableOpacity>
+
+            {/* Full-size image */}
+            {selectedImage && (
+              <View className="px-6 py-20">
+                <Image
+                  source={{ uri: selectedImage }}
+                  style={{
+                    width: Dimensions.get('window').width - 48,
+                    height: Dimensions.get('window').height - 160,
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
