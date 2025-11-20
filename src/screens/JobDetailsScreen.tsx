@@ -322,8 +322,9 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   // Check if THIS specific job has been started by the current user
   const isJobStartedByUser = !!(technicianJob && (technicianJob.assignment_status === 'STARTED' || technicianJob.assignment_status === 'COMPLETED'));
 
-  // Can start job if: job is PENDING AND (no assignment OR assignment is still in ASSIGNED status)
-  const canStartJob = isJobPending && (!technicianJob || technicianJob.assignment_status === 'ASSIGNED');
+  // Can start job if: this technician's assignment is ASSIGNED and job is not completed/cancelled
+  // Multiple technicians can start the same job - each technician starts their own assignment
+  const canStartJob = !isHistoryJob && !!technicianJob && technicianJob.assignment_status === 'ASSIGNED';
 
   // Define tabs based on whether it's a history job
   const tabs: TabConfig[] = isHistoryJob

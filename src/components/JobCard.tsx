@@ -3,9 +3,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
 export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) => {
-  // Get display status based on actual job status
+  // Get display status based on technician's assignment status if available
+  // This ensures the badge reflects the technician's view of the job
   const getDisplayStatus = (): { status: Job['status']; text: string } => {
-    // Use the actual job status
+    // If technicianAssignmentStatus is available, use it for more accurate status
+    if (job.technicianAssignmentStatus) {
+      switch (job.technicianAssignmentStatus) {
+        case 'COMPLETED':
+          return { status: 'COMPLETED', text: 'Completed' };
+        case 'CANCELLED':
+          return { status: 'CANCELLED', text: 'Cancelled' };
+        case 'STARTED':
+          return { status: 'IN_PROGRESS', text: 'In Progress' };
+        case 'ASSIGNED':
+          // If assigned but job is scheduled, show scheduled
+          if (job.status === 'SCHEDULED' || job.status === 'RESCHEDULED') {
+            return { status: job.status, text: job.status === 'SCHEDULED' ? 'Scheduled' : 'Rescheduled' };
+          }
+          return { status: 'CREATED', text: 'Assigned' };
+        default:
+          break;
+      }
+    }
+
+    // Fallback to job status if no assignment status
     switch (job.status) {
       case 'COMPLETED':
         return { status: 'COMPLETED', text: 'Completed' };
