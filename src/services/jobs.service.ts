@@ -493,28 +493,54 @@ export const getJobsForTechnician = async (
       };
     }
 
+    // Log for debugging
+    console.log(`[getJobsForTechnician] Fetched ${data?.length || 0} jobs, isHistory=${isHistory}`);
+
     // Transform the data to extract jobs and transform to UI format
     const jobs = (data || [])
       .filter((item: any) => item.job !== null) // Filter out null jobs
-      .filter((item: any) => {
+      .map((item: any) => {
         const jobStatus = item.job.status;
         const assignmentStatus = item.assignment_status;
-        const isJobCancelledOrRescheduled = ['CANCELLED', 'RESCHEDULED'].includes(jobStatus);
 
-        if (isHistory) {
-          // History: completed assignments OR jobs that are cancelled/rescheduled
-          return assignmentStatus === 'COMPLETED' || isJobCancelledOrRescheduled;
-        } else {
-          // Current: assigned/started assignments AND job is NOT cancelled/rescheduled
-          return ['ASSIGNED', 'STARTED'].includes(assignmentStatus) && !isJobCancelledOrRescheduled;
+        console.log(`[Job ${item.job.job_number}] jobStatus=${jobStatus}, assignmentStatus=${assignmentStatus}`);
+
+        // Active job statuses that should appear in current tab
+        const isActiveJobStatus = ['CREATED', 'SCHEDULED', 'IN_PROGRESS', 'RESCHEDULED'].includes(jobStatus);
+        // Completed job statuses that should appear in history tab
+        const isCompletedJobStatus = ['COMPLETED', 'CANCELLED'].includes(jobStatus);
+
+        let shouldIncludeInCurrent = false;
+        let shouldIncludeInHistory = false;
+
+        // Determine which tab this job belongs to
+        if (isCompletedJobStatus) {
+          // COMPLETED and CANCELLED jobs go to history
+          shouldIncludeInHistory = true;
+        } else if (isActiveJobStatus) {
+          // CREATED, SCHEDULED, IN_PROGRESS, RESCHEDULED jobs go to current
+          shouldIncludeInCurrent = true;
         }
+
+        console.log(`[Job ${item.job.job_number}] shouldIncludeInCurrent=${shouldIncludeInCurrent}, shouldIncludeInHistory=${shouldIncludeInHistory}, requestedHistory=${isHistory}`);
+
+        return {
+          item,
+          shouldIncludeInCurrent,
+          shouldIncludeInHistory
+        };
       })
-      .map((item: any) => {
+      .filter(({ shouldIncludeInCurrent, shouldIncludeInHistory }) => {
+        return isHistory ? shouldIncludeInHistory : shouldIncludeInCurrent;
+      })
+      .map(({ item }) => {
         const job = transformJobToUI(item.job);
         // Add technician assignment status to the job
         job.technicianAssignmentStatus = item.assignment_status;
         return job;
       });
+
+    console.log(`[getJobsForTechnician] Returning ${jobs.length} jobs for ${isHistory ? 'HISTORY' : 'CURRENT'} tab`);
 
     return {
       data: jobs,

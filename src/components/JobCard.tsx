@@ -3,34 +3,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
 export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) => {
-  // Get display status based on job status and technician assignment status
+  // Get display status based on actual job status
   const getDisplayStatus = (): { status: Job['status']; text: string } => {
-    // Check job-level status first for cancelled/rescheduled
-    if (job.status === 'CANCELLED') {
-      return { status: 'CANCELLED', text: 'Cancelled' };
+    // Use the actual job status
+    switch (job.status) {
+      case 'COMPLETED':
+        return { status: 'COMPLETED', text: 'Completed' };
+      case 'CANCELLED':
+        return { status: 'CANCELLED', text: 'Cancelled' };
+      case 'IN_PROGRESS':
+        return { status: 'IN_PROGRESS', text: 'In Progress' };
+      case 'SCHEDULED':
+        return { status: 'SCHEDULED', text: 'Scheduled' };
+      case 'RESCHEDULED':
+        return { status: 'RESCHEDULED', text: 'Rescheduled' };
+      case 'CREATED':
+        return { status: 'CREATED', text: 'Created' };
+      default:
+        return {
+          status: job.status,
+          text: job.status.replace('_', ' ').split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          ).join(' ')
+        };
     }
-    if (job.status === 'RESCHEDULED') {
-      return { status: 'RESCHEDULED', text: 'Rescheduled' };
-    }
-    if (job.technicianAssignmentStatus === 'STARTED') {
-      return { status: 'IN_PROGRESS', text: 'Job Started' };
-    }
-    if (job.technicianAssignmentStatus === 'COMPLETED') {
-      return { status: 'COMPLETED', text: 'Completed' };
-    }
-    if (job.technicianAssignmentStatus === 'CANCELLED') {
-      return { status: 'CANCELLED', text: 'Cancelled' };
-    }
-    if (job.technicianAssignmentStatus === 'ASSIGNED') {
-      return { status: 'CREATED', text: 'Created' };
-    }
-    // Fallback to job status
-    return {
-      status: job.status,
-      text: job.status.replace('_', ' ').split(' ').map(word =>
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-      ).join(' ')
-    };
   };
 
   const statusColors: Record<Job['status'], { bg: string; text: string; border: string }> = {
