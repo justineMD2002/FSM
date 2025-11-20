@@ -15,7 +15,11 @@ const TABLE_NAME = 'jobs';
 export const transformJobToUI = (dbJob: JobDB): Job => {
   // Parse scheduled_start to get date and time
   const scheduledDate = dbJob.scheduled_start ? new Date(dbJob.scheduled_start) : new Date();
-  const date = scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Format as dd-mm-yyyy
+  const day = scheduledDate.getDate().toString().padStart(2, '0');
+  const month = (scheduledDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = scheduledDate.getFullYear();
+  const date = `${day}-${month}-${year}`;
   const time = scheduledDate.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
@@ -27,7 +31,11 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
   let endTime: string | undefined;
   if (dbJob.scheduled_end) {
     const scheduledEndDate = new Date(dbJob.scheduled_end);
-    endDate = scheduledEndDate.toISOString().split('T')[0]; // YYYY-MM-DD
+    // Format as dd-mm-yyyy
+    const endDay = scheduledEndDate.getDate().toString().padStart(2, '0');
+    const endMonth = (scheduledEndDate.getMonth() + 1).toString().padStart(2, '0');
+    const endYear = scheduledEndDate.getFullYear();
+    endDate = `${endDay}-${endMonth}-${endYear}`;
     endTime = scheduledEndDate.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
