@@ -21,9 +21,28 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
   const { equipments, loading: equipmentsLoading } = useCustomerEquipments(customerId);
   const { contacts, loading: contactsLoading } = useCustomerContacts(customerId);
 
-  // Get display status based on job status
+  // Debug logging
+  console.log('[DetailsTab] isHistoryJob:', isHistoryJob);
+  console.log('[DetailsTab] job.status:', job.status);
+  console.log('[DetailsTab] job.technicianAssignmentStatus:', job.technicianAssignmentStatus);
+
+  // Get display status based on whether this is a history job or current job
   const getDisplayStatus = (): string => {
-    // Check job-level status first
+    // For history jobs, use technician assignment status if available
+    if (isHistoryJob && job.technicianAssignmentStatus) {
+      switch (job.technicianAssignmentStatus) {
+        case 'COMPLETED':
+          return 'COMPLETED';
+        case 'CANCELLED':
+          return 'CANCELLED';
+        case 'STARTED':
+          return 'IN PROGRESS';
+        case 'ASSIGNED':
+          return 'ASSIGNED';
+      }
+    }
+
+    // For current jobs, use job-level status
     switch (job.status) {
       case 'COMPLETED':
         return 'COMPLETED';
@@ -37,8 +56,6 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
         return 'RESCHEDULED';
       case 'CREATED':
         return 'CREATED';
-      // default:
-      //   return job.status.replace('_', ' ');
     }
   };
 

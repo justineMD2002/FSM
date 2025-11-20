@@ -239,7 +239,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         ) : filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} />)
+          filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />)
         ) : (
           <View className="items-center justify-center py-20">
             <Ionicons

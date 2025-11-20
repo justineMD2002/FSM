@@ -2,12 +2,12 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 
-export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) => {
-  // Get display status based on technician's assignment status if available
-  // This ensures the badge reflects the technician's view of the job
+export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: () => void; isHistoryTab?: boolean }) => {
+  // Get display status based on which tab is active
+  // History tab uses technician assignment status, Current Jobs tab uses job status
   const getDisplayStatus = (): { status: Job['status']; text: string } => {
-    // If technicianAssignmentStatus is available, use it for more accurate status
-    if (job.technicianAssignmentStatus) {
+    // For History tab, use technician assignment status if available
+    if (isHistoryTab && job.technicianAssignmentStatus) {
       switch (job.technicianAssignmentStatus) {
         case 'COMPLETED':
           return { status: 'COMPLETED', text: 'Completed' };
@@ -16,17 +16,13 @@ export const JobCard = ({ job, onPress }: { job: Job; onPress?: () => void }) =>
         case 'STARTED':
           return { status: 'IN_PROGRESS', text: 'In Progress' };
         case 'ASSIGNED':
-          // If assigned but job is scheduled, show scheduled
-          if (job.status === 'SCHEDULED' || job.status === 'RESCHEDULED') {
-            return { status: job.status, text: job.status === 'SCHEDULED' ? 'Scheduled' : 'Rescheduled' };
-          }
           return { status: 'CREATED', text: 'Assigned' };
         default:
           break;
       }
     }
 
-    // Fallback to job status if no assignment status
+    // For Current Jobs tab, always use job-level status
     switch (job.status) {
       case 'COMPLETED':
         return { status: 'COMPLETED', text: 'Completed' };
