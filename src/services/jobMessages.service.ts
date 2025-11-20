@@ -19,7 +19,14 @@ export const getMessagesByJobId = async (
   try {
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .select('*')
+      .select(`
+        *,
+        technician_job:technician_job_id (
+          technician:technician_id (
+            full_name
+          )
+        )
+      `)
       .eq('job_id', jobId)
       .is('deleted_at', null)
       .order('created_at', { ascending: true });

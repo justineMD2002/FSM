@@ -114,16 +114,23 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   };
 
   const renderMessage = (message: typeof messages[0]) => {
-    const isUser = message.sender_type === 'TECHNICIAN';
-    const displayName = isUser ? userName : 'Admin';
+    const isCurrentUser = message.sender_type === 'TECHNICIAN' &&
+                          message.technician_job?.technician?.full_name === userName;
+
+    // Get the actual sender's name from the message data
+    const senderName = message.sender_type === 'TECHNICIAN'
+      ? (message.technician_job?.technician?.full_name || 'Technician')
+      : 'Admin';
+
+    const displayName = senderName;
 
     return (
       <View
         key={message.id}
-        className={`flex-row mb-4 ${isUser ? 'justify-end' : 'justify-start'}`}
+        className={`flex-row mb-4 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
       >
         {/* Receiver avatar on the left */}
-        {!isUser && (
+        {!isCurrentUser && (
           <View className="mr-2">
             <View className="w-10 h-10 rounded-full bg-slate-300 items-center justify-center">
               <Ionicons name="person" size={24} color="#64748b" />
@@ -132,7 +139,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         )}
 
         {/* Message bubble */}
-        <View className={`max-w-[70%] ${isUser ? 'items-end' : 'items-start'}`}>
+        <View className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
           {/* Sender name */}
           <Text className="text-xs text-slate-600 mb-1 px-1 font-semibold">
             {displayName}
@@ -140,11 +147,11 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
 
           <View
             className={`rounded-2xl overflow-hidden ${
-              isUser ? 'bg-[#0092ce]' : 'bg-white'
+              isCurrentUser ? 'bg-[#0092ce]' : 'bg-white'
             }`}
             style={{
-              borderBottomRightRadius: isUser ? 4 : 16,
-              borderBottomLeftRadius: isUser ? 16 : 4,
+              borderBottomRightRadius: isCurrentUser ? 4 : 16,
+              borderBottomLeftRadius: isCurrentUser ? 16 : 4,
             }}
           >
             {/* Image if available */}
@@ -156,7 +163,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             {(message.message || message.message_text) && (
               <View className="px-4 py-3">
                 <Text
-                  className={`text-base ${isUser ? 'text-white' : 'text-slate-800'}`}
+                  className={`text-base ${isCurrentUser ? 'text-white' : 'text-slate-800'}`}
                 >
                   {message.message || message.message_text}
                 </Text>
@@ -171,7 +178,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         </View>
 
         {/* User avatar on the right */}
-        {isUser && (
+        {isCurrentUser && (
           <View className="ml-2">
             <View className="w-10 h-10 rounded-full bg-[#0092ce] items-center justify-center">
               <Ionicons name="person" size={24} color="#ffffff" />

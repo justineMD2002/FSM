@@ -266,6 +266,12 @@ export interface JobTechnicianAdminMessage {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  // Relations
+  technician_job?: {
+    technician?: {
+      full_name: string;
+    };
+  };
 }
 
 // API Response Types
