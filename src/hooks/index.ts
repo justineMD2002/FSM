@@ -14,3 +14,4 @@ export {
 } from './useJobDetails';
 export { useTechnicianStatus } from './useAttendance';
 export { useJobMessages } from './useJobMessages';
+export { useLocationTracking } from './useLocationTracking';

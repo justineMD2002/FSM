@@ -100,6 +100,66 @@ export const updateCurrentLocation = async (
 };
 
 /**
+ * Create location record for job start with current and destination coordinates
+ * @param customerId - Customer ID
+ * @param locationName - Name of the location
+ * @param currentLat - Current latitude (technician's starting position)
+ * @param currentLng - Current longitude (technician's starting position)
+ * @param destinationLat - Destination latitude (job site location)
+ * @param destinationLng - Destination longitude (job site location)
+ * @returns ApiResponse with created location
+ */
+export const createJobStartLocation = async (
+  customerId: string,
+  locationName: string | null,
+  currentLat: number,
+  currentLng: number,
+  destinationLat: number,
+  destinationLng: number
+): Promise<ApiResponse<Location>> => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .insert([
+        {
+          customer_id: customerId,
+          location_name: locationName,
+          current_latitude: currentLat.toString(),
+          current_longitude: currentLng.toString(),
+          destination_latitude: destinationLat.toString(),
+          destination_longitude: destinationLng.toString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    return {
+      data: data as Location,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
  * Update location's destination coordinates (job site location)
  * @param locationId - Location ID
  * @param latitude - Destination latitude

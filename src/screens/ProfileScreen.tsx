@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { TechnicianProfile, AttendanceRecord } from '@/types';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
 import { setBreakStatus } from '@/services/attendance.service';
+import { createLocationTechnicianRecord } from '@/services/locationTechnicians.service';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
@@ -17,6 +19,7 @@ export default function ProfileScreen() {
   const [runningTime, setRunningTime] = useState('00:00:00');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isClockingInOut, setIsClockingInOut] = useState(false);
 
   // Break functionality states
   const [isOnBreak, setIsOnBreak] = useState(false);
@@ -148,8 +151,28 @@ export default function ProfileScreen() {
       return;
     }
 
+    setIsClockingInOut(true);
+
     try {
       console.log('Clocking in with technician_id:', profile.id);
+
+      // Get current location before clocking in
+      let currentLocation = null;
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+          currentLocation = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          };
+        }
+      } catch (locError) {
+        console.error('Could not get current location:', locError);
+        // Continue without location - it's not critical for clocking in
+      }
 
       const { data, error } = await supabase
         .from('attendance')
@@ -167,6 +190,21 @@ export default function ProfileScreen() {
       }
 
       console.log('Clock in successful:', data);
+
+      // Save location to location_technicians table
+      if (currentLocation) {
+        const locationResult = await createLocationTechnicianRecord(
+          profile.id,
+          currentLocation.latitude,
+          currentLocation.longitude
+        );
+
+        if (locationResult.error) {
+          console.error('Error saving clock-in location:', locationResult.error);
+          // Don't fail the clock-in if location save fails
+        }
+      }
+
       setCurrentAttendance(data);
       // Reset break states
       setIsOnBreak(false);
@@ -177,6 +215,8 @@ export default function ProfileScreen() {
     } catch (error: any) {
       console.error('Error clocking in:', error);
       Alert.alert('Error', error?.message || 'Failed to clock in. Please try again.');
+    } finally {
+      setIsClockingInOut(false);
     }
   };
 
@@ -185,6 +225,8 @@ export default function ProfileScreen() {
       Alert.alert('Error', 'No active clock in session found.');
       return;
     }
+
+    setIsClockingInOut(true);
 
     try {
       const clockOutTime = new Date().toISOString();
@@ -218,6 +260,8 @@ export default function ProfileScreen() {
     } catch (error: any) {
       console.error('Error clocking out:', error);
       Alert.alert('Error', error?.message || 'Failed to clock out. Please try again.');
+    } finally {
+      setIsClockingInOut(false);
     }
   };
 
@@ -503,13 +547,26 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           className="rounded-lg py-4 shadow-md mb-3 flex-row items-center justify-center"
-          style={{ backgroundColor: currentAttendance ? '#ef4444' : '#0092ce' }}
+          style={{
+            backgroundColor: isClockingInOut
+              ? '#cbd5e1'
+              : (currentAttendance ? '#ef4444' : '#0092ce'),
+            opacity: isClockingInOut ? 0.6 : 1
+          }}
           onPress={handleClockToggle}
           activeOpacity={0.8}
+          disabled={isClockingInOut}
         >
-          <Ionicons name={currentAttendance ? 'log-out-outline' : 'log-in-outline'} size={20} color="#ffffff" style={{ marginRight: 8 }} />
+          {isClockingInOut ? (
+            <ActivityIndicator size="small" color="#ffffff" style={{ marginRight: 8 }} />
+          ) : (
+            <Ionicons name={currentAttendance ? 'log-out-outline' : 'log-in-outline'} size={20} color="#ffffff" style={{ marginRight: 8 }} />
+          )}
           <Text className="text-white text-center font-bold text-base">
-            {currentAttendance ? 'Clock Out' : 'Clock In'}
+            {isClockingInOut
+              ? (currentAttendance ? 'Clocking Out...' : 'Clocking In...')
+              : (currentAttendance ? 'Clock Out' : 'Clock In')
+            }
           </Text>
         </TouchableOpacity>
 

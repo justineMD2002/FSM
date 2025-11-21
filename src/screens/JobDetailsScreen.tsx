@@ -14,9 +14,9 @@ import ChatTab from '@/components/ChatTab';
 import { useAuthStore, useNavigationStore } from '@/store';
 import { Tab } from '@/enums';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
-import { useCurrentUserTechnicianJob } from '@/hooks';
+import { useCurrentUserTechnicianJob, useLocationTracking } from '@/hooks';
 import { updateTechnicianJobStatus, checkOngoingJobs } from '@/services/technicianJobs.service';
-import { updateCurrentLocation } from '@/services/locations.service';
+import { createJobStartLocation } from '@/services/locations.service';
 import { getJobById, getJobByIdForTechnician } from '@/services/jobs.service';
 
 interface JobDetailsScreenProps {
@@ -46,12 +46,48 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   const [destinationCoords, setDestinationCoords] = useState<{ lat: string | null; lng: string | null }>({ lat: null, lng: null });
   const [ongoingJobNumbers, setOngoingJobNumbers] = useState<string[]>([]);
   const [isSignatureDrawing, setIsSignatureDrawing] = useState(false);
+  const [jobLocationId, setJobLocationId] = useState<string | null>(null);
+  const [technicianId, setTechnicianId] = useState<string | null>(null);
 
   const user = useAuthStore((state) => state.user);
   const { setActiveTab: setGlobalActiveTab, setSelectedJob, setShowMapView } = useNavigationStore();
 
   // Fetch current user's technician job assignment
   const { technicianJob, refetch: refetchTechnicianJob } = useCurrentUserTechnicianJob(job.id, user?.id || null);
+
+  // Check if job is started to enable location tracking
+  const isJobStartedByUser = !!(technicianJob && (technicianJob.assignment_status === 'STARTED' || technicianJob.assignment_status === 'COMPLETED'));
+
+  // Start real-time location tracking when job is started
+  useLocationTracking(
+    technicianId,
+    jobLocationId,
+    isJobStartedByUser && !!jobLocationId, // Only track when job is started and has location
+    30000 // Update every 30 seconds
+  );
+
+  // Fetch technician ID
+  useEffect(() => {
+    const fetchTechnicianId = async () => {
+      if (!user?.id) return;
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        const { data: techData } = await supabase
+          .from('technicians')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (techData) {
+          setTechnicianId(techData.id);
+        }
+      } catch (error) {
+        console.error('Error fetching technician ID:', error);
+      }
+    };
+
+    fetchTechnicianId();
+  }, [user?.id]);
 
   // Fetch location coordinates from database
   useEffect(() => {
@@ -75,6 +111,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
             lat: dbJob.location.destination_latitude,
             lng: dbJob.location.destination_longitude,
           });
+          setJobLocationId(dbJob.location_id);
         }
       } catch (error) {
         console.error('Error fetching location coordinates:', error);
@@ -225,32 +262,30 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
         return;
       }
 
-      // Save current location to the locations table if we have a location_id
-      if (currentLocation) {
-        // Fetch the full job details to get location_id
-        const jobResult = await getJobById(job.id);
-        if (!jobResult.error && jobResult.data) {
-          // Get the location_id from the database job
-          const { data: dbJob } = await import('@/lib/supabase').then(({ supabase }) =>
-            supabase
-              .from('jobs')
-              .select('location_id')
-              .eq('id', job.id)
-              .single()
-          );
+      // Create a new location record with current and destination coordinates
+      if (currentLocation && destinationCoords.lat && destinationCoords.lng) {
+        const locationResult = await createJobStartLocation(
+          job.customerId,
+          job.address || null,
+          currentLocation.latitude,
+          currentLocation.longitude,
+          parseFloat(destinationCoords.lat),
+          parseFloat(destinationCoords.lng)
+        );
 
-          if (dbJob?.location_id) {
-            const locationResult = await updateCurrentLocation(
-              dbJob.location_id,
-              currentLocation.latitude,
-              currentLocation.longitude
-            );
+        if (locationResult.error) {
+          console.error('Error creating job start location:', locationResult.error);
+          // Don't fail the job start if location save fails
+        } else if (locationResult.data) {
+          // Update the job's location_id to point to this new location record
+          const { supabase } = await import('@/lib/supabase');
+          await supabase
+            .from('jobs')
+            .update({ location_id: locationResult.data.id })
+            .eq('id', job.id);
 
-            if (locationResult.error) {
-              console.error('Error saving starting location:', locationResult.error);
-              // Don't fail the job start if location save fails
-            }
-          }
+          // Update local state with the new location ID for tracking
+          setJobLocationId(locationResult.data.id);
         }
       }
 
@@ -336,9 +371,6 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
     job.status === 'COMPLETED' || // Job completed - always history
     (job.technicianAssignmentStatus === 'COMPLETED') || // Technician completed their part
     (job.technicianAssignmentStatus === 'CANCELLED'); // Technician cancelled their part
-
-  // Check if THIS specific job has been started by the current user
-  const isJobStartedByUser = !!(technicianJob && (technicianJob.assignment_status === 'STARTED' || technicianJob.assignment_status === 'COMPLETED'));
 
   // Can start job if: this technician's assignment is ASSIGNED and job is not completed/cancelled
   // Multiple technicians can start the same job - each technician starts their own assignment
