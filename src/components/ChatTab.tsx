@@ -120,15 +120,16 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   };
 
   const renderMessage = (message: typeof messages[0]) => {
+    // Check if this message was sent by the current user by comparing technician_job_id
     const isCurrentUser = message.sender_type === 'TECHNICIAN' &&
-                          message.technician_job?.technician?.full_name === userName;
+                          message.technician_job_id === technicianJobId;
 
     // Get the actual sender's name from the message data
     const senderName = message.sender_type === 'TECHNICIAN'
       ? (message.technician_job?.technician?.full_name || 'Technician')
       : 'Admin';
 
-    const displayName = senderName;
+    const displayName = isCurrentUser ? 'You' : senderName;
 
     return (
       <View

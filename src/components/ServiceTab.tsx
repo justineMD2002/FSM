@@ -11,7 +11,8 @@ import { getImagesByJobId, uploadMediaAndCreateRecord } from '@/services/jobImag
 import { createMessagesBatch } from '@/services/jobMessages.service';
 import { getTechnicianJobById, updateServiceReportSubmission } from '@/services/technicianJobs.service';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
-import { useAuthStore } from '@/store';
+import { useAuthStore, useServiceTabStore } from '@/store';
+import { formatDate, formatDateTime } from '@/utils/dateFormat';
 
 interface Task extends JobTask {
   isNew?: boolean; // Flag to identify newly added tasks (not yet saved to backend)
@@ -37,6 +38,7 @@ interface ServiceTabProps {
 
 export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistoryJob, isJobStarted }: ServiceTabProps) {
   const user = useAuthStore((state) => state.user);
+  const { getDraft, saveDraft, clearDraft } = useServiceTabStore();
 
   // Service tab states
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -86,23 +88,25 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         setLoading(true);
         console.log('ServiceTab: Fetching data for jobId:', jobId);
 
-        // Fetch tasks
+        // Fetch tasks from backend
         const tasksResult = await getTasksByJobId(jobId);
-        if (!tasksResult.error && tasksResult.data) {
-          setTasks(tasksResult.data.map(task => ({ ...task, isNew: false })));
-        }
+        const backendTasks = tasksResult.error || !tasksResult.data ? [] : tasksResult.data.map(task => ({ ...task, isNew: false }));
 
-        // Fetch followups
+        // Fetch followups from backend
         const followupsResult = await getFollowupsByJobId(jobId);
-        if (!followupsResult.error && followupsResult.data) {
-          setFollowUps(followupsResult.data.map(followup => ({ ...followup, isNew: false })));
-        }
+        const backendFollowups = followupsResult.error || !followupsResult.data ? [] : followupsResult.data.map(followup => ({ ...followup, isNew: false }));
 
-        // Fetch images
+        // Fetch images from backend
         const imagesResult = await getImagesByJobId(jobId);
-        if (!imagesResult.error && imagesResult.data) {
-          setImages(imagesResult.data.map(image => ({ ...image, isNew: false })));
-        }
+        const backendImages = imagesResult.error || !imagesResult.data ? [] : imagesResult.data.map(image => ({ ...image, isNew: false }));
+
+        // Load draft data (newly added items that haven't been submitted)
+        const draft = getDraft(jobId);
+
+        // Merge backend data with draft data (draft items are new, unsaved items)
+        setTasks([...backendTasks, ...draft.tasks]);
+        setFollowUps([...backendFollowups, ...draft.followups]);
+        setImages([...backendImages, ...draft.images]);
 
         // Fetch service report submission status from technician_jobs table
         if (technicianJobId) {
@@ -122,7 +126,24 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     };
 
     fetchData();
-  }, [jobId, technicianJobId]);
+  }, [jobId, technicianJobId, getDraft]);
+
+  // Save draft whenever tasks, followups, or images change (only new items)
+  useEffect(() => {
+    if (!jobId || jobId === 'undefined' || loading) return;
+
+    // Filter only new items (not yet saved to backend)
+    const draftTasks = tasks.filter(task => task.isNew);
+    const draftFollowups = followUps.filter(followup => followup.isNew);
+    const draftImages = images.filter(image => image.isNew);
+
+    // Save draft to store
+    saveDraft(jobId, {
+      tasks: draftTasks,
+      followups: draftFollowups,
+      images: draftImages,
+    });
+  }, [tasks, followUps, images, jobId, loading, saveDraft]);
 
   // Check clock-in and break status
   useEffect(() => {
@@ -464,6 +485,9 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
       // Mark report as submitted
       setHasSubmittedReport(true);
+
+      // Clear draft after successful submission
+      clearDraft(jobId);
 
       Alert.alert('Success', 'Service report submitted successfully', [
         { text: 'OK', onPress: onSubmit }
@@ -897,7 +921,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     <View className="flex-row items-center mb-2">
                       <Ionicons name="calendar-outline" size={16} color="#64748b" />
                       <Text className="text-sm text-slate-600 ml-1">
-                        Due: {new Date(followUp.due_date).toLocaleDateString()}
+                        Due: {formatDate(followUp.due_date)}
                       </Text>
                     </View>
                   )}
@@ -906,7 +930,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                   <View className="flex-row items-center">
                     <Ionicons name="time-outline" size={14} color="#64748b" />
                     <Text className="text-xs text-slate-500 ml-1">
-                      Created: {new Date(followUp.created_at).toLocaleString()}
+                      Created: {formatDateTime(followUp.created_at)}
                     </Text>
                   </View>
                 </View>
@@ -988,7 +1012,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                       {image.description || 'No description'}
                     </Text>
                     <Text className="text-xs text-slate-500">
-                      {new Date(image.created_at).toLocaleString()}
+                      {formatDateTime(image.created_at)}
                     </Text>
                   </View>
                 </View>
