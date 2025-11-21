@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "FSM",
     slug: "sas-fsm",
-    owner: "pxcdev",
+    owner: "keanumd2002",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/SAS-LOGO.png",
@@ -14,6 +14,12 @@ export default {
       image: "./assets/SAS-LOGO.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff"
+    },
+    runtimeVersion: {
+      policy: "appVersion"
+    },
+    updates: {
+      url: "https://u.expo.dev/3049bc12-ae03-4861-99ec-f27c37563dec"
     },
     ios: {
       supportsTablet: true,
@@ -60,9 +66,9 @@ export default {
     ],
     extra: {
       eas: {
-        projectId: "592878ce-ab57-440a-a39e-62963179a8a4"
+        projectId: "3049bc12-ae03-4861-99ec-f27c37563dec"
       }
     },
-    owner: "pxcdev"
+    owner: "keanumd2002"
   }
 };

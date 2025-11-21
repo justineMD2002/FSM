@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreenExpo from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
 import { useAuthStore } from '@/store';
+import { useAppUpdates } from '@/hooks';
 import LoginScreen from '@/screens/LoginScreen';
 import MainScreen from '@/screens/MainScreen';
 import SplashScreen from '@/components/SplashScreen';
@@ -21,6 +22,9 @@ try {
 export default function App() {
   const { user, loading, initialize } = useAuthStore();
   const [appIsReady, setAppIsReady] = useState(false);
+
+  // Initialize EAS Updates - checks for updates automatically on app start
+  useAppUpdates();
 
   // Set Android navigation bar to match footer color (white)
   useEffect(() => {
