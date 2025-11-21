@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -34,6 +34,7 @@ export default function ProfileScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showImageOptions, setShowImageOptions] = useState(false);
+  const [expandedAvatar, setExpandedAvatar] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const [editForm, setEditForm] = useState({
@@ -798,6 +799,20 @@ export default function ProfileScreen() {
             <View className="bg-white rounded-t-3xl p-6">
               <Text className="text-xl font-bold text-slate-800 mb-4">Profile Picture</Text>
 
+              {profile?.avatar_url && (
+                <TouchableOpacity
+                  className="flex-row items-center py-4 border-b border-slate-200"
+                  onPress={() => {
+                    setShowImageOptions(false);
+                    setExpandedAvatar(true);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="eye-outline" size={24} color="#0092ce" />
+                  <Text className="text-slate-800 text-base ml-3">View Picture</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 className="flex-row items-center py-4 border-b border-slate-200"
                 onPress={pickImage}
@@ -888,6 +903,43 @@ export default function ProfileScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Full-screen Avatar Viewer Modal */}
+      <Modal
+        visible={expandedAvatar}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setExpandedAvatar(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/90"
+          onPress={() => setExpandedAvatar(false)}
+        >
+          <View className="flex-1 justify-center items-center">
+            {/* Close button */}
+            <TouchableOpacity
+              className="absolute top-12 right-4 z-10 bg-white/20 rounded-full p-2"
+              onPress={() => setExpandedAvatar(false)}
+            >
+              <Ionicons name="close" size={32} color="#ffffff" />
+            </TouchableOpacity>
+
+            {/* Full-size avatar */}
+            {profile?.avatar_url && (
+              <View className="px-6 py-20">
+                <Image
+                  source={{ uri: profile.avatar_url }}
+                  style={{
+                    width: Dimensions.get('window').width - 48,
+                    height: Dimensions.get('window').height - 160,
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+          </View>
+        </Pressable>
       </Modal>
     </>
   );

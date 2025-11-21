@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
@@ -73,6 +73,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [imageDescription, setImageDescription] = useState('');
   const [selectedImage, setSelectedImage] = useState<{ uri: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string } | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
   // Fetch existing data on mount
   useEffect(() => {
@@ -980,11 +981,17 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                           useNativeControls
                         />
                       ) : (
-                        <Image
-                          source={{ uri: image.image_url }}
+                        <TouchableOpacity
+                          onPress={() => setExpandedImage(image.image_url)}
+                          activeOpacity={0.8}
                           className="w-full h-full"
-                          resizeMode="cover"
-                        />
+                        >
+                          <Image
+                            source={{ uri: image.image_url }}
+                            className="w-full h-full"
+                            resizeMode="cover"
+                          />
+                        </TouchableOpacity>
                       )
                     ) : (
                       <Ionicons name={image.media_type === 'VIDEO' ? 'videocam' : 'image'} size={48} color="#94a3b8" />
@@ -1163,6 +1170,43 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      {/* Full-screen Image Viewer Modal */}
+      <Modal
+        visible={expandedImage !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setExpandedImage(null)}
+      >
+        <Pressable
+          className="flex-1 bg-black/90"
+          onPress={() => setExpandedImage(null)}
+        >
+          <View className="flex-1 justify-center items-center">
+            {/* Close button */}
+            <TouchableOpacity
+              className="absolute top-12 right-4 z-10 bg-white/20 rounded-full p-2"
+              onPress={() => setExpandedImage(null)}
+            >
+              <Ionicons name="close" size={32} color="#ffffff" />
+            </TouchableOpacity>
+
+            {/* Full-size image */}
+            {expandedImage && (
+              <View className="px-6 py-20">
+                <Image
+                  source={{ uri: expandedImage }}
+                  style={{
+                    width: Dimensions.get('window').width - 48,
+                    height: Dimensions.get('window').height - 160,
+                  }}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+          </View>
+        </Pressable>
       </Modal>
     </View>
   );
