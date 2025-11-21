@@ -9,6 +9,7 @@ import { uploadSignatureAndCreateRecord } from '@/services/jobSignatures.service
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useAuthStore } from '@/store';
+import { formatDateTime } from '@/utils/dateFormat';
 
 interface CompleteTabProps {
   jobId: string;
@@ -566,7 +567,7 @@ export default function CompleteTab({
                 <View className="flex-row items-center mb-3">
                   <Ionicons name="time-outline" size={16} color="#64748b" />
                   <Text className="text-sm text-slate-600 ml-2">
-                    Signed on {signatureDate.toLocaleString()}
+                    Signed on {formatDateTime(signatureDate)}
                   </Text>
                 </View>
               )}

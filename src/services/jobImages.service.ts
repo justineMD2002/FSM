@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { ApiResponse, JobImage } from '@/types';
+import { Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
 
 /**
  * Job Images Service
@@ -22,13 +24,31 @@ export const uploadServiceMedia = async (
   contentType: string
 ): Promise<ApiResponse<string>> => {
   try {
-    // Fetch the file from URI and convert to blob
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    let fileData: Blob | ArrayBuffer;
+
+    // Different handling for web vs mobile
+    if (Platform.OS === 'web') {
+      // Web: Use fetch and blob
+      const response = await fetch(uri);
+      fileData = await response.blob();
+    } else {
+      // Mobile (Android/iOS): Use FileSystem to read file as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: 'base64',
+      });
+
+      // Convert base64 to ArrayBuffer for Supabase
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      fileData = bytes.buffer;
+    }
 
     const { data, error } = await supabase.storage
       .from(SERVICE_IMAGES_BUCKET)
-      .upload(fileName, blob, {
+      .upload(fileName, fileData, {
         contentType,
         upsert: false,
       });

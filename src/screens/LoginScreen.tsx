@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { useAuthStore } from '@/store';
 
 const REMEMBER_ME_KEY = '@remember_me';
@@ -16,6 +18,20 @@ export default function LoginScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const signIn = useAuthStore((state) => state.signIn);
+
+  // Get version info
+  const getVersionInfo = () => {
+    const appVersion = Constants.expoConfig?.version || '1.0.0';
+
+    // In production builds, show update ID if available
+    if (!__DEV__ && Updates.updateId) {
+      const updateIdShort = Updates.updateId.substring(0, 8);
+      return `v${appVersion} (${updateIdShort})`;
+    }
+
+    // In development or if no update, just show app version
+    return `v${appVersion}${__DEV__ ? ' (dev)' : ''}`;
+  };
 
   useEffect(() => {
     loadSavedCredentials();
@@ -203,7 +219,7 @@ export default function LoginScreen() {
 
         <View className="items-center mt-8">
           <Text className="text-slate-400 text-center text-xs">
-            Version 1.2.8.2
+            {getVersionInfo()}
           </Text>
         </View>
       </View>
