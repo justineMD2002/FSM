@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { TechnicianProfile, AttendanceRecord } from '@/types';
@@ -416,13 +418,34 @@ export default function ProfileScreen() {
     setShowImageOptions(false);
   };
 
+  const uriToBase64 = async (uri: string): Promise<string> => {
+    if (Platform.OS === 'web') {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      return base64;
+    }
+  };
+
   const uploadImage = async (uri: string) => {
     if (!profile) return;
 
     setUploading(true);
     try {
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const base64Data = await uriToBase64(uri);
+      const arrayBuffer = decode(base64Data);
       const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
@@ -436,7 +459,7 @@ export default function ProfileScreen() {
 
       const { error: uploadError } = await supabase.storage
         .from('avatar')
-        .upload(filePath, blob, {
+        .upload(filePath, arrayBuffer, {
           contentType: `image/${fileExt}`,
           upsert: false,
         });

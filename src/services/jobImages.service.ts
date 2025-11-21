@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { ApiResponse, JobImage } from '@/types';
+import { decode } from 'base64-arraybuffer';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 
 /**
@@ -23,13 +25,14 @@ export const uploadServiceMedia = async (
   contentType: string
 ): Promise<ApiResponse<string>> => {
   try {
-    // For both web and mobile, fetch works with proper handling
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    // Use the same approach as signatures - convert to ArrayBuffer
+    // This works reliably on both web and mobile
+    const base64Data = await uriToBase64(uri);
+    const arrayBuffer = decode(base64Data);
 
     const { data, error } = await supabase.storage
       .from(SERVICE_IMAGES_BUCKET)
-      .upload(fileName, blob, {
+      .upload(fileName, arrayBuffer, {
         contentType,
         upsert: false,
       });
@@ -61,6 +64,33 @@ export const uploadServiceMedia = async (
         details: error,
       },
     };
+  }
+};
+
+/**
+ * Convert URI to base64 string
+ * Works on both web and mobile without using blob
+ */
+const uriToBase64 = async (uri: string): Promise<string> => {
+  if (Platform.OS === 'web') {
+    // Web: Use fetch and FileReader
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } else {
+    // Mobile: Use expo-file-system legacy API (no blob needed!)
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return base64;
   }
 };
 
