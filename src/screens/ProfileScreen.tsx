@@ -3,6 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image, Aler
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
 import { TechnicianProfile, AttendanceRecord } from '@/types';
@@ -30,6 +32,7 @@ export default function ProfileScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showImageOptions, setShowImageOptions] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -39,6 +42,83 @@ export default function ProfileScreen() {
     full_name: '',
     phone_number: '',
   });
+
+  // Get version info
+  const getVersionInfo = () => {
+    const appVersion = Constants.expoConfig?.version || '1.0.0';
+
+    // In production builds, show update ID if available
+    if (!__DEV__ && Updates.updateId) {
+      const updateIdShort = Updates.updateId.substring(0, 8);
+      return `v${appVersion} (${updateIdShort})`;
+    }
+
+    // In development or if no update, just show app version
+    return `v${appVersion}${__DEV__ ? ' (dev)' : ''}`;
+  };
+
+  // Manual update check
+  const handleCheckForUpdates = async () => {
+    if (__DEV__) {
+      Alert.alert(
+        'Development Mode',
+        'Updates are not available in development mode. Build a production app to test EAS Updates.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setCheckingUpdate(true);
+
+    try {
+      const update = await Updates.checkForUpdateAsync();
+
+      if (update.isAvailable) {
+        // Download the update
+        const result = await Updates.fetchUpdateAsync();
+
+        if (result.isNew) {
+          // Show alert to user
+          Alert.alert(
+            'Update Available',
+            'A new version of the app is available. Would you like to restart and apply the update now?',
+            [
+              {
+                text: 'Later',
+                style: 'cancel',
+              },
+              {
+                text: 'Update Now',
+                onPress: async () => {
+                  try {
+                    await Updates.reloadAsync();
+                  } catch (error) {
+                    console.error('Error reloading app:', error);
+                    Alert.alert('Error', 'Failed to apply update. Please restart the app manually.', [{ text: 'OK' }]);
+                  }
+                },
+              },
+            ]
+          );
+        }
+      } else {
+        Alert.alert(
+          'No Updates Available',
+          'You are already using the latest version of the app.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      Alert.alert(
+        'Update Check Failed',
+        'Failed to check for updates. Please check your internet connection and try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -626,6 +706,26 @@ export default function ProfileScreen() {
             <Text className="text-slate-800 text-base ml-3">Privacy Policy</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#64748b" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          className="flex-row items-center justify-between bg-white px-5 py-4 mb-2 rounded-lg shadow-sm"
+          onPress={handleCheckForUpdates}
+          disabled={checkingUpdate}
+          activeOpacity={0.7}
+        >
+          <View className="flex-row items-center flex-1">
+            <Ionicons name="code-download-outline" size={20} color="#0092ce" />
+            <Text className="text-slate-800 text-base ml-3">App Version</Text>
+          </View>
+          <View className="flex-row items-center">
+            {checkingUpdate ? (
+              <ActivityIndicator size="small" color="#0092ce" style={{ marginRight: 8 }} />
+            ) : (
+              <Text className="text-slate-500 text-sm mr-2">{getVersionInfo()}</Text>
+            )}
+            <Ionicons name="chevron-forward" size={20} color="#64748b" />
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
