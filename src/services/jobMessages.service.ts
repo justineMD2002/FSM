@@ -139,7 +139,54 @@ export const createMessagesBatch = async (
 };
 
 /**
- * Delete a message (soft delete)
+ * Update a message (edit message text)
+ * @param messageId - Message ID
+ * @param messageText - New message text
+ * @returns ApiResponse with updated message
+ */
+export const updateMessage = async (
+  messageId: string,
+  messageText: string
+): Promise<ApiResponse<JobTechnicianAdminMessage>> => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .update({
+        message: messageText,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', messageId)
+      .select()
+      .single();
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    return {
+      data: data as JobTechnicianAdminMessage,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
+ * Delete a message for everyone (soft delete)
  * @param messageId - Message ID
  * @returns ApiResponse with success status
  */
@@ -161,6 +208,147 @@ export const deleteMessage = async (
           details: error.details,
         },
       };
+    }
+
+    return {
+      data: { success: true },
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
+ * Bulk delete messages for everyone (soft delete)
+ * @param messageIds - Array of message IDs
+ * @returns ApiResponse with success status
+ */
+export const deleteMessagesBulk = async (
+  messageIds: string[]
+): Promise<ApiResponse<{ success: boolean }>> => {
+  try {
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', messageIds);
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    return {
+      data: { success: true },
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
+ * Delete a message for the current user only (soft delete for user)
+ * @param messageId - Message ID
+ * @param userId - Current user ID
+ * @returns ApiResponse with success status
+ */
+export const deleteMessageForUser = async (
+  messageId: string,
+  userId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  try {
+    // First, get the current deleted_by_user_ids array
+    const { data: messageData, error: fetchError } = await supabase
+      .from(TABLE_NAME)
+      .select('deleted_by_user_ids')
+      .eq('id', messageId)
+      .single();
+
+    if (fetchError) {
+      return {
+        data: null,
+        error: {
+          message: fetchError.message,
+          code: fetchError.code,
+          details: fetchError.details,
+        },
+      };
+    }
+
+    // Add the user ID to the array (if not already present)
+    const deletedByUserIds = messageData?.deleted_by_user_ids || [];
+    if (!deletedByUserIds.includes(userId)) {
+      deletedByUserIds.push(userId);
+    }
+
+    // Update the message with the new array
+    const { error: updateError } = await supabase
+      .from(TABLE_NAME)
+      .update({ deleted_by_user_ids: deletedByUserIds })
+      .eq('id', messageId);
+
+    if (updateError) {
+      return {
+        data: null,
+        error: {
+          message: updateError.message,
+          code: updateError.code,
+          details: updateError.details,
+        },
+      };
+    }
+
+    return {
+      data: { success: true },
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
+ * Bulk delete messages for the current user only (soft delete for user)
+ * @param messageIds - Array of message IDs
+ * @param userId - Current user ID
+ * @returns ApiResponse with success status
+ */
+export const deleteMessagesForUserBulk = async (
+  messageIds: string[],
+  userId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  try {
+    // For each message, add the user ID to deleted_by_user_ids array
+    for (const messageId of messageIds) {
+      const result = await deleteMessageForUser(messageId, userId);
+      if (result.error) {
+        return result;
+      }
     }
 
     return {

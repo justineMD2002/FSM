@@ -9,6 +9,8 @@ interface UseJobMessagesReturn {
   error: ApiError | null;
   refetch: () => Promise<void>;
   sendMessage: (messageText: string, imageUrl?: string) => Promise<void>;
+  updateMessage: (messageId: string, messageText: string) => Promise<void>;
+  deleteMessages: (messageIds: string[], deleteType: 'everyone' | 'you') => Promise<void>;
 }
 
 /**
@@ -23,6 +25,18 @@ export const useJobMessages = (
   const [messages, setMessages] = useState<JobTechnicianAdminMessage[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<ApiError | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user ID
+  useEffect(() => {
+    const fetchUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    fetchUserId();
+  }, []);
 
   /**
    * Fetch messages from the database
@@ -44,7 +58,12 @@ export const useJobMessages = (
         setError(response.error);
         setMessages([]);
       } else {
-        setMessages(response.data || []);
+        // Filter out messages deleted by the current user
+        const filteredMessages = (response.data || []).filter(msg => {
+          if (!currentUserId) return true;
+          return !msg.deleted_by_user_ids?.includes(currentUserId);
+        });
+        setMessages(filteredMessages);
         setError(null);
       }
     } catch (err: any) {
@@ -56,7 +75,7 @@ export const useJobMessages = (
     } finally {
       setLoading(false);
     }
-  }, [jobId]);
+  }, [jobId, currentUserId]);
 
   /**
    * Send a new message
@@ -76,6 +95,7 @@ export const useJobMessages = (
         message: imageUrl ? null : (messageText || null), // Pure text message
         message_text: imageUrl ? (messageText || null) : null, // Image caption
         image_url: imageUrl || null,
+        deleted_by_user_ids: null,
       });
 
       if (response.error) {
@@ -85,6 +105,61 @@ export const useJobMessages = (
       // Message will be added via realtime subscription
     },
     [jobId, technicianJobId]
+  );
+
+  /**
+   * Update a message (edit)
+   */
+  const updateMessage = useCallback(
+    async (messageId: string, messageText: string) => {
+      const response = await jobMessagesService.updateMessage(messageId, messageText);
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      // Message will be updated via realtime subscription
+    },
+    []
+  );
+
+  /**
+   * Delete messages (supports bulk delete)
+   */
+  const deleteMessages = useCallback(
+    async (messageIds: string[], deleteType: 'everyone' | 'you') => {
+      if (!currentUserId) {
+        throw new Error('User ID is required');
+      }
+
+      let response;
+      if (deleteType === 'everyone') {
+        // Delete for everyone
+        if (messageIds.length === 1) {
+          response = await jobMessagesService.deleteMessage(messageIds[0]);
+        } else {
+          response = await jobMessagesService.deleteMessagesBulk(messageIds);
+        }
+      } else {
+        // Delete for current user only
+        if (messageIds.length === 1) {
+          response = await jobMessagesService.deleteMessageForUser(messageIds[0], currentUserId);
+        } else {
+          response = await jobMessagesService.deleteMessagesForUserBulk(messageIds, currentUserId);
+        }
+      }
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      // For delete for everyone, real-time will handle it
+      // For delete for you, we need to manually filter it out
+      if (deleteType === 'you') {
+        setMessages((prev) => prev.filter((msg) => !messageIds.includes(msg.id)));
+      }
+    },
+    [currentUserId]
   );
 
   /**
@@ -145,5 +220,7 @@ export const useJobMessages = (
     error,
     refetch,
     sendMessage,
+    updateMessage,
+    deleteMessages,
   };
 };

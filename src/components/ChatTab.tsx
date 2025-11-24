@@ -63,8 +63,17 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Selection and delete state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Edit message state
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
+
   // Fetch messages using the hook
-  const { messages, loading, error, sendMessage } = useJobMessages(jobId, technicianJobId);
+  const { messages, loading, error, sendMessage, updateMessage, deleteMessages } = useJobMessages(jobId, technicianJobId);
 
   // Fetch user's name from technicians table
   useEffect(() => {
@@ -101,6 +110,21 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   const handleSendMessage = async () => {
     if (newMessage.trim() === '' || !technicianJobId) return;
 
+    // If editing, update the message
+    if (editingMessageId) {
+      try {
+        await updateMessage(editingMessageId, newMessage.trim());
+        setNewMessage('');
+        setEditingMessageId(null);
+        setEditingText('');
+      } catch (error: any) {
+        console.error('Error updating message:', error);
+        alert(`Failed to update message: ${error.message}`);
+      }
+      return;
+    }
+
+    // Otherwise, send a new message
     try {
       await sendMessage(newMessage.trim());
       setNewMessage('');
@@ -108,6 +132,57 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
       console.error('Error sending message:', error);
       alert(`Failed to send message: ${error.message}`);
     }
+  };
+
+  const handleLongPress = (messageId: string) => {
+    setSelectionMode(true);
+    setSelectedMessages(new Set([messageId]));
+  };
+
+  const handleMessageSelect = (messageId: string) => {
+    if (!selectionMode) return;
+
+    const newSelection = new Set(selectedMessages);
+    if (newSelection.has(messageId)) {
+      newSelection.delete(messageId);
+    } else {
+      newSelection.add(messageId);
+    }
+    setSelectedMessages(newSelection);
+
+    // Exit selection mode if no messages selected
+    if (newSelection.size === 0) {
+      setSelectionMode(false);
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedMessages(new Set());
+  };
+
+  const handleDeleteConfirm = async (deleteType: 'everyone' | 'you') => {
+    try {
+      await deleteMessages(Array.from(selectedMessages), deleteType);
+      setShowDeleteModal(false);
+      setSelectionMode(false);
+      setSelectedMessages(new Set());
+    } catch (error: any) {
+      console.error('Error deleting messages:', error);
+      alert(`Failed to delete messages: ${error.message}`);
+    }
+  };
+
+  const handleEditMessage = (message: typeof messages[0]) => {
+    setEditingMessageId(message.id);
+    setEditingText(message.message || message.message_text || '');
+    setNewMessage(message.message || message.message_text || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText('');
+    setNewMessage('');
   };
 
   const formatTime = (dateString: string) => {
@@ -130,14 +205,32 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
       : 'Admin';
 
     const displayName = isCurrentUser ? 'You' : senderName;
+    const isSelected = selectedMessages.has(message.id);
 
     return (
       <View
         key={message.id}
         className={`flex-row mb-4 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
       >
+        {/* Checkbox for selection (on the left) */}
+        {selectionMode && (
+          <TouchableOpacity
+            onPress={() => handleMessageSelect(message.id)}
+            className="mr-2 justify-center items-center"
+            style={{ width: 30, height: 30 }}
+          >
+            <View
+              className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                isSelected ? 'bg-[#0092ce] border-[#0092ce]' : 'bg-white border-slate-300'
+              }`}
+            >
+              {isSelected && <Ionicons name="checkmark" size={16} color="#ffffff" />}
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Receiver avatar on the left */}
-        {!isCurrentUser && (
+        {!isCurrentUser && !selectionMode && (
           <View className="mr-2">
             <View className="w-10 h-10 rounded-full bg-slate-300 items-center justify-center">
               <Ionicons name="person" size={24} color="#64748b" />
@@ -145,8 +238,18 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           </View>
         )}
 
-        {/* Message bubble */}
-        <View className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}>
+        {/* Message bubble with long press */}
+        <TouchableOpacity
+          onLongPress={() => handleLongPress(message.id)}
+          onPress={() => {
+            if (selectionMode) {
+              handleMessageSelect(message.id);
+            }
+          }}
+          activeOpacity={0.7}
+          disabled={!isCurrentUser && !selectionMode}
+          className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}
+        >
           {/* Sender name */}
           <Text className="text-xs text-slate-600 mb-1 px-1 font-semibold">
             {displayName}
@@ -187,14 +290,29 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             </View>
           )}
 
-          {/* Timestamp */}
-          <Text className="text-xs text-slate-500 mt-1 px-1">
-            {formatTime(message.created_at)}
-          </Text>
-        </View>
+          {/* Timestamp and Edit indicator */}
+          <View className="flex-row items-center mt-1 px-1">
+            <Text className="text-xs text-slate-500">
+              {formatTime(message.created_at)}
+            </Text>
+            {message.updated_at !== message.created_at && (
+              <Text className="text-xs text-slate-400 ml-2">(edited)</Text>
+            )}
+          </View>
+
+          {/* Edit button - only for current user's text messages */}
+          {isCurrentUser && !selectionMode && message.message && (
+            <TouchableOpacity
+              onPress={() => handleEditMessage(message)}
+              className="mt-1 px-1"
+            >
+              <Text className="text-xs text-[#0092ce] font-semibold">Edit</Text>
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
 
         {/* User avatar on the right */}
-        {isCurrentUser && (
+        {isCurrentUser && !selectionMode && (
           <View className="ml-2">
             <View className="w-10 h-10 rounded-full bg-[#0092ce] items-center justify-center">
               <Ionicons name="person" size={24} color="#ffffff" />
@@ -260,31 +378,75 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           )}
         </ScrollView>
 
-        {/* Message Input - Fixed */}
-        <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
-          <View className="flex-row items-center">
-            <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
-              <TextInput
-                className="text-slate-800"
-                placeholder="Type a message..."
-                placeholderTextColor="#94a3b8"
-                value={newMessage}
-                onChangeText={setNewMessage}
-                multiline
-                maxLength={500}
-              />
+        {/* Message Input / Delete Actions - Fixed */}
+        {selectionMode ? (
+          // Delete actions when in selection mode
+          <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-slate-700 font-semibold">
+                {selectedMessages.size} selected
+              </Text>
+              <View className="flex-row items-center">
+                <TouchableOpacity
+                  onPress={handleCancelSelection}
+                  className="px-4 py-2 rounded-lg mr-2 bg-slate-100"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-slate-700 font-semibold">Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowDeleteModal(true)}
+                  className="px-4 py-2 rounded-lg bg-red-500"
+                  activeOpacity={0.7}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons name="trash-outline" size={18} color="#ffffff" />
+                    <Text className="text-white font-semibold ml-2">Delete</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity
-              onPress={handleSendMessage}
-              className="w-12 h-12 rounded-full items-center justify-center"
-              style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
-              disabled={!newMessage.trim() || !technicianJobId}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="send" size={20} color="#ffffff" />
-            </TouchableOpacity>
           </View>
-        </View>
+        ) : (
+          // Normal message input
+          <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+            {/* Edit mode indicator */}
+            {editingMessageId && (
+              <View className="flex-row items-center justify-between mb-2 px-2">
+                <View className="flex-row items-center">
+                  <Ionicons name="pencil" size={16} color="#0092ce" />
+                  <Text className="text-sm text-[#0092ce] ml-2 font-semibold">Editing message</Text>
+                </View>
+                <TouchableOpacity onPress={handleCancelEdit}>
+                  <Ionicons name="close" size={20} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View className="flex-row items-center">
+              <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
+                <TextInput
+                  className="text-slate-800"
+                  placeholder="Type a message..."
+                  placeholderTextColor="#94a3b8"
+                  value={newMessage}
+                  onChangeText={setNewMessage}
+                  multiline
+                  maxLength={500}
+                />
+              </View>
+              <TouchableOpacity
+                onPress={handleSendMessage}
+                className="w-12 h-12 rounded-full items-center justify-center"
+                style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
+                disabled={!newMessage.trim() || !technicianJobId}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={editingMessageId ? "checkmark" : "send"} size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
       {/* Full-screen Image Viewer Modal */}
@@ -320,6 +482,94 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
                 />
               </View>
             )}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/50"
+          onPress={() => setShowDeleteModal(false)}
+        >
+          <View className="flex-1 justify-end">
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View className="bg-white rounded-t-3xl p-6 pb-10">
+                {/* Header */}
+                <View className="items-center mb-6">
+                  <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
+                    <Ionicons name="trash-outline" size={32} color="#ef4444" />
+                  </View>
+                  <Text className="text-xl font-bold text-slate-800 mb-2">
+                    Delete Messages
+                  </Text>
+                  <Text className="text-sm text-slate-600 text-center">
+                    Choose how you want to delete {selectedMessages.size} {selectedMessages.size === 1 ? 'message' : 'messages'}
+                  </Text>
+                </View>
+
+                {/* Delete Options */}
+                <View className="space-y-3">
+                  {/* Delete for You */}
+                  <TouchableOpacity
+                    onPress={() => handleDeleteConfirm('you')}
+                    className="bg-slate-100 rounded-2xl p-4 border border-slate-200"
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-center">
+                      <View className="w-10 h-10 rounded-full bg-slate-200 items-center justify-center mr-3">
+                        <Ionicons name="eye-off-outline" size={20} color="#475569" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-slate-800 mb-1">
+                          Delete for You
+                        </Text>
+                        <Text className="text-xs text-slate-600">
+                          Only you won't see {selectedMessages.size === 1 ? 'this message' : 'these messages'}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Delete for Everyone */}
+                  <TouchableOpacity
+                    onPress={() => handleDeleteConfirm('everyone')}
+                    className="bg-red-50 rounded-2xl p-4 border border-red-200"
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-center">
+                      <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center mr-3">
+                        <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-red-600 mb-1">
+                          Delete for Everyone
+                        </Text>
+                        <Text className="text-xs text-red-600">
+                          {selectedMessages.size === 1 ? 'This message' : 'These messages'} will be removed for everyone
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Cancel Button */}
+                <TouchableOpacity
+                  onPress={() => setShowDeleteModal(false)}
+                  className="mt-4 py-3 rounded-2xl bg-slate-100"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-center text-slate-700 font-semibold text-base">
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Pressable>
           </View>
         </Pressable>
       </Modal>

@@ -599,7 +599,7 @@ export const getJobsForTechnician = async (
         const jobStatus = item.job.status;
         const assignmentStatus = item.assignment_status;
 
-        console.log(`[Job ${item.job.job_number}] jobStatus=${jobStatus}, assignmentStatus=${assignmentStatus}`);
+        console.log(`[Job ${item.job.job_number}] jobStatus=${jobStatus}, assignmentStatus=${assignmentStatus}, scheduledStart=${item.job.scheduled_start}`);
 
         // For technicians, we filter based on THEIR assignment_status, not the main job status
         // This allows each technician to see their own completed jobs in history
@@ -607,16 +607,33 @@ export const getJobsForTechnician = async (
         const isAssignmentCompleted = ['COMPLETED', 'CANCELLED'].includes(assignmentStatus);
         const isAssignmentActive = ['ASSIGNED', 'STARTED'].includes(assignmentStatus);
 
-        // Also check if the main job is cancelled or rescheduled (then it should be in history for everyone)
-        const isJobCancelledOrRescheduled = jobStatus === 'CANCELLED' || jobStatus === 'RESCHEDULED';
+        // Check if job is cancelled
+        const isJobCancelled = jobStatus === 'CANCELLED';
+
+        // For rescheduled jobs, check if scheduled_start is more than 24 hours away
+        let isRescheduledAndFuture = false;
+        if (jobStatus === 'RESCHEDULED' && item.job.scheduled_start) {
+          const scheduledStart = new Date(item.job.scheduled_start);
+          const now = new Date();
+          const hoursUntilStart = (scheduledStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+          isRescheduledAndFuture = hoursUntilStart > 24;
+          console.log(`[Job ${item.job.job_number}] RESCHEDULED - hoursUntilStart=${hoursUntilStart.toFixed(2)}, isRescheduledAndFuture=${isRescheduledAndFuture}`);
+        }
 
         let shouldIncludeInCurrent = false;
         let shouldIncludeInHistory = false;
 
         // Determine which tab this job belongs to based on technician's assignment status
-        if (isAssignmentCompleted || isJobCancelledOrRescheduled) {
-          // This technician completed their assignment OR the job was cancelled/rescheduled
+        if (isAssignmentCompleted || isJobCancelled) {
+          // This technician completed their assignment OR the job was cancelled
           shouldIncludeInHistory = true;
+        } else if (jobStatus === 'RESCHEDULED') {
+          // Rescheduled jobs: check if more than 24 hours away
+          if (isRescheduledAndFuture) {
+            shouldIncludeInCurrent = true;
+          } else {
+            shouldIncludeInHistory = true;
+          }
         } else if (isAssignmentActive) {
           // This technician's assignment is still active
           shouldIncludeInCurrent = true;

@@ -8,7 +8,6 @@ import { JobTask, Followup, JobImage } from '@/types';
 import { getTasksByJobId, createJobTask } from '@/services/jobTasks.service';
 import { getFollowupsByJobId, createFollowup } from '@/services/followups.service';
 import { getImagesByJobId, uploadMediaAndCreateRecord } from '@/services/jobImages.service';
-import { createMessagesBatch } from '@/services/jobMessages.service';
 import { getTechnicianJobById, updateServiceReportSubmission } from '@/services/technicianJobs.service';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useAuthStore, useServiceTabStore } from '@/store';
@@ -420,7 +419,6 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
       // Upload new media (images/videos) to backend and save to database
       const newImages = images.filter(image => image.isNew);
-      const uploadedImages: { imageUrl: string; description: string | null }[] = [];
 
       for (const image of newImages) {
         if (image.localUri) {
@@ -442,34 +440,6 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             return;
           }
           console.log(`${mediaType} uploaded and saved successfully:`, result.data);
-
-          // Store uploaded image info for creating chat messages
-          if (result.data) {
-            uploadedImages.push({
-              imageUrl: result.data.image_url,
-              description: result.data.description,
-            });
-          }
-        }
-      }
-
-      // Create chat messages for each uploaded image (if technicianJobId is available)
-      if (technicianJobId && uploadedImages.length > 0) {
-        const messageData = uploadedImages.map(img => ({
-          job_id: jobId,
-          technician_job_id: technicianJobId,
-          sender_type: 'TECHNICIAN' as const,
-          message: null, // Pure text messages only
-          message_text: img.description, // Image caption
-          image_url: img.imageUrl,
-        }));
-
-        const messagesResult = await createMessagesBatch(messageData);
-        if (messagesResult.error) {
-          console.error('Error creating chat messages:', messagesResult.error);
-          // Don't fail the whole submission if messages fail, just log it
-        } else {
-          console.log('Chat messages created successfully for uploaded images');
         }
       }
 

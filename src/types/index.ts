@@ -266,6 +266,7 @@ export interface JobTechnicianAdminMessage {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  deleted_by_user_ids: string[] | null; // Array of user IDs who deleted this message (for "delete for you")
   // Relations
   technician_job?: {
     technician?: {
