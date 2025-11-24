@@ -216,7 +216,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         className={`flex-row mb-4 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
       >
         {/* Checkbox for selection (on the left) - hidden in read-only mode */}
-        {selectionMode && !isReadOnly && (
+        {/* COMMENTED OUT - Client doesn't want edit/delete UI for now */}
+        {/* {selectionMode && !isReadOnly && (
           <TouchableOpacity
             onPress={() => handleMessageSelect(message.id)}
             className="mr-2 justify-center items-center"
@@ -230,7 +231,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
               {isSelected && <Ionicons name="checkmark" size={16} color="#ffffff" />}
             </View>
           </TouchableOpacity>
-        )}
+        )} */}
 
         {/* Receiver avatar on the left */}
         {!isCurrentUser && !selectionMode && (
@@ -304,14 +305,15 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           </View>
 
           {/* Edit button - only for current user's text messages (disabled in read-only mode) */}
-          {isCurrentUser && !selectionMode && !isReadOnly && message.message && (
+          {/* COMMENTED OUT - Client doesn't want edit/delete UI for now */}
+          {/* {isCurrentUser && !selectionMode && !isReadOnly && message.message && (
             <TouchableOpacity
               onPress={() => handleEditMessage(message)}
               className="mt-1 px-1"
             >
               <Text className="text-xs text-[#0092ce] font-semibold">Edit</Text>
             </TouchableOpacity>
-          )}
+          )} */}
         </TouchableOpacity>
 
         {/* User avatar on the right */}
@@ -398,7 +400,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
 
         {/* Message Input / Delete Actions - Fixed (hidden in read-only mode) */}
         {!isReadOnly && (
-          selectionMode ? (
+          /* COMMENTED OUT - Client doesn't want edit/delete UI for now */
+          /* selectionMode ? (
             // Delete actions when in selection mode
             <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
               <View className="flex-row items-center justify-between">
@@ -426,11 +429,12 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
                 </View>
               </View>
             </View>
-          ) : (
+          ) : */ (
             // Normal message input
             <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
               {/* Edit mode indicator */}
-              {editingMessageId && (
+              {/* COMMENTED OUT - Client doesn't want edit/delete UI for now */}
+              {/* {editingMessageId && (
                 <View className="flex-row items-center justify-between mb-2 px-2">
                   <View className="flex-row items-center">
                     <Ionicons name="pencil" size={16} color="#0092ce" />
@@ -440,7 +444,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
                     <Ionicons name="close" size={20} color="#64748b" />
                   </TouchableOpacity>
                 </View>
-              )}
+              )} */}
 
               <View className="flex-row items-center">
                 <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
@@ -507,7 +511,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal
+      {/* COMMENTED OUT - Client doesn't want edit/delete UI for now */}
+      {/* <Modal
         visible={showDeleteModal}
         transparent={true}
         animationType="slide"
@@ -521,7 +526,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View className="bg-white rounded-t-3xl p-6 pb-10">
                 {/* Header */}
-                <View className="items-center mb-6">
+                {/* <View className="items-center mb-6">
                   <View className="w-16 h-16 rounded-full bg-red-100 items-center justify-center mb-4">
                     <Ionicons name="trash-outline" size={32} color="#ef4444" />
                   </View>
@@ -531,12 +536,12 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
                   <Text className="text-sm text-slate-600 text-center">
                     Choose how you want to delete {selectedMessages.size} {selectedMessages.size === 1 ? 'message' : 'messages'}
                   </Text>
-                </View>
+                </View> */}
 
                 {/* Delete Options */}
-                <View className="space-y-3">
+                {/* <View className="space-y-3"> */}
                   {/* Delete for You */}
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     onPress={() => handleDeleteConfirm('you')}
                     className="bg-slate-100 rounded-2xl p-4 border border-slate-200"
                     activeOpacity={0.7}
@@ -554,10 +559,10 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
                         </Text>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
 
                   {/* Delete for Everyone */}
-                  <TouchableOpacity
+                  {/* <TouchableOpacity
                     onPress={() => handleDeleteConfirm('everyone')}
                     className="bg-red-50 rounded-2xl p-4 border border-red-200"
                     activeOpacity={0.7}
@@ -576,10 +581,10 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
                       </View>
                     </View>
                   </TouchableOpacity>
-                </View>
+                </View> */}
 
                 {/* Cancel Button */}
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   onPress={() => setShowDeleteModal(false)}
                   className="mt-4 py-3 rounded-2xl bg-slate-100"
                   activeOpacity={0.7}
@@ -592,7 +597,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             </Pressable>
           </View>
         </Pressable>
-      </Modal>
+      </Modal> */}
     </>
   );
 }

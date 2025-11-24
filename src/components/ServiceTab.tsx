@@ -70,7 +70,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   // Media form states
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageDescription, setImageDescription] = useState('');
-  const [selectedImage, setSelectedImage] = useState<{ uri: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string } | null>(null);
+  const [selectedImages, setSelectedImages] = useState<Array<{ uri: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string }>>([]);
   const [selectedMediaType, setSelectedMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
@@ -320,23 +320,26 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes,
-        allowsEditing: selectedMediaType === 'IMAGE', // Only allow editing for images
-        aspect: selectedMediaType === 'IMAGE' ? [4, 3] : undefined,
+        allowsMultipleSelection: selectedMediaType === 'IMAGE', // Allow multiple selection only for images
+        allowsEditing: false, // Disable editing when selecting multiple
         quality: selectedMediaType === 'IMAGE' ? 0.8 : 0.7, // Slightly lower quality for videos
         videoMaxDuration: 60, // Max 60 seconds for videos
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        // Extract file extension from URI
-        const uriParts = asset.uri.split('.');
-        const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newSelectedImages = result.assets.map(asset => {
+          // Extract file extension from URI
+          const uriParts = asset.uri.split('.');
+          const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
 
-        setSelectedImage({
-          uri: asset.uri,
-          type: asset.type === 'video' ? 'VIDEO' : 'IMAGE',
-          fileExtension,
+          return {
+            uri: asset.uri,
+            type: asset.type === 'video' ? 'VIDEO' as const : 'IMAGE' as const,
+            fileExtension,
+          };
         });
+
+        setSelectedImages(newSelectedImages);
       }
     } catch (error) {
       console.error('Error picking media:', error);
@@ -345,11 +348,12 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   };
 
   const handleAddImage = () => {
-    if (selectedImage && imageDescription.trim()) {
+    if (selectedImages.length > 0 && imageDescription.trim()) {
       if (!user) return;
 
-      const newImage: ServiceImage = {
-        id: `temp_${Date.now()}`, // Temporary ID for frontend
+      // Create a new image entry for each selected image with the same description
+      const newImages: ServiceImage[] = selectedImages.map((selectedImage, index) => ({
+        id: `temp_${Date.now()}_${index}`, // Unique temporary ID for each image
         job_id: jobId,
         technician_job_id: null,
         image_url: selectedImage.uri, // Local URI for preview
@@ -362,10 +366,11 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         isNew: true, // Mark as new (not yet saved to backend)
         localUri: selectedImage.uri, // Store local URI for upload
         fileExtension: selectedImage.fileExtension, // Store file extension
-      };
-      setImages([...images, newImage]);
+      }));
+
+      setImages([...images, ...newImages]);
       setImageDescription('');
-      setSelectedImage(null);
+      setSelectedImages([]);
       setSelectedMediaType('IMAGE'); // Reset to IMAGE
       setShowImageModal(false);
     }
@@ -1074,37 +1079,58 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               {/* Media Picker */}
               <TouchableOpacity
                 onPress={handlePickMedia}
-                className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl h-48 items-center justify-center mb-4"
+                className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center mb-4"
+                style={{ minHeight: selectedImages.length > 0 ? 'auto' : 192 }}
               >
-                {selectedImage ? (
-                  selectedImage.type === 'VIDEO' ? (
-                    <Video
-                      source={{ uri: selectedImage.uri }}
-                      className="w-full h-full rounded-xl"
-                      resizeMode={ResizeMode.COVER}
-                      shouldPlay={false}
-                      useNativeControls
-                    />
-                  ) : (
-                    <Image
-                      source={{ uri: selectedImage.uri }}
-                      className="w-full h-full rounded-xl"
-                      resizeMode="cover"
-                    />
-                  )
+                {selectedImages.length > 0 ? (
+                  <View className="w-full p-4">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                      {selectedImages.map((selectedImage, index) => (
+                        <View key={index} className="mr-2 relative">
+                          {selectedImage.type === 'VIDEO' ? (
+                            <Video
+                              source={{ uri: selectedImage.uri }}
+                              style={{ width: 120, height: 120, borderRadius: 8 }}
+                              resizeMode={ResizeMode.COVER}
+                              shouldPlay={false}
+                              useNativeControls
+                            />
+                          ) : (
+                            <Image
+                              source={{ uri: selectedImage.uri }}
+                              style={{ width: 120, height: 120, borderRadius: 8 }}
+                              resizeMode="cover"
+                            />
+                          )}
+                          <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-1">
+                            <Text className="text-white text-xs font-semibold">{index + 1}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </ScrollView>
+                    <Text className="text-slate-600 text-sm mt-3 text-center">
+                      {selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'} selected - Tap to change
+                    </Text>
+                  </View>
                 ) : (
-                  <>
+                  <View className="py-12">
                     <Ionicons name="cloud-upload-outline" size={48} color="#94a3b8" />
-                    <Text className="text-slate-500 mt-2">Tap to select {selectedMediaType.toLowerCase()}</Text>
-                  </>
+                    <Text className="text-slate-500 mt-2">
+                      Tap to select {selectedMediaType === 'IMAGE' ? 'images (multiple)' : 'video'}
+                    </Text>
+                  </View>
                 )}
               </TouchableOpacity>
 
               {/* Description */}
-              <Text className="text-sm font-semibold text-slate-700 mb-2">Description</Text>
+              <Text className="text-sm font-semibold text-slate-700 mb-2">
+                Description {selectedImages.length > 1 && `(applies to all ${selectedImages.length} images)`}
+              </Text>
               <TextInput
                 className="border border-slate-300 rounded-lg px-4 py-3 mb-4"
-                placeholder={`Enter ${selectedMediaType.toLowerCase()} description`}
+                placeholder={selectedImages.length > 1
+                  ? `Enter description for all ${selectedImages.length} images`
+                  : `Enter ${selectedMediaType.toLowerCase()} description`}
                 value={imageDescription}
                 onChangeText={setImageDescription}
                 multiline
@@ -1119,7 +1145,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                   onPress={() => {
                     setShowImageModal(false);
                     setImageDescription('');
-                    setSelectedImage(null);
+                    setSelectedImages([]);
                     setSelectedMediaType('IMAGE');
                   }}
                   className="px-6 py-3 rounded-lg bg-slate-200 mr-3"
@@ -1128,13 +1154,15 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleAddImage}
-                  disabled={!selectedImage || !imageDescription.trim()}
+                  disabled={selectedImages.length === 0 || !imageDescription.trim()}
                   className={`px-6 py-3 rounded-lg flex-row items-center ${
-                    !selectedImage || !imageDescription.trim() ? 'bg-slate-400' : 'bg-[#0092ce]'
+                    selectedImages.length === 0 || !imageDescription.trim() ? 'bg-slate-400' : 'bg-[#0092ce]'
                   }`}
                 >
                   <Ionicons name="add-circle" size={20} color="#fff" />
-                  <Text className="text-white font-medium ml-2">Add Media</Text>
+                  <Text className="text-white font-medium ml-2">
+                    Add {selectedImages.length > 1 ? `${selectedImages.length} Images` : 'Media'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>

@@ -381,6 +381,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false, 
   const tabs: TabConfig[] = isHistoryJob
     ? [
         { id: 'Details', icon: 'document-text-outline', label: 'Details' },
+        { id: 'Service', icon: 'build-outline', label: 'Service' },
         { id: 'Chat', icon: 'chatbubbles-outline', label: 'Chat' },
       ]
     : [

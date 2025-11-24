@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, TouchableWithoutFeedback } from 'react-native';
 import HomeScreen from './HomeScreen';
 import ProfileScreen from './ProfileScreen';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -7,6 +7,7 @@ import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
 import { useNavigationStore } from '@/store';
 import CustomersScreen from './CustomersScreen';
+import { useInactivityLogout } from '@/hooks';
 
 interface TabConfig {
   title: string;
@@ -16,6 +17,9 @@ interface TabConfig {
 
 export default function MainScreen() {
   const { activeTab, setActiveTab, showMapView, selectedJob } = useNavigationStore();
+
+  // Setup auto-logout after 5 minutes of inactivity
+  const { resetTimer } = useInactivityLogout(5 * 60 * 1000); // 5 minutes
 
   const tabConfig: Record<Tab, TabConfig> = {
     [Tab.HOME]: {
@@ -41,16 +45,23 @@ export default function MainScreen() {
   // When a job is selected from map view, JobDetailsScreen has its own header, so hide DashboardHeader
   const shouldShowHeaderFooter = !showMapView;
 
+  // Handle user activity - reset inactivity timer on any touch
+  const handleUserActivity = () => {
+    resetTimer();
+  };
+
   return (
-    <View className="flex-1 bg-slate-50">
-      {shouldShowHeaderFooter && (
-        <DashboardHeader
-          title={currentTab.title}
-          showMapIcon={currentTab.showMapIcon}
-        />
-      )}
-      {currentTab.screen}
-      {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
-    </View>
+    <TouchableWithoutFeedback onPress={handleUserActivity}>
+      <View className="flex-1 bg-slate-50">
+        {shouldShowHeaderFooter && (
+          <DashboardHeader
+            title={currentTab.title}
+            showMapIcon={currentTab.showMapIcon}
+          />
+        )}
+        {currentTab.screen}
+        {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
