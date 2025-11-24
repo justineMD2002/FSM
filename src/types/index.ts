@@ -72,6 +72,7 @@ export interface Job {
   providerName: string;
   status: 'COMPLETED' | 'CANCELLED' | 'CREATED' | 'SCHEDULED' | 'RESCHEDULED' | 'IN_PROGRESS';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  technicianJobId?: string; // ID of technician_jobs record (null if not assigned to current technician)
   technicianAssignmentStatus?: 'ASSIGNED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
 }
 

@@ -178,6 +178,7 @@ export default function HomeScreen() {
           refetchHistory();
           refetchCurrent();
         }}
+        isFromHistoryTab={activeTab === 'HISTORY'}
       />
     );
   }

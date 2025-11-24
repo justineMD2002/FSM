@@ -521,6 +521,114 @@ export const getJobByIdForTechnician = async (
 };
 
 /**
+ * Fetch all jobs within the last 6 months from scheduled_end date
+ * Used for history tab to show all jobs regardless of technician assignment
+ * @param technicianId - Optional technician ID to check assignment and add technicianJobId
+ * @returns ApiResponse with array of jobs in UI format
+ */
+export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<ApiResponse<Job[]>> => {
+  try {
+    // Calculate date 6 months ago from today
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const sixMonthsAgoISO = sixMonthsAgo.toISOString();
+
+    const { data, error } = await supabase
+      .from('jobs')
+      .select(`
+        id,
+        job_number,
+        title,
+        description,
+        priority,
+        status,
+        scheduled_start,
+        scheduled_end,
+        customer_id,
+        location_id,
+        customer:customer_id (
+          id,
+          customer_code,
+          customer_name,
+          customer_address,
+          phone_number,
+          email,
+          customer_location (
+            country_name,
+            zip_code
+          )
+        ),
+        location:location_id (
+          id,
+          customer_id,
+          location_name,
+          current_longitude,
+          current_latitude,
+          destination_longitude,
+          destination_latitude
+        )
+      `)
+      .gte('scheduled_end', sixMonthsAgoISO)
+      .in('status', ['COMPLETED', 'CANCELLED', 'RESCHEDULED'])
+      .is('deleted_at', null)
+      .order('scheduled_end', { ascending: false });
+
+    if (error) {
+      return {
+        data: null,
+        error: {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+        },
+      };
+    }
+
+    // Transform the data to UI format
+    const jobs = (data || []).map((item: any) => transformJobToUI(item));
+
+    // If technicianId is provided, fetch technician_jobs assignments for these jobs
+    if (technicianId) {
+      const jobIds = jobs.map(job => job.id);
+
+      const { data: technicianJobsData } = await supabase
+        .from('technician_jobs')
+        .select('id, job_id, assignment_status')
+        .eq('technician_id', technicianId)
+        .in('job_id', jobIds)
+        .is('deleted_at', null);
+
+      // Create a map of job_id to technician_job for quick lookup
+      const technicianJobMap = new Map(
+        (technicianJobsData || []).map(tj => [tj.job_id, tj])
+      );
+
+      // Add technician job info to each job
+      jobs.forEach(job => {
+        const techJob = technicianJobMap.get(job.id);
+        if (techJob) {
+          job.technicianJobId = techJob.id;
+          job.technicianAssignmentStatus = techJob.assignment_status;
+        }
+      });
+    }
+
+    return {
+      data: jobs,
+      error: null,
+    };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        message: error.message || 'An unexpected error occurred',
+        details: error,
+      },
+    };
+  }
+};
+
+/**
  * Fetch jobs assigned to a specific technician
  * Filters by technician_jobs.assignment_status instead of jobs.status
  * @param technicianId - Technician ID

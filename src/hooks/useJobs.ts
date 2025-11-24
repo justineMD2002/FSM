@@ -60,7 +60,8 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
 
   /**
    * Fetch jobs from the database based on type (history or current)
-   * Filters by technician_jobs.assignment_status for the current user
+   * For history: shows all jobs within 6 months (regardless of assignment)
+   * For current: shows only assigned jobs (ASSIGNED/STARTED status)
    */
   const fetchJobs = useCallback(async () => {
     try {
@@ -80,8 +81,15 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
         return;
       }
 
-      // Fetch jobs for this technician using the new function
-      const response = await jobsService.getJobsForTechnician(technicianId, isHistory);
+      let response;
+      if (isHistory) {
+        // For history tab: fetch ALL jobs within 6 months
+        // Pass technicianId to get assignment info for each job
+        response = await jobsService.getAllJobsWithinSixMonths(technicianId);
+      } else {
+        // For current tab: fetch only assigned jobs for this technician
+        response = await jobsService.getJobsForTechnician(technicianId, isHistory);
+      }
 
       if (response.error) {
         setError(response.error);

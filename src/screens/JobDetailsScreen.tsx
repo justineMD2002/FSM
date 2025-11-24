@@ -23,6 +23,7 @@ interface JobDetailsScreenProps {
   job: Job;
   onBack: () => void;
   showBackButton?: boolean;
+  isFromHistoryTab?: boolean;
 }
 
 type TabType = 'Details' | 'Navigate' | 'Service' | 'Complete' | 'Chat';
@@ -33,7 +34,7 @@ interface TabConfig {
   label: string;
 }
 
-export default function JobDetailsScreen({ job, onBack, showBackButton = false }: JobDetailsScreenProps) {
+export default function JobDetailsScreen({ job, onBack, showBackButton = false, isFromHistoryTab = false }: JobDetailsScreenProps) {
   const [activeTab, setActiveTab] = useState<TabType>('Details');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -362,10 +363,10 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false }
   }, [showArrivalModal]);
 
   const isJobPending = job.status === 'CREATED';
-  // For history jobs, check technician's assignment status first, then fall back to job status
-  // A job is "history" for a technician if THEY completed/cancelled their assignment
-  // OR if the overall job is cancelled/rescheduled (which affects all technicians)
-  const isHistoryJob =
+  // Determine if this is a history job
+  // If opened from history tab, always treat as history (show only Details and Chat tabs)
+  // Otherwise, check technician's assignment status and job status
+  const isHistoryJob = isFromHistoryTab ||
     job.status === 'CANCELLED' || // Job cancelled by admin - always history
     job.status === 'RESCHEDULED' || // Job rescheduled by admin - always history
     job.status === 'COMPLETED' || // Job completed - always history

@@ -72,6 +72,9 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState('');
 
+  // Check if user is assigned to this job (read-only mode if not assigned)
+  const isReadOnly = !technicianJobId;
+
   // Fetch messages using the hook
   const { messages, loading, error, sendMessage, updateMessage, deleteMessages } = useJobMessages(jobId, technicianJobId);
 
@@ -212,8 +215,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         key={message.id}
         className={`flex-row mb-4 ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
       >
-        {/* Checkbox for selection (on the left) */}
-        {selectionMode && (
+        {/* Checkbox for selection (on the left) - hidden in read-only mode */}
+        {selectionMode && !isReadOnly && (
           <TouchableOpacity
             onPress={() => handleMessageSelect(message.id)}
             className="mr-2 justify-center items-center"
@@ -238,16 +241,16 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           </View>
         )}
 
-        {/* Message bubble with long press */}
+        {/* Message bubble with long press (disabled in read-only mode) */}
         <TouchableOpacity
-          onLongPress={() => handleLongPress(message.id)}
+          onLongPress={() => !isReadOnly && handleLongPress(message.id)}
           onPress={() => {
             if (selectionMode) {
               handleMessageSelect(message.id);
             }
           }}
           activeOpacity={0.7}
-          disabled={!isCurrentUser && !selectionMode}
+          disabled={isReadOnly || (!isCurrentUser && !selectionMode)}
           className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}
         >
           {/* Sender name */}
@@ -300,8 +303,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             )}
           </View>
 
-          {/* Edit button - only for current user's text messages */}
-          {isCurrentUser && !selectionMode && message.message && (
+          {/* Edit button - only for current user's text messages (disabled in read-only mode) */}
+          {isCurrentUser && !selectionMode && !isReadOnly && message.message && (
             <TouchableOpacity
               onPress={() => handleEditMessage(message)}
               className="mt-1 px-1"
@@ -360,9 +363,24 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             </Text>
           </View>
           <Text className="text-sm text-slate-500 mt-2">
-            Chat with Admin about this job
+            {isReadOnly ? 'View-only mode (not assigned to this job)' : 'Chat with Admin about this job'}
           </Text>
         </View>
+
+        {/* Read-Only Notice */}
+        {isReadOnly && (
+          <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+            <View className="flex-row items-start">
+              <Ionicons name="information-circle" size={24} color="#f59e0b" />
+              <View className="ml-3 flex-1">
+                <Text className="text-amber-900 font-semibold mb-1">View-Only Mode</Text>
+                <Text className="text-amber-700 text-sm">
+                  You are not assigned to this job. You can view messages but cannot send or edit them.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Messages - Scrollable */}
         <ScrollView ref={scrollViewRef} className="flex-1 mb-4">
@@ -378,74 +396,76 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           )}
         </ScrollView>
 
-        {/* Message Input / Delete Actions - Fixed */}
-        {selectionMode ? (
-          // Delete actions when in selection mode
-          <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-slate-700 font-semibold">
-                {selectedMessages.size} selected
-              </Text>
-              <View className="flex-row items-center">
-                <TouchableOpacity
-                  onPress={handleCancelSelection}
-                  className="px-4 py-2 rounded-lg mr-2 bg-slate-100"
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-slate-700 font-semibold">Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setShowDeleteModal(true)}
-                  className="px-4 py-2 rounded-lg bg-red-500"
-                  activeOpacity={0.7}
-                >
-                  <View className="flex-row items-center">
-                    <Ionicons name="trash-outline" size={18} color="#ffffff" />
-                    <Text className="text-white font-semibold ml-2">Delete</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ) : (
-          // Normal message input
-          <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
-            {/* Edit mode indicator */}
-            {editingMessageId && (
-              <View className="flex-row items-center justify-between mb-2 px-2">
+        {/* Message Input / Delete Actions - Fixed (hidden in read-only mode) */}
+        {!isReadOnly && (
+          selectionMode ? (
+            // Delete actions when in selection mode
+            <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-slate-700 font-semibold">
+                  {selectedMessages.size} selected
+                </Text>
                 <View className="flex-row items-center">
-                  <Ionicons name="pencil" size={16} color="#0092ce" />
-                  <Text className="text-sm text-[#0092ce] ml-2 font-semibold">Editing message</Text>
+                  <TouchableOpacity
+                    onPress={handleCancelSelection}
+                    className="px-4 py-2 rounded-lg mr-2 bg-slate-100"
+                    activeOpacity={0.7}
+                  >
+                    <Text className="text-slate-700 font-semibold">Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 rounded-lg bg-red-500"
+                    activeOpacity={0.7}
+                  >
+                    <View className="flex-row items-center">
+                      <Ionicons name="trash-outline" size={18} color="#ffffff" />
+                      <Text className="text-white font-semibold ml-2">Delete</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={handleCancelEdit}>
-                  <Ionicons name="close" size={20} color="#64748b" />
+              </View>
+            </View>
+          ) : (
+            // Normal message input
+            <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+              {/* Edit mode indicator */}
+              {editingMessageId && (
+                <View className="flex-row items-center justify-between mb-2 px-2">
+                  <View className="flex-row items-center">
+                    <Ionicons name="pencil" size={16} color="#0092ce" />
+                    <Text className="text-sm text-[#0092ce] ml-2 font-semibold">Editing message</Text>
+                  </View>
+                  <TouchableOpacity onPress={handleCancelEdit}>
+                    <Ionicons name="close" size={20} color="#64748b" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View className="flex-row items-center">
+                <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
+                  <TextInput
+                    className="text-slate-800"
+                    placeholder="Type a message..."
+                    placeholderTextColor="#94a3b8"
+                    value={newMessage}
+                    onChangeText={setNewMessage}
+                    multiline
+                    maxLength={500}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={handleSendMessage}
+                  className="w-12 h-12 rounded-full items-center justify-center"
+                  style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
+                  disabled={!newMessage.trim() || !technicianJobId}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={editingMessageId ? "checkmark" : "send"} size={20} color="#ffffff" />
                 </TouchableOpacity>
               </View>
-            )}
-
-            <View className="flex-row items-center">
-              <View className="flex-1 bg-slate-100 rounded-full px-4 py-3 mr-2">
-                <TextInput
-                  className="text-slate-800"
-                  placeholder="Type a message..."
-                  placeholderTextColor="#94a3b8"
-                  value={newMessage}
-                  onChangeText={setNewMessage}
-                  multiline
-                  maxLength={500}
-                />
-              </View>
-              <TouchableOpacity
-                onPress={handleSendMessage}
-                className="w-12 h-12 rounded-full items-center justify-center"
-                style={{ backgroundColor: newMessage.trim() && technicianJobId ? '#0092ce' : '#cbd5e1' }}
-                disabled={!newMessage.trim() || !technicianJobId}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={editingMessageId ? "checkmark" : "send"} size={20} color="#ffffff" />
-              </TouchableOpacity>
             </View>
-          </View>
+          )
         )}
       </KeyboardAvoidingView>
 
