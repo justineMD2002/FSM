@@ -1113,9 +1113,9 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     </Text>
                   </View>
                 ) : (
-                  <View className="py-12">
+                  <View className="py-12 items-center">
                     <Ionicons name="cloud-upload-outline" size={48} color="#94a3b8" />
-                    <Text className="text-slate-500 mt-2">
+                    <Text className="text-slate-500 mt-2 text-center">
                       Tap to select {selectedMediaType === 'IMAGE' ? 'images (multiple)' : 'video'}
                     </Text>
                   </View>
