@@ -101,9 +101,23 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
             </View>
 
             {job.address && (
-              <View className="flex-row items-start mt-2">
-                <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.address}</Text>
+              <View className="mt-2">
+                <View className="flex-row items-start">
+                  <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
+                  <Text className="text-sm text-slate-600 ml-2 flex-1">{job.address}</Text>
+                </View>
+
+                {/* Address Notes */}
+                {job.addressNotes && job.addressNotes.length > 0 && (
+                  <View className="ml-6 mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                    <Text className="text-xs font-semibold text-amber-800 mb-1">Address Notes:</Text>
+                    {job.addressNotes.map((note, index) => (
+                      <Text key={index} className="text-xs text-amber-700">
+                        {index > 0 && '\n'}• {note}
+                      </Text>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
 

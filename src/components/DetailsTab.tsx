@@ -161,11 +161,25 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
               <Text className="text-sm font-semibold text-slate-700 mb-3">Details</Text>
 
               {/* Address */}
-              <View className="flex-row mb-3">
-                <Ionicons name="location-outline" size={18} color="#0092ce" />
-                <View className="ml-2 flex-1">
-                  <Text className="text-xs text-slate-500 mb-0.5 font-semibold">Address</Text>
-                  <Text className="text-sm text-slate-700">{job.address}</Text>
+              <View className="mb-3">
+                <View className="flex-row">
+                  <Ionicons name="location-outline" size={18} color="#0092ce" />
+                  <View className="ml-2 flex-1">
+                    <Text className="text-xs text-slate-500 mb-0.5 font-semibold">Address</Text>
+                    <Text className="text-sm text-slate-700">{job.address}</Text>
+
+                    {/* Address Notes */}
+                    {job.addressNotes && job.addressNotes.length > 0 && (
+                      <View className="mt-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                        <Text className="text-xs font-semibold text-amber-800 mb-1">Address Notes:</Text>
+                        {job.addressNotes.map((note, index) => (
+                          <Text key={index} className="text-xs text-amber-700">
+                            {index > 0 && '\n'}• {note}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
 

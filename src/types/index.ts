@@ -67,6 +67,7 @@ export interface Job {
   customer: string;
   customerId: string; // Add customer ID for lookups
   address: string;
+  addressNotes?: string[]; // Array of address notes from customer_address_details table
   locationName: string | null;
   notes: string;
   providerName: string;

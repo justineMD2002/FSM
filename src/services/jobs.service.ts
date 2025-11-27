@@ -79,6 +79,11 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
 
   const address = addressParts.join(', ');
 
+  // Extract address notes from customer_address_details (there may be multiple records)
+  const addressNotes = (dbJob.customer as any)?.customer_address_details
+    ?.map((detail: any) => detail.address_notes)
+    .filter((note: string | null) => note !== null && note.trim() !== '') || [];
+
   return {
     id: dbJob.id,
     jobName: dbJob.title,
@@ -91,6 +96,7 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     customerId: dbJob.customer_id,
     // Use location_name with country_name and zip_code if available
     address,
+    addressNotes: addressNotes.length > 0 ? addressNotes : undefined,
     locationName: dbJob.location?.location_name || null,
     notes: stripHtmlTags(dbJob.description) || '',
     // TODO: Get technician name from technician_jobs table
@@ -556,6 +562,10 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
           customer_location (
             country_name,
             zip_code
+          ),
+          customer_address_details (
+            id,
+            address_notes
           )
         ),
         location:location_id (
@@ -668,6 +678,10 @@ export const getJobsForTechnician = async (
             customer_location (
               country_name,
               zip_code
+            ),
+            customer_address_details (
+              id,
+              address_notes
             )
           ),
           location:location_id (
