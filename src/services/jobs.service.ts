@@ -731,6 +731,18 @@ export const getJobsForTechnician = async (
         let shouldIncludeInCurrent = false;
         let shouldIncludeInHistory = false;
 
+        // Check if job is scheduled for today (for Current Jobs tab filtering)
+        const isScheduledForToday = (() => {
+          if (!item.job.scheduled_start) return false;
+          const scheduledDate = new Date(item.job.scheduled_start);
+          const today = new Date();
+          scheduledDate.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          const isTodayResult = scheduledDate.getTime() === today.getTime();
+          console.log(`[Job ${item.job.job_number}] isScheduledForToday=${isTodayResult}, scheduledDate=${scheduledDate.toISOString()}, today=${today.toISOString()}`);
+          return isTodayResult;
+        })();
+
         // Determine which tab this job belongs to based on technician's assignment status
         if (isAssignmentCompleted || isJobCancelled) {
           // This technician completed their assignment OR the job was cancelled
@@ -738,13 +750,15 @@ export const getJobsForTechnician = async (
         } else if (jobStatus === 'RESCHEDULED') {
           // Rescheduled jobs: check if more than 24 hours away
           if (isRescheduledAndFuture) {
-            shouldIncludeInCurrent = true;
+            // Only show in current jobs if scheduled for today
+            shouldIncludeInCurrent = isScheduledForToday;
           } else {
             shouldIncludeInHistory = true;
           }
         } else if (isAssignmentActive) {
           // This technician's assignment is still active
-          shouldIncludeInCurrent = true;
+          // Only show in current jobs if scheduled for today
+          shouldIncludeInCurrent = isScheduledForToday;
         }
 
         console.log(`[Job ${item.job.job_number}] shouldIncludeInCurrent=${shouldIncludeInCurrent}, shouldIncludeInHistory=${shouldIncludeInHistory}, requestedHistory=${isHistory}`);
