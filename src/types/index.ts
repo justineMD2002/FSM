@@ -39,6 +39,12 @@ export interface Location {
   deleted_at: string | null;
 }
 
+// Customer Address Details type (for address notes - references customer_address_details table)
+export interface CustomerAddressDetails {
+  id: string;
+  address_notes: string | null;
+}
+
 // Customer Location type (for customer addresses - references customer_location table)
 export interface CustomerLocation {
   id: string;
@@ -53,6 +59,8 @@ export interface CustomerLocation {
   country_name: string | null;
   zip_code: string | null;
   address_type: string | null;
+  // Relations
+  customer_address_details?: CustomerAddressDetails[];
 }
 
 // UI-friendly Job type (for display in components)

@@ -79,8 +79,9 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
 
   const address = addressParts.join(', ');
 
-  // Extract address notes from customer_address_details (there may be multiple records)
-  const addressNotes = (dbJob.customer as any)?.customer_address_details
+  // Extract address notes from customer_address_details via customer → customer_location relation
+  // customer_address_details now uses customer_location_id as foreign key
+  const addressNotes = customerLocation?.customer_address_details
     ?.map((detail: any) => detail.address_notes)
     .filter((note: string | null) => note !== null && note.trim() !== '') || [];
 
@@ -130,7 +131,11 @@ export const getAllJobs = async (
           email,
           customer_location (
             country_name,
-            zip_code
+            zip_code,
+            customer_address_details (
+              id,
+              address_notes
+            )
           )
         ),
         location:location_id (
@@ -218,7 +223,11 @@ export const getJobById = async (
           email,
           customer_location (
             country_name,
-            zip_code
+            zip_code,
+            customer_address_details (
+              id,
+              address_notes
+            )
           )
         ),
         location:location_id (
@@ -283,7 +292,11 @@ export const createJob = async (
           email,
           customer_location (
             country_name,
-            zip_code
+            zip_code,
+            customer_address_details (
+              id,
+              address_notes
+            )
           )
         ),
         location:location_id (
@@ -350,7 +363,11 @@ export const updateJob = async (
           email,
           customer_location (
             country_name,
-            zip_code
+            zip_code,
+            customer_address_details (
+              id,
+              address_notes
+            )
           )
         ),
         location:location_id (
@@ -561,11 +578,11 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
           email,
           customer_location (
             country_name,
-            zip_code
-          ),
-          customer_address_details (
-            id,
-            address_notes
+            zip_code,
+            customer_address_details (
+              id,
+              address_notes
+            )
           )
         ),
         location:location_id (
@@ -678,10 +695,6 @@ export const getJobsForTechnician = async (
             customer_location (
               country_name,
               zip_code
-            ),
-            customer_address_details (
-              id,
-              address_notes
             )
           ),
           location:location_id (
