@@ -30,6 +30,11 @@ export interface Location {
   id: string;
   customer_id: string;
   location_name: string | null;
+  street_number: string | null;
+  street: string | null;
+  building: string | null;
+  country_name: string | null;
+  zip_code: string | null;
   current_longitude: string | null;
   current_latitude: string | null;
   destination_longitude: string | null;

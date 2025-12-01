@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { JobDB, Job, ApiResponse } from '@/types';
-import { stripHtmlTags } from '@/utils';
+import { stripHtmlTags, formatLocationAddress } from '@/utils';
 
 /**
  * Jobs Service
@@ -61,23 +61,15 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     uiStatus = 'CREATED';
   }
 
-  // Build address with location_name, country_name, and zip_code from customer_location
-  const baseAddress = dbJob.location?.location_name || dbJob.customer?.customer_address || 'No address provided';
+  // Build address from locations table fields: street_number, street, building, country_name, zip_code
+  const location = dbJob.location;
+  const formattedAddress = location ? formatLocationAddress(location) : '';
 
-  // Get customer_location data (first record if available)
+  // Fallback to customer address if no location data
+  const address = formattedAddress || dbJob.customer?.customer_address || 'No address provided';
+
+  // Get customer_location data (first record if available) for address notes
   const customerLocation = dbJob.customer?.customer_location?.[0];
-
-  // Build address parts
-  const addressParts: string[] = [baseAddress];
-
-  if (customerLocation?.country_name) {
-    addressParts.push(customerLocation.country_name);
-  }
-  if (customerLocation?.zip_code) {
-    addressParts.push(customerLocation.zip_code);
-  }
-
-  const address = addressParts.join(', ');
 
   // Extract address notes from customer_address_details via customer → customer_location relation
   // customer_address_details now uses customer_location_id as foreign key
@@ -142,6 +134,11 @@ export const getAllJobs = async (
           id,
           customer_id,
           location_name,
+          street_number,
+          street,
+          building,
+          country_name,
+          zip_code,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -234,6 +231,11 @@ export const getJobById = async (
           id,
           customer_id,
           location_name,
+          street_number,
+          street,
+          building,
+          country_name,
+          zip_code,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -303,6 +305,11 @@ export const createJob = async (
           id,
           customer_id,
           location_name,
+          street_number,
+          street,
+          building,
+          country_name,
+          zip_code,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -374,6 +381,11 @@ export const updateJob = async (
           id,
           customer_id,
           location_name,
+          street_number,
+          street,
+          building,
+          country_name,
+          zip_code,
           current_longitude,
           current_latitude,
           destination_longitude,
@@ -589,6 +601,11 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
           id,
           customer_id,
           location_name,
+          street_number,
+          street,
+          building,
+          country_name,
+          zip_code,
           current_longitude,
           current_latitude,
           destination_longitude,
