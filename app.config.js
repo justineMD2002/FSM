@@ -7,7 +7,7 @@ export default {
     owner: "keanumd2002",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/SAS-LOGO.png",
+    icon: "./assets/adaptive-icon.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
