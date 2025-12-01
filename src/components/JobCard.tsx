@@ -88,18 +88,13 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
 
           {/* Job Details */}
           <View className="space-y-2">
+            {/* Customer */}
             <View className="flex-row items-center">
-              <Ionicons name="calendar-outline" size={16} color="#64748b" />
-              <Text className="text-sm text-slate-600 ml-2">
-                {job.date} at {job.time}
-                {job.endTime && (
-                  job.endDate && job.endDate !== job.date
-                    ? ` - ${job.endDate} at ${job.endTime}`
-                    : ` - ${job.endTime}`
-                )}
-              </Text>
+              <Ionicons name="person-outline" size={16} color="#64748b" />
+              <Text className="text-sm text-slate-600 ml-2">{job.customer}</Text>
             </View>
 
+            {/* Address */}
             {job.address && (
               <View className="mt-2">
                 <View className="flex-row items-start">
@@ -121,16 +116,17 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
               </View>
             )}
 
-            {job.notes && (
-              <View className="flex-row items-start mt-2">
-                <Ionicons name="clipboard-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.notes}</Text>
-              </View>
-            )}
-
+            {/* Date & Time */}
             <View className="flex-row items-center mt-2">
-              <Ionicons name="person-outline" size={16} color="#64748b" />
-              <Text className="text-sm text-slate-600 ml-2">{job.customer}</Text>
+              <Ionicons name="calendar-outline" size={16} color="#64748b" />
+              <Text className="text-sm text-slate-600 ml-2">
+                {job.date} at {job.time}
+                {job.endTime && (
+                  job.endDate && job.endDate !== job.date
+                    ? ` - ${job.endDate} at ${job.endTime}`
+                    : ` - ${job.endTime}`
+                )}
+              </Text>
             </View>
 
             {/* Assigned Technicians */}
@@ -140,6 +136,14 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
                 <Text className="text-sm text-[#0092ce] ml-2 font-medium flex-1">
                   {job.assignedTechnicians.join(', ')}
                 </Text>
+              </View>
+            )}
+
+            {/* Job Description */}
+            {job.notes && (
+              <View className="flex-row items-start mt-2">
+                <Ionicons name="clipboard-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
+                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.notes}</Text>
               </View>
             )}
           </View>
