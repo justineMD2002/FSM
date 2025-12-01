@@ -4,9 +4,9 @@ import { useAuthStore } from '@/store';
 
 /**
  * Custom hook to automatically logout user after a period of inactivity
- * @param inactivityTimeout - Timeout in milliseconds (default: 5 minutes)
+ * @param inactivityTimeout - Timeout in milliseconds (default: 1 hour)
  */
-export const useInactivityLogout = (inactivityTimeout: number = 5 * 60 * 1000) => {
+export const useInactivityLogout = (inactivityTimeout: number = 60 * 60 * 1000) => {
   const signOut = useAuthStore((state) => state.signOut);
   const user = useAuthStore((state) => state.user);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -26,7 +26,7 @@ export const useInactivityLogout = (inactivityTimeout: number = 5 * 60 * 1000) =
     // Only set new timeout if user is logged in
     if (user) {
       timeoutRef.current = setTimeout(() => {
-        console.log('User has been inactive for 5 minutes. Logging out...');
+        console.log('User has been inactive for 1 hour. Logging out...');
         signOut();
       }, inactivityTimeout);
     }

@@ -18,8 +18,8 @@ interface TabConfig {
 export default function MainScreen() {
   const { activeTab, setActiveTab, showMapView, selectedJob } = useNavigationStore();
 
-  // Setup auto-logout after 5 minutes of inactivity
-  const { resetTimer } = useInactivityLogout(5 * 60 * 1000); // 5 minutes
+  // Setup auto-logout after 1 hour of inactivity
+  const { resetTimer } = useInactivityLogout(60 * 60 * 1000); // 1 hour
 
   const tabConfig: Record<Tab, TabConfig> = {
     [Tab.HOME]: {
