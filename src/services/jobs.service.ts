@@ -77,6 +77,11 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     ?.map((detail: any) => detail.address_notes)
     .filter((note: string | null) => note !== null && note.trim() !== '') || [];
 
+  // Extract assigned technician names from technician_jobs (filter out deleted assignments)
+  const assignedTechnicians = dbJob.technician_jobs
+    ?.filter(tj => !tj.deleted_at && tj.technician?.full_name)
+    .map(tj => tj.technician!.full_name) || [];
+
   return {
     id: dbJob.id,
     jobName: dbJob.title,
@@ -92,12 +97,10 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     addressNotes: addressNotes.length > 0 ? addressNotes : undefined,
     locationName: dbJob.location?.location_name || null,
     notes: stripHtmlTags(dbJob.description) || '',
-    // TODO: Get technician name from technician_jobs table
-    // Need to add a join to technician_jobs -> technicians to get full_name
-    // For now, using a placeholder value
-    providerName: 'Technician',
+    providerName: assignedTechnicians.length > 0 ? assignedTechnicians[0] : 'Unassigned',
     status: uiStatus,
     priority: dbJob.priority,
+    assignedTechnicians: assignedTechnicians.length > 0 ? assignedTechnicians : undefined,
   };
 };
 
@@ -143,6 +146,14 @@ export const getAllJobs = async (
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        technician_jobs (
+          id,
+          assignment_status,
+          deleted_at,
+          technician:technician_id (
+            full_name
+          )
         )
       `)
       .order('scheduled_start', { ascending: false });
@@ -240,6 +251,14 @@ export const getJobById = async (
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        technician_jobs (
+          id,
+          assignment_status,
+          deleted_at,
+          technician:technician_id (
+            full_name
+          )
         )
       `)
       .eq('id', id)
@@ -495,17 +514,34 @@ export const getJobByIdForTechnician = async (
             email,
             customer_location (
               country_name,
-              zip_code
+              zip_code,
+              customer_address_details (
+                id,
+                address_notes
+              )
             )
           ),
           location:location_id (
             id,
             customer_id,
             location_name,
+            street_number,
+            street,
+            building,
+            country_name,
+            zip_code,
             current_longitude,
             current_latitude,
             destination_longitude,
             destination_latitude
+          ),
+          technician_jobs (
+            id,
+            assignment_status,
+            deleted_at,
+            technician:technician_id (
+              full_name
+            )
           )
         )
       `)
@@ -610,6 +646,14 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        technician_jobs (
+          id,
+          assignment_status,
+          deleted_at,
+          technician:technician_id (
+            full_name
+          )
         )
       `)
       .gte('scheduled_end', sixMonthsAgoISO)
@@ -711,17 +755,34 @@ export const getJobsForTechnician = async (
             email,
             customer_location (
               country_name,
-              zip_code
+              zip_code,
+              customer_address_details (
+                id,
+                address_notes
+              )
             )
           ),
           location:location_id (
             id,
             customer_id,
             location_name,
+            street_number,
+            street,
+            building,
+            country_name,
+            zip_code,
             current_longitude,
             current_latitude,
             destination_longitude,
             destination_latitude
+          ),
+          technician_jobs (
+            id,
+            assignment_status,
+            deleted_at,
+            technician:technician_id (
+              full_name
+            )
           )
         )
       `)

@@ -23,6 +23,14 @@ export interface JobDB {
   // Relations
   customer?: Customer;
   location?: Location;
+  technician_jobs?: Array<{
+    id: string;
+    assignment_status: string;
+    deleted_at: string | null;
+    technician?: {
+      full_name: string;
+    };
+  }>;
 }
 
 // Location type (for job navigation - references locations table)
@@ -88,6 +96,7 @@ export interface Job {
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   technicianJobId?: string; // ID of technician_jobs record (null if not assigned to current technician)
   technicianAssignmentStatus?: 'ASSIGNED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
+  assignedTechnicians?: string[]; // Array of assigned technician names
 }
 
 export interface Technician {

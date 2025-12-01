@@ -132,6 +132,16 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
               <Ionicons name="person-outline" size={16} color="#64748b" />
               <Text className="text-sm text-slate-600 ml-2">{job.customer}</Text>
             </View>
+
+            {/* Assigned Technicians */}
+            {job.assignedTechnicians && job.assignedTechnicians.length > 0 && (
+              <View className="flex-row items-start mt-2">
+                <Ionicons name="people-outline" size={16} color="#0092ce" style={{ marginTop: 2 }} />
+                <Text className="text-sm text-[#0092ce] ml-2 font-medium flex-1">
+                  {job.assignedTechnicians.join(', ')}
+                </Text>
+              </View>
+            )}
           </View>
           <View className="mt-4 flex-row justify-end">
             <TouchableOpacity

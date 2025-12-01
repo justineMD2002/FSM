@@ -444,6 +444,16 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                     </Text>
                   </View>
 
+                  {/* Assigned Technicians */}
+                  {job.assignedTechnicians && job.assignedTechnicians.length > 0 && (
+                    <View className="flex-row items-start mb-2">
+                      <Ionicons name="people-outline" size={16} color="#0092ce" style={{ marginTop: 1 }} />
+                      <Text className="text-xs text-[#0092ce] ml-2 font-medium flex-1">
+                        {job.assignedTechnicians.join(', ')}
+                      </Text>
+                    </View>
+                  )}
+
                       {/* Location */}
                       <View className="flex-row items-start">
                         <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 1 }} />
