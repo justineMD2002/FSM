@@ -35,7 +35,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/SAS-LOGO.png",
+        foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
       permissions: [
