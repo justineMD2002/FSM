@@ -14,6 +14,7 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import SuccessModal from '@/components/SuccessModal';
 import { setBreakStatus } from '@/services/attendance.service';
 import { createLocationTechnicianRecord } from '@/services/locationTechnicians.service';
+import { useAutoClockOut } from '@/hooks/useAutoClockOut';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthStore();
@@ -122,6 +123,23 @@ export default function ProfileScreen() {
       setCheckingUpdate(false);
     }
   };
+
+  // Auto clock-out callback - called when user is auto clocked out after 24 hours
+  const handleAutoClockOut = async () => {
+    setCurrentAttendance(null);
+    setIsOnBreak(false);
+    setBreakStartTime(null);
+    setTotalBreakTime(0);
+    await fetchAttendanceData();
+    Alert.alert(
+      'Auto Clock Out',
+      'You have been automatically clocked out after being clocked in for 24 hours.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  // Setup auto clock-out after 24 hours (1 day)
+  useAutoClockOut(currentAttendance, handleAutoClockOut, 24 * 60 * 60 * 1000);
 
   useEffect(() => {
     if (user) {
