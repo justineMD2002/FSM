@@ -216,7 +216,7 @@ export interface Followup {
   user_id: string;
   technician_id: string | null;
   type: string | null;
-  status: string | null;
+  status: 'ALL' | 'LOGGED' | 'IN_PROGRESS' | 'CLOSED' | 'CANCELLED' | 'COMPLETED' | 'OPEN' | null;
   priority: string | null;
   notes: string | null;
   due_date: string | null;

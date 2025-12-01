@@ -62,7 +62,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [followUpType, setFollowUpType] = useState('');
   const [followUpDueDate, setFollowUpDueDate] = useState('');
   const [followUpPriority, setFollowUpPriority] = useState<'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'>('NORMAL');
-  const [followUpStatus, setFollowUpStatus] = useState<'OPEN' | 'IN_PROGRESS' | 'RESOLVED'>('OPEN');
+  const [followUpStatus, setFollowUpStatus] = useState<'ALL' | 'LOGGED' | 'IN_PROGRESS' | 'CLOSED' | 'CANCELLED' | 'COMPLETED' | 'OPEN'>('OPEN');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [editingFollowUpId, setEditingFollowUpId] = useState<string | null>(null);
@@ -297,7 +297,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       followUp.id === followUpId
         ? {
             ...followUp,
-            status: followUp.status === 'OPEN' ? 'RESOLVED' : 'OPEN',
+            status: followUp.status === 'OPEN' ? 'COMPLETED' : 'OPEN',
             updated_at: new Date().toISOString(),
           }
         : followUp
@@ -767,12 +767,12 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             </View>
             <View className="mb-3">
               <Text className="text-sm text-slate-600 mb-2">Status</Text>
-              <View className="flex-row space-x-2">
-                {(['OPEN', 'IN_PROGRESS', 'RESOLVED'] as const).map((status) => (
+              <View className="flex-row flex-wrap gap-2">
+                {(['OPEN', 'LOGGED', 'IN_PROGRESS', 'CLOSED', 'CANCELLED', 'COMPLETED'] as const).map((status) => (
                   <TouchableOpacity
                     key={status}
                     onPress={() => setFollowUpStatus(status)}
-                    className={`flex-1 py-2 rounded-lg ${
+                    className={`px-3 py-2 rounded-lg ${
                       followUpStatus === status ? 'bg-[#0092ce]' : 'bg-slate-200'
                     }`}
                   >
@@ -831,13 +831,18 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                       {/* Status Badge */}
                       <View
                         style={{
-                          backgroundColor: followUp.status === 'RESOLVED' ? '#77DD77' :
-                            followUp.status === 'IN_PROGRESS' ? '#6A89CC' : '#FFD580'
+                          backgroundColor:
+                            followUp.status === 'COMPLETED' ? '#77DD77' :
+                            followUp.status === 'CLOSED' ? '#77DD77' :
+                            followUp.status === 'IN_PROGRESS' ? '#6A89CC' :
+                            followUp.status === 'LOGGED' ? '#FFD580' :
+                            followUp.status === 'CANCELLED' ? '#FF6961' :
+                            followUp.status === 'OPEN' ? '#FFD580' : '#FFD580'
                         }}
                         className="px-3 py-1.5 rounded-lg mr-2 mb-2"
                       >
                         <Text className="text-xs font-medium text-white">
-                          {followUp.status || 'OPEN'}
+                          {followUp.status ? followUp.status.replace('_', ' ') : 'OPEN'}
                         </Text>
                       </View>
                       {/* Priority Badge */}
