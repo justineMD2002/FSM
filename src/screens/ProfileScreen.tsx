@@ -596,6 +596,9 @@ export default function ProfileScreen() {
         style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}
         showsVerticalScrollIndicator={false}
         bounces={true}
+        nestedScrollEnabled={true}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
       >
         <View className="items-center mb-3">
           <TouchableOpacity

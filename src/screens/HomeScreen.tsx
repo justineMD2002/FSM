@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, FlatList, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { JobCard } from '@/components/JobCard';
 import JobDetailsScreen from './JobDetailsScreen';
@@ -231,51 +231,64 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <FlatList
+        data={filteredJobs}
+        renderItem={({ item: job }) => (
+          <JobCard
+            job={job}
+            onPress={() => setSelectedJob(job)}
+            isHistoryTab={activeTab === 'HISTORY'}
+          />
+        )}
+        keyExtractor={(job) => job.id}
+        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 5, paddingBottom: 20 }}
         className="flex-1 bg-[#f5f5f5] mt-4"
-        contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
         bounces={true}
-      >
-        {loading ? (
-          <View className="items-center justify-center py-20">
-            <ActivityIndicator size="large" color="#0092ce" />
-            <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
-          </View>
-        ) : error ? (
-          <View className="items-center justify-center py-20">
-            <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
-            <Text className="text-slate-700 text-base font-semibold mt-4">Error Loading Jobs</Text>
-            <Text className="text-slate-500 text-sm mt-2 text-center px-6">{error.message}</Text>
-            <TouchableOpacity
-              onPress={onRefresh}
-              className="bg-[#0092ce] rounded-lg px-6 py-3 mt-4"
-              activeOpacity={0.7}
-            >
-              <Text className="text-white font-semibold">Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />)
-        ) : (
-          <View className="items-center justify-center py-20">
-            <Ionicons
-              name={activeTab === 'HISTORY' ? 'search-outline' : 'briefcase-outline'}
-              size={64}
-              color="#cbd5e1"
-            />
-            <Text className="text-slate-400 text-base mt-4">
-              {activeTab === 'HISTORY' ? 'No jobs found' : 'No current jobs found'}
-            </Text>
-            {activeTab === 'CURRENT' && (
-              <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
-                <Text className="text-[#0092ce] text-sm mt-2">Tap to refresh</Text>
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        ListEmptyComponent={() => (
+          loading ? (
+            <View className="items-center justify-center py-20">
+              <ActivityIndicator size="large" color="#0092ce" />
+              <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
+            </View>
+          ) : error ? (
+            <View className="items-center justify-center py-20">
+              <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+              <Text className="text-slate-700 text-base font-semibold mt-4">Error Loading Jobs</Text>
+              <Text className="text-slate-500 text-sm mt-2 text-center px-6">{error.message}</Text>
+              <TouchableOpacity
+                onPress={onRefresh}
+                className="bg-[#0092ce] rounded-lg px-6 py-3 mt-4"
+                activeOpacity={0.7}
+              >
+                <Text className="text-white font-semibold">Retry</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </View>
+          ) : (
+            <View className="items-center justify-center py-20">
+              <Ionicons
+                name={activeTab === 'HISTORY' ? 'search-outline' : 'briefcase-outline'}
+                size={64}
+                color="#cbd5e1"
+              />
+              <Text className="text-slate-400 text-base mt-4">
+                {activeTab === 'HISTORY' ? 'No jobs found' : 'No current jobs found'}
+              </Text>
+              {activeTab === 'CURRENT' && (
+                <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
+                  <Text className="text-[#0092ce] text-sm mt-2">Tap to refresh</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )
         )}
-      </ScrollView>
+      />
 
       <Modal
         visible={showFilterModal}
@@ -306,7 +319,13 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false}>
+            <ScrollView
+              className="px-6 py-4"
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+              scrollEventThrottle={16}
+            >
 
             <View className="mb-6">
               <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Date</Text>

@@ -491,6 +491,9 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false, 
           scrollEnabled={!isSignatureDrawing}
           showsVerticalScrollIndicator={false}
           bounces={true}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
         >
           {activeTab === 'Details' && (
             <DetailsTab

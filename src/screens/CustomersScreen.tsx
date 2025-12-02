@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, FlatList, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCustomers } from '@/hooks';
 import { Customer } from '@/types';
@@ -186,37 +186,44 @@ export default function CustomersScreen() {
       </View>
 
       {/* Customer List */}
-      <ScrollView
+      <FlatList
+        data={filteredCustomers}
+        renderItem={({ item: customer }) => renderCustomerCard(customer)}
+        keyExtractor={(customer) => customer.id}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 5, paddingBottom: 20 }}
         className="flex-1 bg-[#f5f5f5] pt-4"
-        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
         bounces={true}
-      >
-        {loading && !refreshing ? (
-          <View className="items-center justify-center py-20">
-            <ActivityIndicator size="large" color="#0092ce" />
-            <Text className="text-slate-500 text-base mt-4">Loading customers...</Text>
-          </View>
-        ) : filteredCustomers.length > 0 ? (
-          filteredCustomers.map((customer) => renderCustomerCard(customer))
-        ) : (
-          <View className="items-center justify-center py-20">
-            <Ionicons name="people-outline" size={64} color="#cbd5e1" />
-            <Text className="text-slate-400 text-base mt-4">
-              {searchQuery ? 'No customers found' : 'No customers available'}
-            </Text>
-            {!searchQuery && (
-              <Text className="text-slate-400 text-sm mt-2 text-center px-6">
-                Customers will appear here once you're assigned to jobs
+        keyboardShouldPersistTaps="handled"
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        ListEmptyComponent={() => (
+          loading && !refreshing ? (
+            <View className="items-center justify-center py-20">
+              <ActivityIndicator size="large" color="#0092ce" />
+              <Text className="text-slate-500 text-base mt-4">Loading customers...</Text>
+            </View>
+          ) : (
+            <View className="items-center justify-center py-20">
+              <Ionicons name="people-outline" size={64} color="#cbd5e1" />
+              <Text className="text-slate-400 text-base mt-4">
+                {searchQuery ? 'No customers found' : 'No customers available'}
               </Text>
-            )}
-            <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
-              <Text className="text-[#0092ce] text-sm mt-4">Tap to refresh</Text>
-            </TouchableOpacity>
-          </View>
+              {!searchQuery && (
+                <Text className="text-slate-400 text-sm mt-2 text-center px-6">
+                  Customers will appear here once you're assigned to jobs
+                </Text>
+              )}
+              <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
+                <Text className="text-[#0092ce] text-sm mt-4">Tap to refresh</Text>
+              </TouchableOpacity>
+            </View>
+          )
         )}
-      </ScrollView>
+      />
     </View>
   );
 }

@@ -537,7 +537,13 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false}>
+            <ScrollView
+              className="px-6 py-4"
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+              scrollEventThrottle={16}
+            >
               <View className="mb-6">
                 <View className="space-y-2">
                   {[

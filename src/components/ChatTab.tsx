@@ -385,7 +385,14 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         )}
 
         {/* Messages - Scrollable */}
-        <ScrollView ref={scrollViewRef} className="flex-1 mb-4">
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1 mb-4"
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+          keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
+        >
           {messages.length === 0 ? (
             <View className="flex-1 justify-center items-center py-12">
               <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
