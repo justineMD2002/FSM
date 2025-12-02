@@ -235,6 +235,8 @@ export default function HomeScreen() {
         className="flex-1 bg-[#f5f5f5] mt-4"
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         {loading ? (
           <View className="items-center justify-center py-20">

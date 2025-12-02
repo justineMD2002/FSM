@@ -486,7 +486,12 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false, 
           <ChatTab jobId={job.id} technicianJobId={technicianJob?.id || null} />
         </View>
       ) : (
-        <ScrollView className="flex-1 px-4 py-4" scrollEnabled={!isSignatureDrawing}>
+        <ScrollView
+          className="flex-1 px-4 py-4"
+          scrollEnabled={!isSignatureDrawing}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
           {activeTab === 'Details' && (
             <DetailsTab
               job={job}

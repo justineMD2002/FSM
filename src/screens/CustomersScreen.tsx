@@ -190,6 +190,8 @@ export default function CustomersScreen() {
         className="flex-1 bg-[#f5f5f5] pt-4"
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         {loading && !refreshing ? (
           <View className="items-center justify-center py-20">

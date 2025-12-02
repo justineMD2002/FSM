@@ -42,7 +42,6 @@ export default {
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ],
-      edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       config: {
         googleMaps: {
