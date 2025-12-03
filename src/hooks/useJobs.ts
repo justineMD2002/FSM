@@ -10,6 +10,9 @@ interface UseJobsReturn {
   loading: boolean;
   error: ApiError | null;
   refetch: () => Promise<void>;
+  loadMore: () => Promise<void>;
+  hasMore: boolean;
+  loadingMore: boolean;
 }
 
 /**
@@ -32,7 +35,12 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<ApiError | null>(null);
   const [technicianId, setTechnicianId] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [offset, setOffset] = useState<number>(0);
   const user = useAuthStore((state) => state.user);
+
+  const PAGE_SIZE = 10;
 
   // Fetch technician ID once when user is available
   useEffect(() => {
@@ -62,10 +70,14 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
    * Fetch jobs from the database based on type (history or current)
    * For history: shows all jobs within 6 months (regardless of assignment)
    * For current: shows only assigned jobs (ASSIGNED/STARTED status)
+   * @param resetOffset - If true, resets pagination to start from beginning
    */
-  const fetchJobs = useCallback(async () => {
+  const fetchJobs = useCallback(async (resetOffset: boolean = false) => {
     try {
-      setLoading(true);
+      if (resetOffset) {
+        setLoading(true);
+        setOffset(0);
+      }
       setError(null);
 
       if (!user?.id) {
@@ -81,21 +93,34 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
         return;
       }
 
+      const currentOffset = resetOffset ? 0 : offset;
+
       let response;
       if (isHistory) {
         // For history tab: fetch ALL jobs within 6 months
         // Pass technicianId to get assignment info for each job
-        response = await jobsService.getAllJobsWithinSixMonths(technicianId);
+        response = await jobsService.getAllJobsWithinSixMonths(technicianId, PAGE_SIZE, currentOffset);
       } else {
         // For current tab: fetch only assigned jobs for this technician
-        response = await jobsService.getJobsForTechnician(technicianId, isHistory);
+        response = await jobsService.getJobsForTechnician(technicianId, isHistory, PAGE_SIZE, currentOffset);
       }
 
       if (response.error) {
         setError(response.error);
-        setJobs([]);
+        if (resetOffset) {
+          setJobs([]);
+        }
       } else {
-        setJobs(response.data || []);
+        const newJobs = response.data || [];
+
+        if (resetOffset) {
+          setJobs(newJobs);
+        } else {
+          setJobs(prev => [...prev, ...newJobs]);
+        }
+
+        // Check if there are more jobs to load
+        setHasMore(newJobs.length === PAGE_SIZE);
         setError(null);
       }
     } catch (err: any) {
@@ -103,23 +128,66 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
         message: err.message || 'Failed to fetch jobs',
         details: err,
       });
-      setJobs([]);
+      if (resetOffset) {
+        setJobs([]);
+      }
     } finally {
-      setLoading(false);
+      if (resetOffset) {
+        setLoading(false);
+      }
     }
-  }, [isHistory, user?.id, technicianId]);
+  }, [isHistory, user?.id, technicianId, offset, PAGE_SIZE]);
 
   /**
-   * Refetch all jobs
+   * Load more jobs (next page)
+   */
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    const newOffset = offset + PAGE_SIZE;
+    setOffset(newOffset);
+
+    try {
+      if (!technicianId) return;
+
+      let response;
+      if (isHistory) {
+        response = await jobsService.getAllJobsWithinSixMonths(technicianId, PAGE_SIZE, newOffset);
+      } else {
+        response = await jobsService.getJobsForTechnician(technicianId, isHistory, PAGE_SIZE, newOffset);
+      }
+
+      if (response.error) {
+        setError(response.error);
+      } else {
+        const newJobs = response.data || [];
+        setJobs(prev => [...prev, ...newJobs]);
+        setHasMore(newJobs.length === PAGE_SIZE);
+      }
+    } catch (err: any) {
+      setError({
+        message: err.message || 'Failed to load more jobs',
+        details: err,
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, offset, technicianId, isHistory, PAGE_SIZE]);
+
+  /**
+   * Refetch all jobs (reset to first page)
    */
   const refetch = useCallback(async () => {
-    await fetchJobs();
+    setOffset(0);
+    setHasMore(true);
+    await fetchJobs(true);
   }, [fetchJobs]);
 
   // Initial fetch on mount and when isHistory changes
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    fetchJobs(true);
+  }, [isHistory, technicianId]);
 
   // Set up real-time subscription for technician_jobs
   useEffect(() => {
@@ -200,6 +268,9 @@ export const useJobs = (isHistory: boolean = false): UseJobsReturn => {
     loading,
     error,
     refetch,
+    loadMore,
+    hasMore,
+    loadingMore,
   };
 };
 

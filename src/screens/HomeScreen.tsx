@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { JobCard } from '@/components/JobCard';
 import JobDetailsScreen from './JobDetailsScreen';
@@ -36,9 +36,26 @@ export default function HomeScreen() {
 
   const { selectedJob, setSelectedJob, showMapView, setShowMapView } = useNavigationStore();
 
-  // Fetch jobs from backend
-  const { jobs: historyJobs, loading: historyLoading, error: historyError, refetch: refetchHistory } = useJobs(true);
-  const { jobs: currentJobs, loading: currentLoading, error: currentError, refetch: refetchCurrent } = useJobs(false);
+  // Fetch jobs from backend with pagination
+  const {
+    jobs: historyJobs,
+    loading: historyLoading,
+    error: historyError,
+    refetch: refetchHistory,
+    loadMore: loadMoreHistory,
+    hasMore: hasMoreHistory,
+    loadingMore: loadingMoreHistory,
+  } = useJobs(true);
+
+  const {
+    jobs: currentJobs,
+    loading: currentLoading,
+    error: currentError,
+    refetch: refetchCurrent,
+    loadMore: loadMoreCurrent,
+    hasMore: hasMoreCurrent,
+    loadingMore: loadingMoreCurrent,
+  } = useJobs(false);
 
   // Get current tab's data and states
   const jobs = activeTab === 'HISTORY' ? historyJobs : currentJobs;
@@ -48,6 +65,9 @@ export default function HomeScreen() {
   const startDate = activeTab === 'HISTORY' ? historyStartDate : currentStartDate;
   const endDate = activeTab === 'HISTORY' ? historyEndDate : currentEndDate;
   const statusFilters = activeTab === 'HISTORY' ? historyStatusFilters : currentStatusFilters;
+  const loadMore = activeTab === 'HISTORY' ? loadMoreHistory : loadMoreCurrent;
+  const hasMore = activeTab === 'HISTORY' ? hasMoreHistory : hasMoreCurrent;
+  const loadingMore = activeTab === 'HISTORY' ? loadingMoreHistory : loadingMoreCurrent;
 
   const onRefresh = useCallback(async () => {
     if (activeTab === 'HISTORY') {
@@ -163,6 +183,19 @@ export default function HomeScreen() {
 
   const hasActiveFilters = dateFilter !== 'ALL' || (activeTab === 'HISTORY' && statusFilters.length > 0);
 
+  // Handle scroll to bottom for infinite scrolling
+  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+
+    // Check if user scrolled to bottom
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+    if (isCloseToBottom && hasMore && !loadingMore && !loading) {
+      loadMore();
+    }
+  }, [hasMore, loadingMore, loading, loadMore]);
+
   // Show MapViewScreen if map view is active
   if (showMapView) {
     return <MapViewScreen onBack={() => setShowMapView(false)} />;
@@ -237,6 +270,8 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
         nestedScrollEnabled={true}
         overScrollMode="always"
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
       >
         {loading ? (
           <View className="items-center justify-center py-20">
@@ -257,7 +292,24 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         ) : filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />)
+          <>
+            {filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />)}
+
+            {/* Loading more indicator */}
+            {loadingMore && (
+              <View className="items-center justify-center py-6">
+                <ActivityIndicator size="small" color="#0092ce" />
+                <Text className="text-slate-400 text-sm mt-2">Loading more jobs...</Text>
+              </View>
+            )}
+
+            {/* No more jobs indicator */}
+            {!hasMore && filteredJobs.length > 0 && (
+              <View className="items-center justify-center py-6">
+                <Text className="text-slate-400 text-sm">No more jobs to load</Text>
+              </View>
+            )}
+          </>
         ) : (
           <View className="items-center justify-center py-20">
             <Ionicons

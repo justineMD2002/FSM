@@ -597,14 +597,18 @@ export const getJobByIdForTechnician = async (
  * @param technicianId - Optional technician ID to check assignment and add technicianJobId
  * @returns ApiResponse with array of jobs in UI format
  */
-export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<ApiResponse<Job[]>> => {
+export const getAllJobsWithinSixMonths = async (
+  technicianId?: string,
+  limit?: number,
+  offset?: number
+): Promise<ApiResponse<Job[]>> => {
   try {
     // Calculate date 6 months ago from today
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     const sixMonthsAgoISO = sixMonthsAgo.toISOString();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('jobs')
       .select(`
         id,
@@ -660,6 +664,16 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
       .in('status', ['COMPLETED', 'CANCELLED', 'RESCHEDULED'])
       .is('deleted_at', null)
       .order('scheduled_end', { ascending: false });
+
+    // Apply pagination if provided
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    if (offset !== undefined) {
+      query = query.range(offset, offset + (limit || 10) - 1);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return {
@@ -725,13 +739,15 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
  */
 export const getJobsForTechnician = async (
   technicianId: string,
-  isHistory: boolean
+  isHistory: boolean,
+  limit?: number,
+  offset?: number
 ): Promise<ApiResponse<Job[]>> => {
   try {
     // Fetch all assignment statuses, then filter by job.status for cancelled/rescheduled
     const assignmentStatusFilter = ['ASSIGNED', 'STARTED', 'COMPLETED', 'CANCELLED'];
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('technician_jobs')
       .select(`
         assignment_status,
@@ -790,6 +806,16 @@ export const getJobsForTechnician = async (
       .in('assignment_status', assignmentStatusFilter)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
+
+    // Apply pagination if provided
+    if (limit !== undefined) {
+      query = query.limit(limit);
+    }
+    if (offset !== undefined) {
+      query = query.range(offset, offset + (limit || 10) - 1);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       return {
