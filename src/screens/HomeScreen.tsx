@@ -236,7 +236,9 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
         nestedScrollEnabled={true}
-        overScrollMode="always"
+        overScrollMode="auto"
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
       >
         {loading ? (
           <View className="items-center justify-center py-20">
@@ -306,7 +308,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false} nestedScrollEnabled={true} overScrollMode="always">
+            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false} nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
 
             <View className="mb-6">
               <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Date</Text>

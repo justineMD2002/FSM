@@ -191,7 +191,9 @@ export default function CustomersScreen() {
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         nestedScrollEnabled={true}
-        overScrollMode="always"
+        overScrollMode="auto"
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
       >
         {loading && !refreshing ? (
           <View className="items-center justify-center py-20">

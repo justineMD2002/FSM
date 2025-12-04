@@ -683,7 +683,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             />
             <View className="mb-3">
               <Text className="text-sm text-slate-600 mb-2">Type</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" nestedScrollEnabled={true} overScrollMode="always">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
                 {[
                   'appointment',
                   'repair',
@@ -1053,7 +1053,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               </TouchableOpacity>
             </View>
 
-            <ScrollView nestedScrollEnabled={true} overScrollMode="always">
+            <ScrollView nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
               {/* Media Type Selector */}
               <Text className="text-sm font-semibold text-slate-700 mb-2">Media Type</Text>
               <View className="flex-row mb-4">
@@ -1089,7 +1089,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               >
                 {selectedImages.length > 0 ? (
                   <View className="w-full p-4">
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" nestedScrollEnabled={true} overScrollMode="always">
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
                       {selectedImages.map((selectedImage, index) => (
                         <View key={index} className="mr-2 relative">
                           {selectedImage.type === 'VIDEO' ? (

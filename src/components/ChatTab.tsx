@@ -353,7 +353,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
     <>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
         {/* Chat Header - Fixed */}
@@ -385,7 +385,14 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         )}
 
         {/* Messages - Scrollable */}
-        <ScrollView ref={scrollViewRef} className="flex-1 mb-4" nestedScrollEnabled={true} overScrollMode="always">
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1 mb-4"
+          nestedScrollEnabled={true}
+          overScrollMode="auto"
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+        >
           {messages.length === 0 ? (
             <View className="flex-1 justify-center items-center py-12">
               <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
