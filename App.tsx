@@ -2,6 +2,7 @@ import './global.css';
 import { StatusBar } from 'expo-status-bar';
 import { View, Platform } from 'react-native';
 import { useEffect, useCallback, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreenExpo from 'expo-splash-screen';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -83,11 +84,13 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
-        {user ? <MainScreen /> : <LoginScreen />}
-      </View>
-      <StatusBar style="auto" />
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <View onLayout={onLayoutRootView} style={{ flex: 1 }}>
+          {user ? <MainScreen /> : <LoginScreen />}
+        </View>
+        <StatusBar style="auto" />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

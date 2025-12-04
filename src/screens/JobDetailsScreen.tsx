@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { Job } from '@/types';

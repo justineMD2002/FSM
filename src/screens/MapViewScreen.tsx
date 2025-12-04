@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ScrollView, Dimensions, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal, Dimensions, Pressable, ActivityIndicator } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 import JobDetailsScreen from './JobDetailsScreen';

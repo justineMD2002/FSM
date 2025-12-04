@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useCustomers } from '@/hooks';
 import { Customer } from '@/types';

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, Modal, Pressable } from 'react-native';
+import { View, Text, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, Modal, Pressable } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
