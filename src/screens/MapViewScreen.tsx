@@ -378,10 +378,6 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
             }}
             scrollEventThrottle={16}
             scrollEnabled={false}
-            nestedScrollEnabled={true}
-            overScrollMode="auto"
-            activeOffsetX={[-5, 5]}
-            failOffsetY={[-15, 15]}
             bounces={true}
           >
             {jobsWithColors.map((job, index) => (
@@ -546,11 +542,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
             <ScrollView
               className="px-6 py-4"
               showsVerticalScrollIndicator={false}
-              nestedScrollEnabled={true}
-              overScrollMode="auto"
               scrollEventThrottle={16}
-              activeOffsetY={[-5, 5]}
-              failOffsetX={[-15, 15]}
               bounces={true}
             >
               <View className="mb-6">

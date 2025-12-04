@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { JobCard } from '@/components/JobCard';
@@ -11,10 +11,17 @@ import { useJobs } from '@/hooks';
 type TabType = 'HISTORY' | 'CURRENT';
 type DateFilter = 'ALL' | 'TODAY' | 'THIS_WEEK' | 'THIS_MONTH' | 'CUSTOM';
 
+const INITIAL_JOBS_TO_DISPLAY = 5;
+const JOBS_INCREMENT = 5;
+
 export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('CURRENT');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
+
+  // Pagination state
+  const [displayedJobCount, setDisplayedJobCount] = useState(INITIAL_JOBS_TO_DISPLAY);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Separate filter states for HISTORY tab
   const [historyDateFilter, setHistoryDateFilter] = useState<DateFilter>('ALL');
@@ -75,6 +82,31 @@ export default function HomeScreen() {
     setActiveTab(tab);
     // Clear search query when switching tabs
     setSearchQuery('');
+    // Reset pagination when switching tabs
+    setDisplayedJobCount(INITIAL_JOBS_TO_DISPLAY);
+  };
+
+  // Reset pagination when filters or search changes
+  useEffect(() => {
+    setDisplayedJobCount(INITIAL_JOBS_TO_DISPLAY);
+  }, [searchQuery, dateFilter, statusFilters]);
+
+  // Handle scroll to load more jobs
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+
+    // Check if user is within 200px of the bottom
+    const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 200;
+
+    if (isNearBottom && !isLoadingMore && displayedJobCount < filteredJobs.length) {
+      setIsLoadingMore(true);
+
+      // Simulate a small delay for smooth UX
+      setTimeout(() => {
+        setDisplayedJobCount(prev => Math.min(prev + JOBS_INCREMENT, filteredJobs.length));
+        setIsLoadingMore(false);
+      }, 300);
+    }
   };
 
   // Initialize temporary filters with current tab's values when opening modal
@@ -236,13 +268,10 @@ export default function HomeScreen() {
         className="flex-1 bg-[#f5f5f5] mt-4"
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
-        nestedScrollEnabled={true}
-        overScrollMode="auto"
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
-        activeOffsetY={[-5, 5]}
-        failOffsetX={[-15, 15]}
         bounces={true}
+        onScroll={handleScroll}
       >
         {loading ? (
           <View className="items-center justify-center py-20">
@@ -263,7 +292,17 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
         ) : filteredJobs.length > 0 ? (
-          filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />)
+          <>
+            {filteredJobs.slice(0, displayedJobCount).map((job) => (
+              <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />
+            ))}
+            {isLoadingMore && (
+              <View className="items-center justify-center py-4">
+                <ActivityIndicator size="small" color="#0092ce" />
+                <Text className="text-slate-400 text-sm mt-2">Loading more jobs...</Text>
+              </View>
+            )}
+          </>
         ) : (
           <View className="items-center justify-center py-20">
             <Ionicons
@@ -315,11 +354,7 @@ export default function HomeScreen() {
             <ScrollView
               className="px-6 py-4"
               showsVerticalScrollIndicator={false}
-              nestedScrollEnabled={true}
-              overScrollMode="auto"
               scrollEventThrottle={16}
-              activeOffsetY={[-5, 5]}
-              failOffsetX={[-15, 15]}
               bounces={true}
             >
 

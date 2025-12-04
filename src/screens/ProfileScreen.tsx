@@ -595,11 +595,7 @@ export default function ProfileScreen() {
       <ScrollView
         className="flex-1 px-6 pb-20 bg-white"
         style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}
-        nestedScrollEnabled={true}
-        overScrollMode="auto"
         scrollEventThrottle={16}
-        activeOffsetY={[-5, 5]}
-        failOffsetX={[-15, 15]}
         bounces={true}
       >
         <View className="items-center mb-3">

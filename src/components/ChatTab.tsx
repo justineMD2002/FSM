@@ -389,12 +389,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         <ScrollView
           ref={scrollViewRef}
           className="flex-1 mb-4"
-          nestedScrollEnabled={true}
-          overScrollMode="auto"
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          activeOffsetY={[-5, 5]}
-          failOffsetX={[-15, 15]}
           bounces={true}
         >
           {messages.length === 0 ? (

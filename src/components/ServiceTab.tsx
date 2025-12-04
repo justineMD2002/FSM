@@ -1065,11 +1065,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             </View>
 
             <ScrollView
-              nestedScrollEnabled={true}
-              overScrollMode="auto"
               scrollEventThrottle={16}
-              activeOffsetY={[-5, 5]}
-              failOffsetX={[-15, 15]}
               bounces={true}
             >
               {/* Media Type Selector */}

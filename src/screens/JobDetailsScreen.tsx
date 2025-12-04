@@ -490,11 +490,7 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false, 
         <ScrollView
           className="flex-1 px-4 py-4"
           scrollEnabled={!isSignatureDrawing}
-          nestedScrollEnabled={true}
-          overScrollMode="auto"
           scrollEventThrottle={16}
-          activeOffsetY={[-5, 5]}
-          failOffsetX={[-15, 15]}
           bounces={true}
         >
           {activeTab === 'Details' && (

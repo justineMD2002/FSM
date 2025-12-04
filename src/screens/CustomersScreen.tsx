@@ -1,14 +1,21 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { View, Text, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useCustomers } from '@/hooks';
 import { Customer } from '@/types';
 import { useAuthStore } from '@/store';
 
+const INITIAL_CUSTOMERS_TO_DISPLAY = 5;
+const CUSTOMERS_INCREMENT = 5;
+
 export default function CustomersScreen() {
   const user = useAuthStore((state) => state.user);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Pagination state
+  const [displayedCustomerCount, setDisplayedCustomerCount] = useState(INITIAL_CUSTOMERS_TO_DISPLAY);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Fetch customers connected to the logged-in technician (filtered by user ID)
   const { customers, loading, error, refetch } = useCustomers(user?.id);
@@ -65,6 +72,29 @@ export default function CustomersScreen() {
       );
     });
   }, [customers, searchQuery]);
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    setDisplayedCustomerCount(INITIAL_CUSTOMERS_TO_DISPLAY);
+  }, [searchQuery]);
+
+  // Handle scroll to load more customers
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+
+    // Check if user is within 200px of the bottom
+    const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 200;
+
+    if (isNearBottom && !isLoadingMore && displayedCustomerCount < filteredCustomers.length) {
+      setIsLoadingMore(true);
+
+      // Simulate a small delay for smooth UX
+      setTimeout(() => {
+        setDisplayedCustomerCount(prev => Math.min(prev + CUSTOMERS_INCREMENT, filteredCustomers.length));
+        setIsLoadingMore(false);
+      }, 300);
+    }
+  };
 
   const renderCustomerCard = (customer: Customer) => (
     <View key={customer.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
@@ -191,13 +221,10 @@ export default function CustomersScreen() {
         className="flex-1 bg-[#f5f5f5] pt-4"
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        nestedScrollEnabled={true}
-        overScrollMode="auto"
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
-        activeOffsetY={[-5, 5]}
-        failOffsetX={[-15, 15]}
         bounces={true}
+        onScroll={handleScroll}
       >
         {loading && !refreshing ? (
           <View className="items-center justify-center py-20">
@@ -205,7 +232,15 @@ export default function CustomersScreen() {
             <Text className="text-slate-500 text-base mt-4">Loading customers...</Text>
           </View>
         ) : filteredCustomers.length > 0 ? (
-          filteredCustomers.map((customer) => renderCustomerCard(customer))
+          <>
+            {filteredCustomers.slice(0, displayedCustomerCount).map((customer) => renderCustomerCard(customer))}
+            {isLoadingMore && (
+              <View className="items-center justify-center py-4">
+                <ActivityIndicator size="small" color="#0092ce" />
+                <Text className="text-slate-400 text-sm mt-2">Loading more customers...</Text>
+              </View>
+            )}
+          </>
         ) : (
           <View className="items-center justify-center py-20">
             <Ionicons name="people-outline" size={64} color="#cbd5e1" />
