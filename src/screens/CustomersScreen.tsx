@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, RefreshControl, Linking, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCustomers } from '@/hooks';
 import { Customer } from '@/types';
@@ -65,8 +65,8 @@ export default function CustomersScreen() {
     });
   }, [customers, searchQuery]);
 
-  const renderCustomerCard = (customer: Customer) => (
-    <View key={customer.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+  const renderCustomerCard = useCallback(({ item: customer }: { item: Customer }) => (
+    <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
       {/* Header with Avatar */}
       <View className="flex-row items-start mb-3">
         {/* Avatar */}
@@ -122,7 +122,36 @@ export default function CustomersScreen() {
         <Text className="text-white font-semibold ml-2">WhatsApp</Text>
       </TouchableOpacity>
     </View>
-  );
+  ), [handleWhatsApp, getInitials]);
+
+  const keyExtractor = useCallback((item: Customer) => item.id, []);
+
+  const ListEmptyComponent = useCallback(() => {
+    if (loading && !refreshing) {
+      return (
+        <View className="items-center justify-center py-20">
+          <ActivityIndicator size="large" color="#0092ce" />
+          <Text className="text-slate-500 text-base mt-4">Loading customers...</Text>
+        </View>
+      );
+    }
+    return (
+      <View className="items-center justify-center py-20">
+        <Ionicons name="people-outline" size={64} color="#cbd5e1" />
+        <Text className="text-slate-400 text-base mt-4">
+          {searchQuery ? 'No customers found' : 'No customers available'}
+        </Text>
+        {!searchQuery && (
+          <Text className="text-slate-400 text-sm mt-2 text-center px-6">
+            Customers will appear here once you're assigned to jobs
+          </Text>
+        )}
+        <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
+          <Text className="text-[#0092ce] text-sm mt-4">Tap to refresh</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [loading, refreshing, searchQuery, onRefresh]);
 
   // Error state
   if (error && !loading && customers.length === 0) {
@@ -186,37 +215,20 @@ export default function CustomersScreen() {
       </View>
 
       {/* Customer List */}
-      <ScrollView
+      <FlatList
+        data={filteredCustomers}
+        renderItem={renderCustomerCard}
+        keyExtractor={keyExtractor}
         className="flex-1 bg-[#f5f5f5] pt-4"
         contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        nestedScrollEnabled={true}
-        overScrollMode="always"
-      >
-        {loading && !refreshing ? (
-          <View className="items-center justify-center py-20">
-            <ActivityIndicator size="large" color="#0092ce" />
-            <Text className="text-slate-500 text-base mt-4">Loading customers...</Text>
-          </View>
-        ) : filteredCustomers.length > 0 ? (
-          filteredCustomers.map((customer) => renderCustomerCard(customer))
-        ) : (
-          <View className="items-center justify-center py-20">
-            <Ionicons name="people-outline" size={64} color="#cbd5e1" />
-            <Text className="text-slate-400 text-base mt-4">
-              {searchQuery ? 'No customers found' : 'No customers available'}
-            </Text>
-            {!searchQuery && (
-              <Text className="text-slate-400 text-sm mt-2 text-center px-6">
-                Customers will appear here once you're assigned to jobs
-              </Text>
-            )}
-            <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
-              <Text className="text-[#0092ce] text-sm mt-4">Tap to refresh</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+        ListEmptyComponent={ListEmptyComponent}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
+      />
     </View>
   );
 }

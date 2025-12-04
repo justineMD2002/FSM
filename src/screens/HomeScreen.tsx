@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, ScrollView, FlatList, TouchableOpacity, TextInput, RefreshControl, Modal, ActivityIndicator, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { JobCard } from '@/components/JobCard';
 import JobDetailsScreen from './JobDetailsScreen';
@@ -183,18 +183,89 @@ export default function HomeScreen() {
 
   const hasActiveFilters = dateFilter !== 'ALL' || (activeTab === 'HISTORY' && statusFilters.length > 0);
 
-  // Handle scroll to bottom for infinite scrolling
-  const handleScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 20;
-
-    // Check if user scrolled to bottom
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-
-    if (isCloseToBottom && hasMore && !loadingMore && !loading) {
+  // Handle end reached for infinite scrolling (FlatList)
+  const handleEndReached = useCallback(() => {
+    if (hasMore && !loadingMore && !loading) {
       loadMore();
     }
   }, [hasMore, loadingMore, loading, loadMore]);
+
+  // Render item for FlatList
+  const renderJobCard = useCallback(({ item }: { item: typeof filteredJobs[0] }) => (
+    <JobCard
+      job={item}
+      onPress={() => setSelectedJob(item)}
+      isHistoryTab={activeTab === 'HISTORY'}
+    />
+  ), [activeTab, setSelectedJob]);
+
+  // Key extractor for FlatList
+  const keyExtractor = useCallback((item: typeof filteredJobs[0]) => item.id, []);
+
+  // List footer component (loading more indicator)
+  const ListFooterComponent = useCallback(() => {
+    if (loadingMore) {
+      return (
+        <View className="items-center justify-center py-6">
+          <ActivityIndicator size="small" color="#0092ce" />
+          <Text className="text-slate-400 text-sm mt-2">Loading more jobs...</Text>
+        </View>
+      );
+    }
+    if (!hasMore && filteredJobs.length > 0) {
+      return (
+        <View className="items-center justify-center py-6">
+          <Text className="text-slate-400 text-sm">No more jobs to load</Text>
+        </View>
+      );
+    }
+    return null;
+  }, [loadingMore, hasMore, filteredJobs.length]);
+
+  // List empty component
+  const ListEmptyComponent = useCallback(() => {
+    if (loading) {
+      return (
+        <View className="items-center justify-center py-20">
+          <ActivityIndicator size="large" color="#0092ce" />
+          <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
+        </View>
+      );
+    }
+    if (error) {
+      return (
+        <View className="items-center justify-center py-20">
+          <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
+          <Text className="text-slate-700 text-base font-semibold mt-4">Error Loading Jobs</Text>
+          <Text className="text-slate-500 text-sm mt-2 text-center px-6">{error.message}</Text>
+          <TouchableOpacity
+            onPress={onRefresh}
+            className="bg-[#0092ce] rounded-lg px-6 py-3 mt-4"
+            activeOpacity={0.7}
+          >
+            <Text className="text-white font-semibold">Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <View className="items-center justify-center py-20">
+        <Ionicons
+          name={activeTab === 'HISTORY' ? 'search-outline' : 'briefcase-outline'}
+          size={64}
+          color="#cbd5e1"
+        />
+        <Text className="text-slate-400 text-base mt-4">
+          {activeTab === 'HISTORY' ? 'No jobs found' : 'No current jobs found'}
+        </Text>
+        {activeTab === 'CURRENT' && (
+          <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
+            <Text className="text-[#0092ce] text-sm mt-2">Tap to refresh</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }, [loading, error, activeTab, onRefresh]);
 
   // Show MapViewScreen if map view is active
   if (showMapView) {
@@ -264,70 +335,23 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <FlatList
+        data={filteredJobs}
+        renderItem={renderJobCard}
+        keyExtractor={keyExtractor}
         className="flex-1 bg-[#f5f5f5] mt-4"
         contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
-        nestedScrollEnabled={true}
-        overScrollMode="always"
-        onScroll={handleScroll}
-        scrollEventThrottle={400}
-      >
-        {loading ? (
-          <View className="items-center justify-center py-20">
-            <ActivityIndicator size="large" color="#0092ce" />
-            <Text className="text-slate-400 text-base mt-4">Loading jobs...</Text>
-          </View>
-        ) : error ? (
-          <View className="items-center justify-center py-20">
-            <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
-            <Text className="text-slate-700 text-base font-semibold mt-4">Error Loading Jobs</Text>
-            <Text className="text-slate-500 text-sm mt-2 text-center px-6">{error.message}</Text>
-            <TouchableOpacity
-              onPress={onRefresh}
-              className="bg-[#0092ce] rounded-lg px-6 py-3 mt-4"
-              activeOpacity={0.7}
-            >
-              <Text className="text-white font-semibold">Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : filteredJobs.length > 0 ? (
-          <>
-            {filteredJobs.map((job) => <JobCard key={job.id} job={job} onPress={() => setSelectedJob(job)} isHistoryTab={activeTab === 'HISTORY'} />)}
-
-            {/* Loading more indicator */}
-            {loadingMore && (
-              <View className="items-center justify-center py-6">
-                <ActivityIndicator size="small" color="#0092ce" />
-                <Text className="text-slate-400 text-sm mt-2">Loading more jobs...</Text>
-              </View>
-            )}
-
-            {/* No more jobs indicator */}
-            {!hasMore && filteredJobs.length > 0 && (
-              <View className="items-center justify-center py-6">
-                <Text className="text-slate-400 text-sm">No more jobs to load</Text>
-              </View>
-            )}
-          </>
-        ) : (
-          <View className="items-center justify-center py-20">
-            <Ionicons
-              name={activeTab === 'HISTORY' ? 'search-outline' : 'briefcase-outline'}
-              size={64}
-              color="#cbd5e1"
-            />
-            <Text className="text-slate-400 text-base mt-4">
-              {activeTab === 'HISTORY' ? 'No jobs found' : 'No current jobs found'}
-            </Text>
-            {activeTab === 'CURRENT' && (
-              <TouchableOpacity onPress={onRefresh} activeOpacity={0.7}>
-                <Text className="text-[#0092ce] text-sm mt-2">Tap to refresh</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </ScrollView>
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={ListFooterComponent}
+        ListEmptyComponent={ListEmptyComponent}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={10}
+      />
 
       <Modal
         visible={showFilterModal}
@@ -358,7 +382,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false} nestedScrollEnabled={true} overScrollMode="always">
+            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false}>
 
             <View className="mb-6">
               <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Date</Text>

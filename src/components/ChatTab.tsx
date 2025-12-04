@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, Modal, Pressable } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, FlatList, Image, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Dimensions, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/store';
 import { supabase } from '@/lib/supabase';
@@ -61,7 +61,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   const [newMessage, setNewMessage] = useState('');
   const [userName, setUserName] = useState('You');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const flatListRef = useRef<FlatList>(null);
 
   // Selection and delete state
   const [selectionMode, setSelectionMode] = useState(false);
@@ -105,7 +105,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
+        flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
   }, [messages]);
@@ -197,7 +197,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
     });
   };
 
-  const renderMessage = (message: typeof messages[0]) => {
+  const renderMessage = useCallback(({ item: message }: { item: typeof messages[0] }) => {
     // Check if this message was sent by the current user by comparing technician_job_id
     const isCurrentUser = message.sender_type === 'TECHNICIAN' &&
                           message.technician_job_id === technicianJobId;
@@ -326,7 +326,18 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         )}
       </View>
     );
-  };
+  }, [technicianJobId, selectedMessages, selectionMode, isReadOnly]);
+
+  const keyExtractor = useCallback((item: typeof messages[0]) => item.id, []);
+
+  const ListEmptyComponent = useCallback(() => (
+    <View className="flex-1 justify-center items-center py-12">
+      <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
+      <Text className="text-slate-500 text-center mt-4">
+        No messages yet. Start a conversation!
+      </Text>
+    </View>
+  ), []);
 
   // Show loading state
   if (loading) {
@@ -385,18 +396,19 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         )}
 
         {/* Messages - Scrollable */}
-        <ScrollView ref={scrollViewRef} className="flex-1 mb-4" nestedScrollEnabled={true} overScrollMode="always">
-          {messages.length === 0 ? (
-            <View className="flex-1 justify-center items-center py-12">
-              <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
-              <Text className="text-slate-500 text-center mt-4">
-                No messages yet. Start a conversation!
-              </Text>
-            </View>
-          ) : (
-            messages.map((message) => renderMessage(message))
-          )}
-        </ScrollView>
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={keyExtractor}
+          className="flex-1 mb-4"
+          ListEmptyComponent={ListEmptyComponent}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={15}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={15}
+          windowSize={10}
+        />
 
         {/* Message Input / Delete Actions - Fixed (hidden in read-only mode) */}
         {!isReadOnly && (

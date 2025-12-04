@@ -594,8 +594,7 @@ export default function ProfileScreen() {
       <ScrollView
         className="flex-1 px-6 pb-20 bg-white"
         style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}
-        nestedScrollEnabled={true}
-        overScrollMode="always"
+        showsVerticalScrollIndicator={true}
       >
         <View className="items-center mb-3">
           <TouchableOpacity
