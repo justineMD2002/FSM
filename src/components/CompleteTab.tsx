@@ -7,6 +7,7 @@ import SuccessModal from '@/components/SuccessModal';
 import { useJobTasks, useTaskCompletions, useJobEquipments, useJobSignature } from '@/hooks';
 import { uploadSignatureAndCreateRecord } from '@/services/jobSignatures.service';
 import { updateTechnicianJobStatus } from '@/services/technicianJobs.service';
+import { updateJob } from '@/services/jobs.service';
 import { checkClockInStatus, getTechnicianStatus } from '@/services/attendance.service';
 import { useAuthStore } from '@/store';
 import { formatDateTime } from '@/utils/dateFormat';
@@ -271,11 +272,15 @@ export default function CompleteTab({
       }
 
       // Update technician job status to COMPLETED
-      // Note: Job status is automatically updated to COMPLETED by database trigger
-      // when all technicians have completed their assignments
       const techJobResult = await updateTechnicianJobStatus(technicianJobId, 'COMPLETED');
       if (techJobResult.error) {
         throw new Error(techJobResult.error.message);
+      }
+
+      // Update job status to COMPLETED in jobs table
+      const jobUpdateResult = await updateJob(jobId, { status: 'COMPLETED' });
+      if (jobUpdateResult.error) {
+        throw new Error(jobUpdateResult.error.message);
       }
 
       // Mark job as completed locally
