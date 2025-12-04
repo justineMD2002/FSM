@@ -598,6 +598,9 @@ export default function ProfileScreen() {
         nestedScrollEnabled={true}
         overScrollMode="auto"
         scrollEventThrottle={16}
+        activeOffsetY={[-5, 5]}
+        failOffsetX={[-15, 15]}
+        bounces={true}
       >
         <View className="items-center mb-3">
           <TouchableOpacity

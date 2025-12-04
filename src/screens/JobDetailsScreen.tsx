@@ -493,6 +493,9 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false, 
           nestedScrollEnabled={true}
           overScrollMode="auto"
           scrollEventThrottle={16}
+          activeOffsetY={[-5, 5]}
+          failOffsetX={[-15, 15]}
+          bounces={true}
         >
           {activeTab === 'Details' && (
             <DetailsTab

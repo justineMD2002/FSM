@@ -195,6 +195,9 @@ export default function CustomersScreen() {
         overScrollMode="auto"
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
+        activeOffsetY={[-5, 5]}
+        failOffsetX={[-15, 15]}
+        bounces={true}
       >
         {loading && !refreshing ? (
           <View className="items-center justify-center py-20">

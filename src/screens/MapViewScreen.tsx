@@ -380,6 +380,9 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
             scrollEnabled={false}
             nestedScrollEnabled={true}
             overScrollMode="auto"
+            activeOffsetX={[-5, 5]}
+            failOffsetY={[-15, 15]}
+            bounces={true}
           >
             {jobsWithColors.map((job, index) => (
               <Pressable
@@ -540,7 +543,16 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="px-6 py-4" showsVerticalScrollIndicator={false} nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
+            <ScrollView
+              className="px-6 py-4"
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+              overScrollMode="auto"
+              scrollEventThrottle={16}
+              activeOffsetY={[-5, 5]}
+              failOffsetX={[-15, 15]}
+              bounces={true}
+            >
               <View className="mb-6">
                 <View className="space-y-2">
                   {[

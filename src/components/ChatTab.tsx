@@ -393,6 +393,9 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           overScrollMode="auto"
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
+          activeOffsetY={[-5, 5]}
+          failOffsetX={[-15, 15]}
+          bounces={true}
         >
           {messages.length === 0 ? (
             <View className="flex-1 justify-center items-center py-12">

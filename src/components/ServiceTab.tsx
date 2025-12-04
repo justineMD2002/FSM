@@ -684,7 +684,17 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             />
             <View className="mb-3">
               <Text className="text-sm text-slate-600 mb-2">Type</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-row"
+                nestedScrollEnabled={true}
+                overScrollMode="auto"
+                scrollEventThrottle={16}
+                activeOffsetX={[-5, 5]}
+                failOffsetY={[-15, 15]}
+                bounces={true}
+              >
                 {[
                   'appointment',
                   'repair',
@@ -1054,7 +1064,14 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               </TouchableOpacity>
             </View>
 
-            <ScrollView nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
+            <ScrollView
+              nestedScrollEnabled={true}
+              overScrollMode="auto"
+              scrollEventThrottle={16}
+              activeOffsetY={[-5, 5]}
+              failOffsetX={[-15, 15]}
+              bounces={true}
+            >
               {/* Media Type Selector */}
               <Text className="text-sm font-semibold text-slate-700 mb-2">Media Type</Text>
               <View className="flex-row mb-4">
@@ -1090,7 +1107,17 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               >
                 {selectedImages.length > 0 ? (
                   <View className="w-full p-4">
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" nestedScrollEnabled={true} overScrollMode="auto" scrollEventThrottle={16}>
+                    <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="flex-row"
+                nestedScrollEnabled={true}
+                overScrollMode="auto"
+                scrollEventThrottle={16}
+                activeOffsetX={[-5, 5]}
+                failOffsetY={[-15, 15]}
+                bounces={true}
+              >
                       {selectedImages.map((selectedImage, index) => (
                         <View key={index} className="mr-2 relative">
                           {selectedImage.type === 'VIDEO' ? (
