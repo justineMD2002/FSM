@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TouchableWithoutFeedback } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import HomeScreen from './HomeScreen';
 import ProfileScreen from './ProfileScreen';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -51,17 +52,19 @@ export default function MainScreen() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleUserActivity}>
-      <View className="flex-1 bg-slate-50">
-        {shouldShowHeaderFooter && (
-          <DashboardHeader
-            title={currentTab.title}
-            showMapIcon={currentTab.showMapIcon}
-          />
-        )}
-        {currentTab.screen}
-        {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
-      </View>
-    </TouchableWithoutFeedback>
+    <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
+      <TouchableWithoutFeedback onPress={handleUserActivity}>
+        <View className="flex-1 bg-slate-50">
+          {shouldShowHeaderFooter && (
+            <DashboardHeader
+              title={currentTab.title}
+              showMapIcon={currentTab.showMapIcon}
+            />
+          )}
+          {currentTab.screen}
+          {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
+        </View>
+      </TouchableWithoutFeedback>
+    </SafeAreaView>
   );
 }

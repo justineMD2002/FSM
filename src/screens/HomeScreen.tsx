@@ -238,7 +238,7 @@ export default function HomeScreen() {
         ))}
       </View>
 
-      <View className="px-6 pt-4 bg-white">
+      <View className="px-6 pt-4 pb-6 bg-white">
         <View className="flex-row items-center gap-2">
           <View className="flex-1 flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
             <Ionicons name="search-outline" size={20} color="#64748b" />
@@ -265,8 +265,8 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView
-        className="flex-1 bg-[#f5f5f5] mt-4"
-        contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
+        className="flex-1 bg-[#f5f5f5]"
+        contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 16, paddingBottom: 20 }}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
