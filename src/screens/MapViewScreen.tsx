@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Modal, Dimensions, Pressable, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
@@ -253,9 +254,10 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
   }
 
   return (
-    <View className="flex-1 bg-slate-50">
-      {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-slate-200 flex-row items-center justify-between">
+    <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
+      <View className="flex-1 bg-slate-50">
+        {/* Header */}
+        <View className="bg-white px-6 py-4 border-b border-slate-200 flex-row items-center justify-between">
         <View className="flex-row items-center">
           <TouchableOpacity
             onPress={onBack}
@@ -308,7 +310,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
           style={{
             position: 'absolute',
             bottom: 30,
-            left: 0,
+            left: 0,  
             right: 0,
           }}
         >
@@ -394,7 +396,8 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                     className="bg-white rounded-2xl shadow-lg overflow-hidden"
                     style={{
                       opacity: pressed ? 0.8 : 1,
-                      transform: [{ scale: pressed ? 0.98 : 1 }]
+                      transform: [{ scale: pressed ? 0.98 : 1 }],
+                      height: 250
                     }}
                   >
                     {/* Route Color Bar - Matches map route color */}
@@ -408,7 +411,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
 
                     <View className="pl-5 pr-4 py-4">
                   {/* Job Number & Status */}
-                  <View className="flex-row items-center justify-between mb-3">
+                  <View className="flex-row items-center justify-between mb-1">
                     <Text className="text-slate-600 text-sm font-bold">
                       {job.jobCode}
                     </Text>
@@ -426,14 +429,14 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                   </View>
 
                   {/* Job Name */}
-                  <Text className="text-lg font-bold text-slate-800 mb-3" numberOfLines={2}>
+                  <Text className="text-lg font-bold text-slate-800 mb-3" numberOfLines={2} ellipsizeMode="tail">
                     {job.jobName}
                   </Text>
 
                   {/* Customer */}
                   <View className="flex-row items-center mb-2">
                     <Ionicons name="person-outline" size={16} color="#64748b" />
-                    <Text className="text-sm text-slate-700 ml-2 flex-1 font-medium" numberOfLines={1}>
+                    <Text className="text-sm text-slate-700 ml-2 flex-1 font-medium" numberOfLines={1} ellipsizeMode="tail">
                       {job.customer}
                     </Text>
                   </View>
@@ -450,19 +453,36 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
                   {job.assignedTechnicians && job.assignedTechnicians.length > 0 && (
                     <View className="flex-row items-start mb-2">
                       <Ionicons name="people-outline" size={16} color="#0092ce" style={{ marginTop: 1 }} />
-                      <Text className="text-xs text-[#0092ce] ml-2 font-medium flex-1">
+                      <Text className="text-xs text-[#0092ce] ml-2 font-medium flex-1" numberOfLines={1} ellipsizeMode="tail">
                         {job.assignedTechnicians.join(', ')}
                       </Text>
                     </View>
                   )}
 
                       {/* Location */}
-                      <View className="flex-row items-start">
+                      <View className="flex-row items-start mb-2">
                         <Ionicons name="location-outline" size={16} color="#64748b" style={{ marginTop: 1 }} />
-                        <Text className="text-xs text-slate-600 ml-2 flex-1" numberOfLines={2}>
+                        <Text className="text-xs text-slate-600 ml-2 flex-1" numberOfLines={2} ellipsizeMode="tail">
                           {job.address}
                         </Text>
                       </View>
+
+                    </View>
+
+                    {/* See More Indicator - Fixed at Bottom */}
+                    <View
+                      className="flex-row items-center justify-center border-t border-slate-100"
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        paddingVertical: 10,
+                        backgroundColor: 'white'
+                      }}
+                    >
+                      <Text className="text-xs text-[#0092ce] font-semibold">Tap to view details</Text>
+                      <Ionicons name="chevron-forward" size={14} color="#0092ce" style={{ marginLeft: 4 }} />
                     </View>
                   </View>
                 )}
@@ -677,6 +697,7 @@ export default function MapViewScreen({ onBack }: MapViewScreenProps) {
           </View>
         </View>
       </Modal>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
