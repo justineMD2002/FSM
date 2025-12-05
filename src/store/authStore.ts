@@ -24,11 +24,29 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (loading) => set({ loading }),
 
   signIn: async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    // Strategy: Sign in, then immediately sign out globally, then sign in again
+    // This ensures only ONE active session exists
+
+    // Step 1: Sign in to get access
+    const { data: firstSignIn, error: firstError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+
+    if (firstError) {
+      return { error: firstError };
+    }
+
+    // Step 2: Sign out from ALL sessions globally
+    await supabase.auth.signOut({ scope: 'global' });
+
+    // Step 3: Sign in again to create a fresh single session
+    const { error: finalError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    return { error: finalError };
   },
 
   signOut: async () => {
