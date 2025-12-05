@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   email: string;
+  username?: string;
   created_at: string;
 }
 
@@ -20,9 +21,13 @@ export interface JobDB {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  created_by?: string;
   // Relations
   customer?: Customer;
   location?: Location;
+  creator?: {
+    username: string;
+  };
   technician_jobs?: Array<{
     id: string;
     assignment_status: string;
@@ -97,6 +102,7 @@ export interface Job {
   technicianJobId?: string; // ID of technician_jobs record (null if not assigned to current technician)
   technicianAssignmentStatus?: 'ASSIGNED' | 'STARTED' | 'COMPLETED' | 'CANCELLED';
   assignedTechnicians?: string[]; // Array of assigned technician names
+  createdBy?: string; // Username of the user who created the job
 }
 
 export interface Technician {

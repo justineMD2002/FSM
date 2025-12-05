@@ -199,6 +199,17 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
                 </View>
               </View>
 
+              {/* Created By */}
+              {job.createdBy && (
+                <View className="flex-row mb-3">
+                  <Ionicons name="person-outline" size={18} color="#0092ce" />
+                  <View className="ml-2 flex-1">
+                    <Text className="text-xs text-slate-500 mb-0.5 font-semibold">Created By</Text>
+                    <Text className="text-sm text-slate-700">{job.createdBy}</Text>
+                  </View>
+                </View>
+              )}
+
               {/* Customer */}
               <View className="flex-row justify-between items-start mb-3">
                 <View className="flex-row flex-1">

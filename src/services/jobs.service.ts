@@ -101,6 +101,7 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     status: uiStatus,
     priority: dbJob.priority,
     assignedTechnicians: assignedTechnicians.length > 0 ? assignedTechnicians : undefined,
+    createdBy: dbJob.creator?.username,
   };
 };
 
@@ -146,6 +147,9 @@ export const getAllJobs = async (
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        creator:created_by (
+          username
         ),
         technician_jobs (
           id,
@@ -252,6 +256,9 @@ export const getJobById = async (
           destination_longitude,
           destination_latitude
         ),
+        creator:created_by (
+          username
+        ),
         technician_jobs (
           id,
           assignment_status,
@@ -333,6 +340,9 @@ export const createJob = async (
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        creator:created_by (
+          username
         )
       `)
       .single();
@@ -409,6 +419,9 @@ export const updateJob = async (
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        creator:created_by (
+          username
         )
       `)
       .single();
@@ -505,6 +518,7 @@ export const getJobByIdForTechnician = async (
           scheduled_end,
           customer_id,
           location_id,
+          created_by,
           customer:customer_id (
             id,
             customer_code,
@@ -534,6 +548,9 @@ export const getJobByIdForTechnician = async (
             current_latitude,
             destination_longitude,
             destination_latitude
+          ),
+          creator:created_by (
+            username
           ),
           technician_jobs (
             id,
@@ -617,6 +634,7 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
         scheduled_end,
         customer_id,
         location_id,
+        created_by,
         customer:customer_id (
           id,
           customer_code,
@@ -646,6 +664,9 @@ export const getAllJobsWithinSixMonths = async (technicianId?: string): Promise<
           current_latitude,
           destination_longitude,
           destination_latitude
+        ),
+        creator:created_by (
+          username
         ),
         technician_jobs (
           id,
@@ -746,6 +767,7 @@ export const getJobsForTechnician = async (
           scheduled_end,
           customer_id,
           location_id,
+          created_by,
           customer:customer_id (
             id,
             customer_code,
@@ -775,6 +797,9 @@ export const getJobsForTechnician = async (
             current_latitude,
             destination_longitude,
             destination_latitude
+          ),
+          creator:created_by (
+            username
           ),
           technician_jobs (
             id,
