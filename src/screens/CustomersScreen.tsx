@@ -96,64 +96,95 @@ export default function CustomersScreen() {
     }
   };
 
-  const renderCustomerCard = (customer: Customer) => (
-    <View key={customer.id} className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-      {/* Header with Avatar */}
-      <View className="flex-row items-start mb-3">
-        {/* Avatar */}
-        <View
-          className="w-16 h-16 rounded-full items-center justify-center"
-          style={{ backgroundColor: '#0092ce' }}
-        >
-          <Text className="text-white text-xl font-bold">
-            {getInitials(customer.customer_name)}
-          </Text>
-        </View>
+  const renderCustomerCard = (customer: Customer) => {
+    // Extract address notes from customer_location -> customer_address_details
+    const addressNotes = customer.customer_location
+      ?.flatMap(loc => loc.customer_address_details || [])
+      .map(detail => detail.address_notes)
+      .filter(note => note && note.trim() !== '') || [];
 
-        {/* Name and Code */}
-        <View className="flex-1 ml-3">
-          <Text className="text-lg font-bold text-slate-800">{customer.customer_name}</Text>
-          <Text className="text-sm text-slate-600 mt-0.5">Code: {customer.customer_code}</Text>
-        </View>
-      </View>
-
-      {/* Contact Info */}
-      <View className="border-t border-slate-100 pt-3 mb-3">
-        {/* Address */}
-        <View className="flex-row items-start mb-2">
-          <Ionicons name="location-outline" size={16} color="#64748b" />
-          <Text className="text-sm text-slate-600 ml-2 flex-1" numberOfLines={2}>
-            {customer.customer_address}
-          </Text>
-        </View>
-
-        {/* Email */}
+    return (
+      <View key={customer.id} className="bg-white rounded-xl p-3 mb-2 shadow-sm">
+        {/* Header with Avatar */}
         <View className="flex-row items-center mb-2">
-          <Ionicons name="mail-outline" size={16} color="#64748b" />
-          <Text className="text-sm text-slate-600 ml-2 flex-1" numberOfLines={1}>
-            {customer.email}
-          </Text>
+          {/* Avatar */}
+          <View
+            className="w-12 h-12 rounded-full items-center justify-center"
+            style={{ backgroundColor: '#0092ce' }}
+          >
+            <Text className="text-white text-base font-bold">
+              {getInitials(customer.customer_name)}
+            </Text>
+          </View>
+
+          {/* Name */}
+          <View className="flex-1 ml-2">
+            <Text className="text-base font-bold text-slate-800" numberOfLines={1} ellipsizeMode="tail">
+              {customer.customer_name}
+            </Text>
+          </View>
         </View>
 
-        {/* Phone */}
-        <View className="flex-row items-center">
-          <Ionicons name="call-outline" size={16} color="#64748b" />
-          <Text className="text-sm text-slate-600 ml-2">{customer.phone_number}</Text>
+        {/* Contact Info */}
+        <View className="border-t border-slate-100 pt-2 mb-2">
+          {/* Email - only show if exists */}
+          {customer.email && customer.email.trim() !== '' && (
+            <View className="flex-row items-center mb-1.5">
+              <Ionicons name="mail-outline" size={14} color="#64748b" />
+              <Text className="text-xs text-slate-600 ml-2 flex-1" numberOfLines={1} ellipsizeMode="tail">
+                {customer.email}
+              </Text>
+            </View>
+          )}
+
+          {/* Phone - only show if exists */}
+          {customer.phone_number && customer.phone_number.trim() !== '' && (
+            <View className="flex-row items-center mb-1.5">
+              <Ionicons name="call-outline" size={14} color="#64748b" />
+              <Text className="text-xs text-slate-600 ml-2">{customer.phone_number}</Text>
+            </View>
+          )}
+
+          {/* Address - only show if exists */}
+          {customer.customer_address && customer.customer_address.trim() !== '' && (
+            <View className="flex-row items-start mb-1.5">
+              <Ionicons name="location-outline" size={14} color="#64748b" style={{ marginTop: 1 }} />
+              <Text className="text-xs text-slate-600 ml-2 flex-1" numberOfLines={1} ellipsizeMode="tail">
+                {customer.customer_address}
+              </Text>
+            </View>
+          )}
+
+          {/* Address Notes - only show if exists */}
+          {addressNotes.length > 0 && (
+            <View className="flex-row items-start">
+              <Ionicons name="document-text-outline" size={14} color="#64748b" style={{ marginTop: 1 }} />
+              <View className="flex-1 ml-2">
+                {addressNotes.slice(0, 1).map((note, index) => (
+                  <Text key={index} className="text-xs text-slate-600" numberOfLines={1} ellipsizeMode="tail">
+                    {note}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
+
+        {/* WhatsApp Button - only show if phone exists */}
+        {customer.phone_number && customer.phone_number.trim() !== '' && (
+          <TouchableOpacity
+            className="flex-row items-center justify-center py-2 rounded-lg"
+            style={{ backgroundColor: '#25D366' }}
+            onPress={() => handleWhatsApp(customer.phone_number, customer.customer_name)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="logo-whatsapp" size={16} color="#ffffff" />
+            <Text className="text-white font-semibold text-sm ml-1.5">WhatsApp</Text>
+          </TouchableOpacity>
+        )}
       </View>
-
-      {/* WhatsApp Button */}
-      <TouchableOpacity
-        className="flex-row items-center justify-center py-3 rounded-lg"
-        style={{ backgroundColor: '#25D366' }}
-        onPress={() => handleWhatsApp(customer.phone_number, customer.customer_name)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="logo-whatsapp" size={20} color="#ffffff" />
-        <Text className="text-white font-semibold ml-2">WhatsApp</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   // Error state
   if (error && !loading && customers.length === 0) {
@@ -178,7 +209,7 @@ export default function CustomersScreen() {
   return (
     <View className="flex-1 bg-white" style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}>
       {/* Search */}
-      <View className="px-6 pt-4 bg-white">
+      <View className="px-6 pt-4 pb-4 bg-white">
         {/* Search Bar */}
         <View className="flex-row items-center bg-slate-100 rounded-lg px-4 py-3">
           <Ionicons name="search-outline" size={20} color="#64748b" />
@@ -193,25 +224,6 @@ export default function CustomersScreen() {
             <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
               <Ionicons name="close-circle" size={20} color="#64748b" />
             </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Stats Bar */}
-      <View className="px-6 pt-3 pb-3 bg-white">
-        <View className="flex-row items-center bg-slate-50 rounded-lg p-3">
-          <Ionicons name="people-outline" size={20} color="#0092ce" />
-          <Text className="text-sm text-slate-600 ml-2">
-            {loading ? 'Loading...' : `${filteredCustomers.length} Customer${filteredCustomers.length !== 1 ? 's' : ''}`}
-            {!loading && searchQuery && customers.length !== filteredCustomers.length && (
-              <Text className="text-slate-500"> of {customers.length}</Text>
-            )}
-          </Text>
-          {error && customers.length > 0 && (
-            <View className="ml-auto flex-row items-center">
-              <Ionicons name="warning-outline" size={16} color="#f59e0b" />
-              <Text className="text-xs text-amber-600 ml-1">Partial results</Text>
-            </View>
           )}
         </View>
       </View>

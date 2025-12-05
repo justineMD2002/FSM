@@ -19,8 +19,17 @@ export const getAllCustomers = async (
   try {
     let query = supabase
       .from(TABLE_NAME)
-      .select('*')
-      .order('customer_name', { ascending: true });
+      .select(`
+        *,
+        customer_location (
+          customer_address_details (
+            address_notes
+          )
+        )
+      `)
+      .is('deleted_at', null)
+      .order('customer_name', { ascending: true })
+      .limit(1000); // Explicitly set a high limit to fetch all customers
 
     // Apply search filter if provided
     if (searchQuery && searchQuery.trim()) {
@@ -289,6 +298,11 @@ export const getCustomersByTechnicianUserId = async (
       .from(TABLE_NAME)
       .select(`
         *,
+        customer_location (
+          customer_address_details (
+            address_notes
+          )
+        ),
         jobs!inner(
           id,
           technician_jobs!inner(
@@ -299,8 +313,10 @@ export const getCustomersByTechnicianUserId = async (
           )
         )
       `)
+      .is('deleted_at', null)
       .eq('jobs.technician_jobs.technician.user_id', userId)
-      .order('customer_name', { ascending: true });
+      .order('customer_name', { ascending: true })
+      .limit(1000); // Explicitly set a high limit to fetch all customers
 
     // Apply search filter if provided
     if (searchQuery && searchQuery.trim()) {
@@ -323,6 +339,7 @@ export const getCustomersByTechnicianUserId = async (
     }
 
     // Remove duplicates and clean up the response (remove nested jobs data)
+    // Note: Supabase may return duplicate rows when joining, so we deduplicate by customer ID
     const uniqueCustomers = data
       ? Array.from(
           new Map(
