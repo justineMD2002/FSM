@@ -494,62 +494,63 @@ export default function CompleteTab({
           <Text className="text-lg font-semibold text-slate-800 ml-2">Customer Signature</Text>
         </View>
         <View className="bg-white rounded-xl p-4 shadow-sm">
-          {!hasSignature || showSignaturePad ? (
+          {!hasSignature ? (
             <View>
-              {/* Signature Canvas */}
-              <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 250 }}>
-                {isWeb ? (
-                  <SignatureCanvas
-                    ref={signatureRef}
-                    onBegin={handleSignatureBegin}
-                    onEnd={handleSignatureEnd}
-                    penColor="black"
-                    minWidth={0.5}
-                    maxWidth={2.5}
-                    dotSize={1}
-                    velocityFilterWeight={0.5}
-                    throttle={8}
-                    canvasProps={{
-                      className: 'signature-canvas',
-                      style: { width: '100%', height: '100%', touchAction: 'none' }
-                    }}
-                  />
-                ) : (
-                  <SignatureScreen
-                    ref={signatureRef}
-                    onOK={handleSignatureOK}
-                    onBegin={handleSignatureBegin}
-                    onEnd={handleSignatureEnd}
-                    webStyle={style}
-                    descriptionText="Sign above"
-                    minWidth={0.5}
-                    maxWidth={2.5}
-                    penColor="black"
-                    // throttle={8}
-                  />
-                )}
-              </View>
-              {/* Action Buttons */}
-              <View className="flex-row space-x-2">
+              {/* Show button to open signature modal on mobile, or inline canvas on web */}
+              {isWeb ? (
+                <View>
+                  {/* Signature Canvas - Web inline */}
+                  <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 250 }}>
+                    <SignatureCanvas
+                      ref={signatureRef}
+                      onBegin={handleSignatureBegin}
+                      onEnd={handleSignatureEnd}
+                      penColor="black"
+                      minWidth={0.5}
+                      maxWidth={2.5}
+                      dotSize={1}
+                      velocityFilterWeight={0.5}
+                      throttle={8}
+                      canvasProps={{
+                        className: 'signature-canvas',
+                        style: { width: '100%', height: '100%', touchAction: 'none' }
+                      }}
+                    />
+                  </View>
+                  {/* Action Buttons */}
+                  <View className="flex-row space-x-2">
+                    <TouchableOpacity
+                      onPress={handleSignatureClear}
+                      className="flex-1 bg-slate-200 rounded-lg py-2 px-4 flex-row items-center justify-center mr-2"
+                      disabled={!canSaveSignature || isSignatureEmpty}
+                      style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#475569" />
+                      <Text className="text-slate-700 font-medium ml-2">Clear</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleSaveSignature}
+                      className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
+                      disabled={!canSaveSignature || isSignatureEmpty}
+                      style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
+                    >
+                      <Ionicons name="checkmark" size={18} color="#fff" />
+                      <Text className="text-white font-medium ml-2">Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
                 <TouchableOpacity
-                  onPress={handleSignatureClear}
-                  className="flex-1 bg-slate-200 rounded-lg py-2 px-4 flex-row items-center justify-center mr-2"
-                  disabled={!canSaveSignature || isSignatureEmpty}
-                  style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
+                  onPress={() => canSaveSignature && setShowSignaturePad(true)}
+                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 items-center justify-center"
+                  disabled={!canSaveSignature}
+                  style={{ opacity: canSaveSignature ? 1 : 0.5, minHeight: 200 }}
                 >
-                  <Ionicons name="trash-outline" size={18} color="#475569" />
-                  <Text className="text-slate-700 font-medium ml-2">Clear</Text>
+                  <Ionicons name="create-outline" size={48} color="#94a3b8" />
+                  <Text className="text-slate-600 text-base mt-4 font-medium">Tap to Add Signature</Text>
+                  <Text className="text-slate-400 text-sm mt-1">Customer signature required</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={isWeb ? handleSaveSignature : () => signatureRef.current?.readSignature()}
-                  className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
-                  disabled={!canSaveSignature || isSignatureEmpty}
-                  style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
-                >
-                  <Ionicons name="checkmark" size={18} color="#fff" />
-                  <Text className="text-white font-medium ml-2">Save</Text>
-                </TouchableOpacity>
-              </View>
+              )}
             </View>
           ) : (
             <View>
@@ -586,6 +587,79 @@ export default function CompleteTab({
           )}
         </View>
       </View>
+
+      {/* Mobile Signature Modal - Outside ScrollView Context */}
+      {!isWeb && (
+        <Modal
+          visible={showSignaturePad}
+          transparent={false}
+          animationType="slide"
+          onRequestClose={() => {
+            setShowSignaturePad(false);
+            setIsSignatureEmpty(true);
+            onSignatureDrawingChange?.(false);
+          }}
+        >
+          <View className="flex-1 bg-white">
+            {/* Header */}
+            <View className="bg-[#0092ce] px-4 pt-12 pb-4">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-white text-xl font-semibold">Customer Signature</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowSignaturePad(false);
+                    setIsSignatureEmpty(true);
+                    onSignatureDrawingChange?.(false);
+                  }}
+                >
+                  <Ionicons name="close" size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Signature Canvas */}
+            <View className="flex-1 bg-slate-50 p-4">
+              <View className="flex-1 bg-white border-2 border-slate-300 rounded-xl overflow-hidden">
+                <SignatureScreen
+                  ref={signatureRef}
+                  onOK={handleSignatureOK}
+                  onBegin={handleSignatureBegin}
+                  onEnd={handleSignatureEnd}
+                  webStyle={style}
+                  descriptionText="Sign above"
+                  minWidth={0.5}
+                  maxWidth={2.5}
+                  penColor="black"
+                />
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View className="bg-white px-4 pb-8 pt-4 border-t border-slate-200">
+              <View className="flex-row space-x-3">
+                <TouchableOpacity
+                  onPress={handleSignatureClear}
+                  className="flex-1 bg-slate-200 rounded-xl py-4 flex-row items-center justify-center mr-2"
+                  disabled={isSignatureEmpty}
+                  style={{ opacity: isSignatureEmpty ? 0.5 : 1 }}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#475569" />
+                  <Text className="text-slate-700 font-semibold ml-2 text-base">Clear</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => signatureRef.current?.readSignature()}
+                  className="flex-1 bg-[#0092ce] rounded-xl py-4 flex-row items-center justify-center"
+                  disabled={isSignatureEmpty}
+                  style={{ opacity: isSignatureEmpty ? 0.5 : 1 }}
+                >
+                  <Ionicons name="checkmark" size={20} color="#fff" />
+                  <Text className="text-white font-semibold ml-2 text-base">Save Signature</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Complete Job Button */}
       <TouchableOpacity
