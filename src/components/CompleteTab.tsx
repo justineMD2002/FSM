@@ -41,6 +41,7 @@ export default function CompleteTab({
   const [localTaskCompletions, setLocalTaskCompletions] = useState<{ [taskId: string]: boolean }>({});
   const [pendingSignature, setPendingSignature] = useState<string | null>(null); // Store signature temporarily until job completion
   const [localJobCompleted, setLocalJobCompleted] = useState(false); // Track if job was completed in this session
+  const [isActivelyDrawing, setIsActivelyDrawing] = useState(false); // Track if user is actively drawing
   const signatureRef = useRef<any>(null);
   const isWeb = Platform.OS === 'web';
 
@@ -141,12 +142,26 @@ export default function CompleteTab({
     .filter(task => task.is_required)
     .every(task => localTaskCompletions[task.id] === true);
 
-  // Cleanup: ensure scrolling is enabled when component unmounts
+  // Manage scroll based on actively drawing state
   useEffect(() => {
+    console.log('Scroll state changed:', isActivelyDrawing ? 'DISABLED' : 'ENABLED');
+    onSignatureDrawingChange?.(isActivelyDrawing);
+
+    // Safety timeout: if scroll is disabled for more than 10 seconds, force re-enable
+    let timeoutId: NodeJS.Timeout | null = null;
+    if (isActivelyDrawing) {
+      timeoutId = setTimeout(() => {
+        console.warn('Force re-enabling scroll after 10 seconds');
+        setIsActivelyDrawing(false);
+      }, 10000);
+    }
+
+    // Cleanup: ensure scrolling is enabled when component unmounts
     return () => {
+      if (timeoutId) clearTimeout(timeoutId);
       onSignatureDrawingChange?.(false);
     };
-  }, [onSignatureDrawingChange]);
+  }, [isActivelyDrawing, onSignatureDrawingChange]);
 
   // Can save signature if job started, not completed, clocked in, and not on break
   const canSaveSignature = jobStarted && !jobCompleted && isClockedIn && !isOnBreak;
@@ -158,11 +173,13 @@ export default function CompleteTab({
   const handleSignatureOK = (signatureData: string) => {
     if (!canSaveSignature) return;
 
+    console.log('Signature saved');
     // Store signature locally, don't upload to database yet
     setPendingSignature(signatureData);
     setSignatureDate(new Date());
     setShowSignaturePad(false);
     setIsSignatureEmpty(true);
+    setIsActivelyDrawing(false);
     setShowSignatureSavedModal(true);
   };
 
@@ -182,21 +199,22 @@ export default function CompleteTab({
       signatureRef.current?.clearSignature();
     }
     setIsSignatureEmpty(true);
+    setIsActivelyDrawing(false);
   };
 
   const handleSignatureBegin = () => {
+    console.log('Signature drawing started');
     setIsSignatureEmpty(false);
-    // Disable scrolling while user is actively drawing (finger touching screen)
-    onSignatureDrawingChange?.(true);
+    setIsActivelyDrawing(true);
   };
 
   const handleSignatureEnd = () => {
+    console.log('Signature drawing ended');
     // For web, check if signature is empty after drawing ends
     if (isWeb && signatureRef.current) {
       setIsSignatureEmpty(signatureRef.current.isEmpty());
     }
-    // Re-enable scrolling when user lifts finger from screen
-    onSignatureDrawingChange?.(false);
+    setIsActivelyDrawing(false);
   };
 
   const handleSaveSignature = () => {
@@ -215,11 +233,13 @@ export default function CompleteTab({
       alert('Cannot retake signature - job is already completed');
       return;
     }
+    console.log('Retaking signature');
     setLocalSignature(null);
     setPendingSignature(null);
     setSignatureDate(null);
     setShowSignaturePad(true);
     setIsSignatureEmpty(true);
+    setIsActivelyDrawing(false);
   };
 
   const handleCompleteJob = () => {
@@ -358,9 +378,13 @@ export default function CompleteTab({
   const style = `.m-signature-pad {
     box-shadow: none;
     border: none;
+    margin: 0;
+    padding: 0;
   }
   .m-signature-pad--body {
     border: none;
+    margin: 0;
+    padding: 0;
   }
   .m-signature-pad--footer {
     display: none;
@@ -368,10 +392,16 @@ export default function CompleteTab({
   body,html {
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
     touch-action: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
   canvas {
     touch-action: none;
+    -webkit-user-select: none;
+    display: block;
   }`;
 
   if (tasksLoading || completionsLoading || equipmentsLoading || signatureLoading) {
@@ -527,11 +557,18 @@ export default function CompleteTab({
                     onBegin={handleSignatureBegin}
                     onEnd={handleSignatureEnd}
                     webStyle={style}
-                    descriptionText="Sign above"
+                    descriptionText=""
+                    clearText="Clear"
+                    confirmText="Save"
                     minWidth={0.5}
                     maxWidth={2.5}
                     penColor="black"
-                    // throttle={8}
+                    backgroundColor="white"
+                    dataURL=""
+                    dotSize={0.5}
+                    imageType="image/png"
+                    autoClear={false}
+                    scrollable={false}
                   />
                 )}
               </View>
