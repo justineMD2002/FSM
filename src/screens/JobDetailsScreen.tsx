@@ -483,10 +483,8 @@ export default function JobDetailsScreen({ job, onBack, showBackButton = false, 
         </View>
       ) : activeTab === 'Chat' ? (
         // Chat tab takes full height without parent ScrollView
-        <View className="flex-1">
-          <View style={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-            <ChatTab jobId={job.id} technicianJobId={technicianJob?.id || null} />
-          </View>
+        <View className="flex-1" style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <ChatTab jobId={job.id} technicianJobId={technicianJob?.id || null} />
         </View>
       ) : (
         <ScrollView

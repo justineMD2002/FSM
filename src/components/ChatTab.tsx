@@ -235,7 +235,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         )} */}
 
         {/* Receiver avatar on the left */}
-        {!isCurrentUser && !selectionMode && (
+        {!isCurrentUser && (
           <View className="mr-2">
             <View className="w-10 h-10 rounded-full bg-slate-300 items-center justify-center">
               <Ionicons name="person" size={24} color="#64748b" />
@@ -245,14 +245,16 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
 
         {/* Message bubble with long press (disabled in read-only mode) */}
         <TouchableOpacity
-          onLongPress={() => !isReadOnly && handleLongPress(message.id)}
+          // COMMENTED OUT - Long press functionality disabled for now
+          // onLongPress={() => !isReadOnly && handleLongPress(message.id)}
           onPress={() => {
-            if (selectionMode) {
-              handleMessageSelect(message.id);
-            }
+            // COMMENTED OUT - Selection mode disabled for now
+            // if (selectionMode) {
+            //   handleMessageSelect(message.id);
+            // }
           }}
           activeOpacity={0.7}
-          disabled={isReadOnly || (!isCurrentUser && !selectionMode)}
+          disabled={isReadOnly}
           className={`max-w-[70%] ${isCurrentUser ? 'items-end' : 'items-start'}`}
         >
           {/* Sender name */}
@@ -318,7 +320,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
         </TouchableOpacity>
 
         {/* User avatar on the right */}
-        {isCurrentUser && !selectionMode && (
+        {isCurrentUser && (
           <View className="ml-2">
             <View className="w-10 h-10 rounded-full bg-[#0092ce] items-center justify-center">
               <Ionicons name="person" size={24} color="#ffffff" />
@@ -354,8 +356,8 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
     <>
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {/* Chat Header - Fixed */}
         <View className="bg-white rounded-xl p-4 mb-4 shadow-sm">
@@ -385,32 +387,38 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
           </View>
         )}
 
-        {/* Messages - Scrollable */}
-        <ScrollView
-          ref={scrollViewRef}
-          className="flex-1 mb-4"
-          scrollEventThrottle={16}
-          keyboardShouldPersistTaps="handled"
-          bounces={true}
-        >
-          {messages.length === 0 ? (
-            <View className="flex-1 justify-center items-center py-12">
-              <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
-              <Text className="text-slate-500 text-center mt-4">
-                No messages yet. Start a conversation!
-              </Text>
-            </View>
-          ) : (
-            messages.map((message) => renderMessage(message))
-          )}
-        </ScrollView>
+        {/* Messages - Scrollable Area Only */}
+        <View className="flex-1 mb-4">
+          <ScrollView
+            ref={scrollViewRef}
+            className="flex-1"
+            contentContainerStyle={{ flexGrow: 1 }}
+            scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
+            bounces={true}
+            showsVerticalScrollIndicator={true}
+          >
+            {messages.length === 0 ? (
+              <View className="flex-1 justify-center items-center py-12">
+                <Ionicons name="chatbubbles-outline" size={64} color="#cbd5e1" />
+                <Text className="text-slate-500 text-center mt-4">
+                  No messages yet. Start a conversation!
+                </Text>
+              </View>
+            ) : (
+              <View style={{ paddingBottom: 8 }}>
+                {messages.map((message) => renderMessage(message))}
+              </View>
+            )}
+          </ScrollView>
+        </View>
 
-        {/* Message Input / Delete Actions - Fixed (hidden in read-only mode) */}
+        {/* Message Input - Fixed at Bottom (hidden in read-only mode) */}
         {!isReadOnly && (
           /* COMMENTED OUT - Client doesn't want edit/delete UI for now */
           /* selectionMode ? (
             // Delete actions when in selection mode
-            <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+            <View className="bg-white rounded-xl p-3 shadow-sm mb-4">
               <View className="flex-row items-center justify-between">
                 <Text className="text-slate-700 font-semibold">
                   {selectedMessages.size} selected
@@ -438,7 +446,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
             </View>
           ) : */ (
             // Normal message input
-            <View className="bg-white rounded-xl p-3 shadow-sm mb-10">
+            <View className="bg-white rounded-xl p-3 shadow-sm mb-4">
               {/* Edit mode indicator */}
               {/* COMMENTED OUT - Client doesn't want edit/delete UI for now */}
               {/* {editingMessageId && (
