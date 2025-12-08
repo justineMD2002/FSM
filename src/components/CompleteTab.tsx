@@ -39,8 +39,8 @@ export default function CompleteTab({
   const [showSignaturePad, setShowSignaturePad] = useState(false);
   const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
   const [localTaskCompletions, setLocalTaskCompletions] = useState<{ [taskId: string]: boolean }>({});
-  const [pendingSignature, setPendingSignature] = useState<string | null>(null); // Store signature temporarily until job completion
   const [localJobCompleted, setLocalJobCompleted] = useState(false); // Track if job was completed in this session
+  const [isSavingSignature, setIsSavingSignature] = useState(false); // Track signature saving state
   const signatureRef = useRef<any>(null);
   const isWeb = Platform.OS === 'web';
 
@@ -144,20 +144,41 @@ export default function CompleteTab({
   // Can save signature if job started, not completed, clocked in, and not on break
   const canSaveSignature = jobStarted && !jobCompleted && isClockedIn && !isOnBreak;
 
-  // Can complete job if signature exists (either saved to DB or pending), job started, not completed, all required tasks done, clocked in, and not on break
-  const hasSignature = localSignature || pendingSignature;
+  // Can complete job if signature exists (saved to DB), job started, not completed, all required tasks done, clocked in, and not on break
+  const hasSignature = !!localSignature;
   const canCompleteJob = hasSignature && jobStarted && !jobCompleted && allRequiredTasksCompleted && isClockedIn && !isOnBreak;
 
-  const handleSignatureOK = (signatureData: string) => {
-    if (!canSaveSignature) return;
+  const handleSignatureOK = async (signatureData: string) => {
+    if (!canSaveSignature || !technicianJobId) return;
 
-    // Store signature locally, don't upload to database yet
-    setPendingSignature(signatureData);
-    setSignatureDate(new Date());
-    setShowSignaturePad(false);
-    setShowSignatureSavedModal(true);
-    // Re-enable scrolling after saving signature
-    onSignatureDrawingChange?.(false);
+    setIsSavingSignature(true);
+    try {
+      // Upload signature to database immediately
+      const signatureResult = await uploadSignatureAndCreateRecord(
+        technicianJobId,
+        signatureData,
+        customerName
+      );
+
+      if (signatureResult.error) {
+        throw new Error(`Error saving signature: ${signatureResult.error.message}`);
+      }
+
+      // Update local state with saved signature
+      setLocalSignature(signatureResult.data?.signature_image_url || null);
+      setSignatureDate(new Date());
+      setShowSignaturePad(false);
+      setShowSignatureSavedModal(true);
+
+      // Refetch signature to ensure we have the latest data
+      await refetchSignature();
+    } catch (error: any) {
+      alert(`Error saving signature: ${error.message}`);
+    } finally {
+      setIsSavingSignature(false);
+      // Re-enable scrolling after saving signature
+      onSignatureDrawingChange?.(false);
+    }
   };
 
   const handleToggleTask = (taskId: string) => {
@@ -204,13 +225,26 @@ export default function CompleteTab({
     }
   };
 
-  const handleRetakeSignature = () => {
+  const handleRetakeSignature = async () => {
     if (!canSaveSignature) {
       alert('Cannot retake signature - job is already completed');
       return;
     }
+
+    // Delete existing signature from database if exists
+    if (existingSignature && technicianJobId) {
+      try {
+        const { supabase } = await import('@/lib/supabase');
+        await supabase
+          .from('job_signatures')
+          .delete()
+          .eq('technician_job_id', technicianJobId);
+      } catch (error) {
+        console.error('Error deleting signature:', error);
+      }
+    }
+
     setLocalSignature(null);
-    setPendingSignature(null);
     setSignatureDate(null);
     setShowSignaturePad(true);
     setIsSignatureEmpty(true);
@@ -235,22 +269,8 @@ export default function CompleteTab({
 
     setCompleting(true);
     try {
-      // Upload pending signature to database if exists (will create or update)
-      if (pendingSignature) {
-        const signatureResult = await uploadSignatureAndCreateRecord(
-          technicianJobId,
-          pendingSignature,
-          customerName
-        );
-
-        if (signatureResult.error) {
-          throw new Error(`Error saving signature: ${signatureResult.error.message}`);
-        }
-
-        // Clear pending signature after successful upload
-        setPendingSignature(null);
-        setLocalSignature(signatureResult.data?.signature_image_url || null);
-      }
+      // Signature is already saved to database from handleSignatureOK
+      // No need to upload again
 
       // Update is_completed field in the database
       const { supabase } = await import('@/lib/supabase');
@@ -522,8 +542,8 @@ export default function CompleteTab({
                     <TouchableOpacity
                       onPress={handleSignatureClear}
                       className="flex-1 bg-slate-200 rounded-lg py-2 px-4 flex-row items-center justify-center mr-2"
-                      disabled={!canSaveSignature || isSignatureEmpty}
-                      style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
+                      disabled={!canSaveSignature || isSignatureEmpty || isSavingSignature}
+                      style={{ opacity: canSaveSignature && !isSignatureEmpty && !isSavingSignature ? 1 : 0.5 }}
                     >
                       <Ionicons name="trash-outline" size={18} color="#475569" />
                       <Text className="text-slate-700 font-medium ml-2">Clear</Text>
@@ -531,11 +551,17 @@ export default function CompleteTab({
                     <TouchableOpacity
                       onPress={handleSaveSignature}
                       className="flex-1 bg-[#0092ce] rounded-lg py-2 px-4 flex-row items-center justify-center"
-                      disabled={!canSaveSignature || isSignatureEmpty}
-                      style={{ opacity: canSaveSignature && !isSignatureEmpty ? 1 : 0.5 }}
+                      disabled={!canSaveSignature || isSignatureEmpty || isSavingSignature}
+                      style={{ opacity: canSaveSignature && !isSignatureEmpty && !isSavingSignature ? 1 : 0.5 }}
                     >
-                      <Ionicons name="checkmark" size={18} color="#fff" />
-                      <Text className="text-white font-medium ml-2">Save</Text>
+                      {isSavingSignature ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : (
+                        <>
+                          <Ionicons name="checkmark" size={18} color="#fff" />
+                          <Text className="text-white font-medium ml-2">Save</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -557,7 +583,7 @@ export default function CompleteTab({
               {/* Display Captured Signature */}
               <View className="border-2 border-slate-300 rounded-xl overflow-hidden mb-4" style={{ height: 200 }}>
                 <Image
-                  source={{ uri: (pendingSignature || localSignature) as string }}
+                  source={{ uri: localSignature as string }}
                   style={{ width: '100%', height: '100%' }}
                   resizeMode="contain"
                 />
@@ -595,6 +621,7 @@ export default function CompleteTab({
           transparent={false}
           animationType="slide"
           onRequestClose={() => {
+            if (isSavingSignature) return;
             setShowSignaturePad(false);
             setIsSignatureEmpty(true);
             onSignatureDrawingChange?.(false);
@@ -607,10 +634,13 @@ export default function CompleteTab({
                 <Text className="text-white text-xl font-semibold">Customer Signature</Text>
                 <TouchableOpacity
                   onPress={() => {
+                    if (isSavingSignature) return;
                     setShowSignaturePad(false);
                     setIsSignatureEmpty(true);
                     onSignatureDrawingChange?.(false);
                   }}
+                  disabled={isSavingSignature}
+                  style={{ opacity: isSavingSignature ? 0.5 : 1 }}
                 >
                   <Ionicons name="close" size={28} color="#fff" />
                 </TouchableOpacity>
@@ -640,8 +670,8 @@ export default function CompleteTab({
                 <TouchableOpacity
                   onPress={handleSignatureClear}
                   className="flex-1 bg-slate-200 rounded-xl py-4 flex-row items-center justify-center mr-2"
-                  disabled={isSignatureEmpty}
-                  style={{ opacity: isSignatureEmpty ? 0.5 : 1 }}
+                  disabled={isSignatureEmpty || isSavingSignature}
+                  style={{ opacity: isSignatureEmpty || isSavingSignature ? 0.5 : 1 }}
                 >
                   <Ionicons name="trash-outline" size={20} color="#475569" />
                   <Text className="text-slate-700 font-semibold ml-2 text-base">Clear</Text>
@@ -649,11 +679,17 @@ export default function CompleteTab({
                 <TouchableOpacity
                   onPress={() => signatureRef.current?.readSignature()}
                   className="flex-1 bg-[#0092ce] rounded-xl py-4 flex-row items-center justify-center"
-                  disabled={isSignatureEmpty}
-                  style={{ opacity: isSignatureEmpty ? 0.5 : 1 }}
+                  disabled={isSignatureEmpty || isSavingSignature}
+                  style={{ opacity: isSignatureEmpty || isSavingSignature ? 0.5 : 1 }}
                 >
-                  <Ionicons name="checkmark" size={20} color="#fff" />
-                  <Text className="text-white font-semibold ml-2 text-base">Save Signature</Text>
+                  {isSavingSignature ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                      <Text className="text-white font-semibold ml-2 text-base">Save Signature</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
