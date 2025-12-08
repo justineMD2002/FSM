@@ -155,6 +155,7 @@ export default function CompleteTab({
     setPendingSignature(signatureData);
     setSignatureDate(new Date());
     setShowSignaturePad(false);
+    setIsSignatureEmpty(true);
     setShowSignatureSavedModal(true);
     // Re-enable scrolling after saving signature
     onSignatureDrawingChange?.(false);
@@ -176,13 +177,10 @@ export default function CompleteTab({
       signatureRef.current?.clearSignature();
     }
     setIsSignatureEmpty(true);
-    // Re-enable scrolling after clearing signature
-    onSignatureDrawingChange?.(false);
   };
 
   const handleSignatureBegin = () => {
     setIsSignatureEmpty(false);
-    onSignatureDrawingChange?.(true);
   };
 
   const handleSignatureEnd = () => {
@@ -190,7 +188,6 @@ export default function CompleteTab({
     if (isWeb && signatureRef.current) {
       setIsSignatureEmpty(signatureRef.current.isEmpty());
     }
-    onSignatureDrawingChange?.(false);
   };
 
   const handleSaveSignature = () => {
@@ -214,7 +211,28 @@ export default function CompleteTab({
     setSignatureDate(null);
     setShowSignaturePad(true);
     setIsSignatureEmpty(true);
+    // Disable scrolling when signature pad opens
+    onSignatureDrawingChange?.(true);
   };
+
+  // Effect to manage scrolling based on signature pad visibility
+  useEffect(() => {
+    // Signature pad is shown when: no signature exists OR user is retaking signature
+    const isSignaturePadVisible = !hasSignature || showSignaturePad;
+
+    if (isSignaturePadVisible) {
+      // Disable scrolling when signature pad is visible
+      onSignatureDrawingChange?.(true);
+    } else {
+      // Re-enable scrolling when signature is captured and pad is hidden
+      onSignatureDrawingChange?.(false);
+    }
+
+    // Cleanup: ensure scrolling is enabled when component unmounts
+    return () => {
+      onSignatureDrawingChange?.(false);
+    };
+  }, [hasSignature, showSignaturePad, onSignatureDrawingChange]);
 
   const handleCompleteJob = () => {
     if (!canCompleteJob) {

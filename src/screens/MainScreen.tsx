@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, TouchableWithoutFeedback } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import HomeScreen from './HomeScreen';
 import ProfileScreen from './ProfileScreen';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -51,9 +52,27 @@ export default function MainScreen() {
     resetTimer();
   };
 
+  // Create a tap gesture that runs simultaneously with other gestures (won't block scrolling)
+  const tapGesture = Gesture.Tap()
+    .onStart(() => {
+      handleUserActivity();
+    })
+    .runOnJS(true)
+    .shouldCancelWhenOutside(false);
+
+  // Create a pan gesture that also resets the timer (for scrolling detection)
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      handleUserActivity();
+    })
+    .runOnJS(true);
+
+  // Combine gestures to run simultaneously (won't interfere with ScrollView)
+  const combinedGesture = Gesture.Simultaneous(tapGesture, panGesture);
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['top', 'left', 'right']}>
-      <TouchableWithoutFeedback onPress={handleUserActivity}>
+      <GestureDetector gesture={combinedGesture}>
         <View className="flex-1 bg-slate-50">
           {shouldShowHeaderFooter && (
             <DashboardHeader
@@ -64,7 +83,7 @@ export default function MainScreen() {
           {currentTab.screen}
           {shouldShowHeaderFooter && <FooterNav activeTab={activeTab} onTabChange={setActiveTab} />}
         </View>
-      </TouchableWithoutFeedback>
+      </GestureDetector>
     </SafeAreaView>
   );
 }

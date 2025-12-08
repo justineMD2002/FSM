@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { View, Text, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Video, ResizeMode } from 'expo-av';
@@ -689,10 +688,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 showsHorizontalScrollIndicator={false}
                 className="flex-row"
                 nestedScrollEnabled={true}
-                overScrollMode="auto"
                 scrollEventThrottle={16}
-                activeOffsetX={[-5, 5]}
-                failOffsetY={[-15, 15]}
                 bounces={true}
               >
                 {[
@@ -1108,10 +1104,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 showsHorizontalScrollIndicator={false}
                 className="flex-row"
                 nestedScrollEnabled={true}
-                overScrollMode="auto"
                 scrollEventThrottle={16}
-                activeOffsetX={[-5, 5]}
-                failOffsetY={[-15, 15]}
                 bounces={true}
               >
                       {selectedImages.map((selectedImage, index) => (
