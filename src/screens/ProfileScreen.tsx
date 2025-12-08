@@ -593,9 +593,9 @@ export default function ProfileScreen() {
   return (
     <>
       <ScrollView
-        className="flex-1 pb-32 bg-white"
+        className="flex-1 bg-white"
         style={{ marginTop: -20, paddingTop: 26, borderTopLeftRadius: 15, borderTopRightRadius: 15, zIndex: 2 }}
-        contentContainerStyle={{ paddingHorizontal: 24 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}
         scrollEventThrottle={16}
         bounces={true}
       >
