@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 export const useAutoClockOut = (
   currentAttendance: AttendanceRecord | null,
   onAutoClockOut: () => Promise<void>,
-  maxClockInDuration: number = 24 * 60 * 60 * 1000 // 24 hours
+  maxClockInDuration: number = 12 * 60 * 60 * 1000 // 12 hours
 ) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
