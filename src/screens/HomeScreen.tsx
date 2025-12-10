@@ -358,7 +358,7 @@ export default function HomeScreen() {
               bounces={true}
             >
 
-            <View className="mb-6">
+            <View className="mb-6 px-4 mt-2">
               <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Date</Text>
               <View className="space-y-2">
                 {[
@@ -409,7 +409,7 @@ export default function HomeScreen() {
             </View>
 
             {activeTab === 'HISTORY' && (
-              <View className="mb-4">
+              <View className="mb-4 px-4 mt-2">
                 <Text className="text-sm font-bold text-slate-700 mb-3">Filter by Status</Text>
                 <View className="space-y-2">
                   {[
