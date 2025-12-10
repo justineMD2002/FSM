@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Video, ResizeMode } from 'expo-av';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { JobTask, Followup, JobImage } from '@/types';
@@ -73,6 +74,12 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [selectedImages, setSelectedImages] = useState<Array<{ uri: string; type?: 'IMAGE' | 'VIDEO'; fileExtension?: string }>>([]);
   const [selectedMediaType, setSelectedMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+
+  // Camera states
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const [facing, setFacing] = useState<CameraType>('back');
 
   // Fetch existing data on mount
   useEffect(() => {
@@ -339,7 +346,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           };
         });
 
-        setSelectedImages(newSelectedImages);
+        setSelectedImages(prev => [...prev, ...newSelectedImages]);
       }
     } catch (error) {
       console.error('Error picking media:', error);
@@ -347,13 +354,78 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     }
   };
 
+  const handleOpenCamera = async () => {
+    // Only allow camera for images, not videos
+    if (selectedMediaType === 'VIDEO') {
+      Alert.alert('Info', 'Camera capture is only available for images');
+      return;
+    }
+
+    // Check camera permission
+    if (!cameraPermission) {
+      // Permission is still loading
+      return;
+    }
+
+    if (!cameraPermission.granted) {
+      // Request permission
+      const { granted } = await requestCameraPermission();
+      if (!granted) {
+        Alert.alert('Permission Required', 'Please grant camera permission to capture photos');
+        return;
+      }
+    }
+
+    // Open camera modal
+    setShowCameraModal(true);
+  };
+
+  const handleCapturePhoto = async () => {
+    if (!cameraRef.current) {
+      Alert.alert('Error', 'Camera not ready');
+      return;
+    }
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 0.8,
+        base64: false,
+      });
+
+      if (photo) {
+        // Extract file extension (usually jpg for camera photos)
+        const uriParts = photo.uri.split('.');
+        const fileExtension = uriParts[uriParts.length - 1].toLowerCase() || 'jpg';
+
+        // Add captured photo to selected images
+        const capturedImage = {
+          uri: photo.uri,
+          type: 'IMAGE' as const,
+          fileExtension,
+        };
+
+        setSelectedImages([...selectedImages, capturedImage]);
+        setShowCameraModal(false);
+      }
+    } catch (error) {
+      console.error('Error capturing photo:', error);
+      Alert.alert('Error', 'Failed to capture photo');
+    }
+  };
+
+  const toggleCameraFacing = () => {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
+  };
+
   const handleAddImage = () => {
     if (selectedImages.length > 0 && imageDescription.trim()) {
       if (!user) return;
 
       // Create a new image entry for each selected image with the same description
+      // Use a more unique ID that includes timestamp and random number to avoid collisions
+      const timestamp = Date.now();
       const newImages: ServiceImage[] = selectedImages.map((selectedImage, index) => ({
-        id: `temp_${Date.now()}_${index}`, // Unique temporary ID for each image
+        id: `temp_${timestamp}_${index}_${Math.random().toString(36).substr(2, 9)}`, // Unique temporary ID for each image
         job_id: jobId,
         technician_job_id: null,
         image_url: selectedImage.uri, // Local URI for preview
@@ -368,7 +440,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         fileExtension: selectedImage.fileExtension, // Store file extension
       }));
 
-      setImages([...images, ...newImages]);
+      // Append new images to existing images array
+      setImages(prevImages => [...prevImages, ...newImages]);
       setImageDescription('');
       setSelectedImages([]);
       setSelectedMediaType('IMAGE'); // Reset to IMAGE
@@ -1091,58 +1164,79 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 </TouchableOpacity>
               </View>
 
-              {/* Media Picker */}
-              <TouchableOpacity
-                onPress={handlePickMedia}
-                className="bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center mb-4"
-                style={{ minHeight: selectedImages.length > 0 ? 'auto' : 192 }}
-              >
-                {selectedImages.length > 0 ? (
-                  <View className="w-full p-4">
-                    <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="flex-row"
-                nestedScrollEnabled={true}
-                scrollEventThrottle={16}
-                bounces={true}
-              >
-                      {selectedImages.map((selectedImage, index) => (
-                        <View key={index} className="mr-2 relative">
-                          {selectedImage.type === 'VIDEO' ? (
-                            <Video
-                              source={{ uri: selectedImage.uri }}
-                              style={{ width: 120, height: 120, borderRadius: 8 }}
-                              resizeMode={ResizeMode.COVER}
-                              shouldPlay={false}
-                              useNativeControls
-                            />
-                          ) : (
-                            <Image
-                              source={{ uri: selectedImage.uri }}
-                              style={{ width: 120, height: 120, borderRadius: 8 }}
-                              resizeMode="cover"
-                            />
-                          )}
-                          <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-1">
-                            <Text className="text-white text-xs font-semibold">{index + 1}</Text>
-                          </View>
+              {/* Media Source Selection */}
+              <View className="mb-4">
+                <Text className="text-sm font-semibold text-slate-700 mb-2">Select Source</Text>
+                <View className="flex-row gap-2">
+                  <TouchableOpacity
+                    onPress={handlePickMedia}
+                    className="flex-1 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center py-4"
+                  >
+                    <Ionicons name="images-outline" size={24} color="#64748b" />
+                    <Text className="text-slate-600 text-sm mt-2 text-center">
+                      {selectedMediaType === 'IMAGE' ? 'From Album' : 'From Library'}
+                    </Text>
+                  </TouchableOpacity>
+                  {selectedMediaType === 'IMAGE' && (
+                    <TouchableOpacity
+                      onPress={handleOpenCamera}
+                      className="flex-1 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center py-4"
+                    >
+                      <Ionicons name="camera-outline" size={24} color="#64748b" />
+                      <Text className="text-slate-600 text-sm mt-2 text-center">Take Photo</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Selected Images Preview */}
+              {selectedImages.length > 0 && (
+                <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+                  <Text className="text-sm font-semibold text-slate-700 mb-3">
+                    Selected ({selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'})
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    className="flex-row"
+                    nestedScrollEnabled={true}
+                    scrollEventThrottle={16}
+                    bounces={true}
+                  >
+                    {selectedImages.map((selectedImage, index) => (
+                      <View key={index} className="mr-2 relative">
+                        {selectedImage.type === 'VIDEO' ? (
+                          <Video
+                            source={{ uri: selectedImage.uri }}
+                            style={{ width: 120, height: 120, borderRadius: 8 }}
+                            resizeMode={ResizeMode.COVER}
+                            shouldPlay={false}
+                            useNativeControls
+                          />
+                        ) : (
+                          <Image
+                            source={{ uri: selectedImage.uri }}
+                            style={{ width: 120, height: 120, borderRadius: 8 }}
+                            resizeMode="cover"
+                          />
+                        )}
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSelectedImages(selectedImages.filter((_, i) => i !== index));
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+                          style={{ width: 24, height: 24 }}
+                        >
+                          <Ionicons name="close" size={12} color="#fff" />
+                        </TouchableOpacity>
+                        <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-1">
+                          <Text className="text-white text-xs font-semibold">{index + 1}</Text>
                         </View>
-                      ))}
-                    </ScrollView>
-                    <Text className="text-slate-600 text-sm mt-3 text-center">
-                      {selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'} selected - Tap to change
-                    </Text>
-                  </View>
-                ) : (
-                  <View className="py-12 items-center">
-                    <Ionicons name="cloud-upload-outline" size={48} color="#94a3b8" />
-                    <Text className="text-slate-500 mt-2 text-center">
-                      Tap to select {selectedMediaType === 'IMAGE' ? 'images (multiple)' : 'video'}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* Description */}
               <Text className="text-sm font-semibold text-slate-700 mb-2">
@@ -1227,6 +1321,82 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             )}
           </View>
         </Pressable>
+      </Modal>
+
+      {/* Camera Modal */}
+      <Modal
+        visible={showCameraModal}
+        animationType="slide"
+        onRequestClose={() => setShowCameraModal(false)}
+      >
+        <View className="flex-1 bg-black">
+          {cameraPermission?.granted ? (
+            <>
+              <CameraView
+                ref={cameraRef}
+                className="flex-1"
+                facing={facing}
+              >
+                <View className="flex-1 bg-transparent justify-end pb-8">
+                  {/* Top controls */}
+                  <View className="flex-row justify-between items-center px-4 pt-12">
+                    <TouchableOpacity
+                      onPress={() => setShowCameraModal(false)}
+                      className="bg-black/50 rounded-full p-3"
+                    >
+                      <Ionicons name="close" size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={toggleCameraFacing}
+                      className="bg-black/50 rounded-full p-3"
+                    >
+                      <Ionicons name="camera-reverse-outline" size={24} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Bottom controls */}
+                  <View className="items-center">
+                    <TouchableOpacity
+                      onPress={handleCapturePhoto}
+                      className="bg-white rounded-full p-4 mb-4"
+                      style={{ width: 72, height: 72 }}
+                    >
+                      <View className="flex-1 bg-white rounded-full border-4 border-slate-300" />
+                    </TouchableOpacity>
+                    <Text className="text-white text-sm mb-2">Tap to capture</Text>
+                  </View>
+                </View>
+              </CameraView>
+            </>
+          ) : (
+            <View className="flex-1 justify-center items-center bg-black px-6">
+              <Ionicons name="camera-outline" size={64} color="#94a3b8" />
+              <Text className="text-white text-lg font-semibold mt-4 mb-2 text-center">
+                Camera Permission Required
+              </Text>
+              <Text className="text-slate-400 text-sm text-center mb-6">
+                Please grant camera permission to capture photos
+              </Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  const { granted } = await requestCameraPermission();
+                  if (!granted) {
+                    Alert.alert('Permission Denied', 'Camera permission is required to capture photos');
+                  }
+                }}
+                className="bg-[#0092ce] rounded-xl px-6 py-3"
+              >
+                <Text className="text-white font-semibold">Grant Permission</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowCameraModal(false)}
+                className="mt-4"
+              >
+                <Text className="text-slate-400">Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </Modal>
     </View>
   );
