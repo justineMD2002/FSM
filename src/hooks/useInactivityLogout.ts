@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useAuthStore } from '@/store';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Custom hook to automatically logout user after a period of inactivity
@@ -25,8 +26,16 @@ export const useInactivityLogout = (inactivityTimeout: number = 60 * 60 * 1000) 
 
     // Only set new timeout if user is logged in
     if (user) {
-      timeoutRef.current = setTimeout(() => {
+      timeoutRef.current = setTimeout(async () => {
         console.log('User has been inactive for 1 hour. Logging out...');
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ is_logged_in: false })
+          .eq('id', user.id);
+  
+        if (updateError) {
+          console.error('Failed to update logout status:', updateError);
+        }
         signOut();
       }, inactivityTimeout);
     }
