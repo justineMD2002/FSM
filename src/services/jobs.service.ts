@@ -888,7 +888,8 @@ export const getJobsForTechnician = async (
         } else if (isAssignmentActive) {
           // This technician's assignment is still active
           // Only show in current jobs if scheduled for today
-          shouldIncludeInCurrent = isScheduledForToday;
+          // shouldIncludeInCurrent = isScheduledForToday;
+          shouldIncludeInCurrent = true;
         }
 
         console.log(`[Job ${item.job.job_number}] shouldIncludeInCurrent=${shouldIncludeInCurrent}, shouldIncludeInHistory=${shouldIncludeInHistory}, requestedHistory=${isHistory}`);
