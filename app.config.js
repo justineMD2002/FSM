@@ -2,9 +2,9 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "FSM",
+    name: "SAS: Field Service Management",
     slug: "sas-fsm",
-    owner: "keanumd2002",
+    owner: "keanusksks-organization",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/adaptive-icon.png",
@@ -19,7 +19,7 @@ export default {
       policy: "appVersion"
     },
     updates: {
-      url: "https://u.expo.dev/3049bc12-ae03-4861-99ec-f27c37563dec"
+      url: "https://u.expo.dev/a86bd2c3-2ea7-47ca-9212-ff9797afe239"
     },
     ios: {
       supportsTablet: true,
@@ -49,7 +49,7 @@ export default {
           apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
         }
       },
-      package: "com.anonymous.FSM"
+      package: "com.sas.fsm"
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -59,16 +59,21 @@ export default {
         "expo-location",
         {
           locationAlwaysAndWhenInUsePermission:
-            "Allow FSM to use your location for navigation to job sites."
+            "Allow SAS: Field Service Management to use your location for navigation to job sites."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow SAS: Field Service Management to access your camera to take photos for service reports."
         }
       ],
       "expo-navigation-bar"
     ],
     extra: {
       eas: {
-        projectId: "3049bc12-ae03-4861-99ec-f27c37563dec"
+        projectId: "a86bd2c3-2ea7-47ca-9212-ff9797afe239"
       }
     },
-    owner: "keanumd2002"
   }
 };
