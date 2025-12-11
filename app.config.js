@@ -27,7 +27,9 @@ export default {
         NSLocationWhenInUseUsageDescription:
           "This app needs access to your location to show your position on the map and provide navigation to job sites.",
         NSLocationAlwaysAndWhenInUseUsageDescription:
-          "This app needs access to your location to show your position on the map and provide navigation to job sites."
+          "This app needs access to your location to show your position on the map and provide navigation to job sites.",
+        NSCameraUsageDescription:
+          "This app needs access to your camera to take photos for service reports."
       },
       config: {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
@@ -40,7 +42,11 @@ export default {
       },
       permissions: [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
       ],
       edgeToEdgeEnabled: false,
       predictiveBackGestureEnabled: false,
@@ -65,6 +71,15 @@ export default {
       [
         "expo-camera",
         {
+          "cameraPermission": "Allow SAS: Field Service Management to access your camera to take photos for service reports.",
+          "microphonePermission": "Allow SAS: Field Service Management to access your microphone for video recording.",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow SAS: Field Service Management to access your photos for service reports.",
           "cameraPermission": "Allow SAS: Field Service Management to access your camera to take photos for service reports."
         }
       ],

@@ -80,6 +80,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [facing, setFacing] = useState<CameraType>('back');
+  const [isCameraReady, setIsCameraReady] = useState(false);
 
   // Fetch existing data on mount
   useEffect(() => {
@@ -354,6 +355,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
     }
   };
 
+  // Update handleOpenCamera function:
   const handleOpenCamera = async () => {
     // Only allow camera for images, not videos
     if (selectedMediaType === 'VIDEO') {
@@ -361,41 +363,77 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       return;
     }
 
-    // Check camera permission
-    if (!cameraPermission) {
-      // Permission is still loading
-      return;
-    }
-
-    if (!cameraPermission.granted) {
-      // Request permission
-      const { granted } = await requestCameraPermission();
-      if (!granted) {
-        Alert.alert('Permission Required', 'Please grant camera permission to capture photos');
+    try {
+      console.log('Opening camera - checking permission...');
+      
+      // Check camera permission
+      if (!cameraPermission) {
+        console.log('Camera permission is still loading...');
         return;
       }
-    }
 
-    // Open camera modal
-    setShowCameraModal(true);
+      console.log('Camera permission status:', cameraPermission.granted);
+
+      if (!cameraPermission.granted) {
+        console.log('Requesting camera permission...');
+        const { granted } = await requestCameraPermission();
+        console.log('Permission granted:', granted);
+        
+        if (!granted) {
+          Alert.alert('Permission Required', 'Please grant camera permission to capture photos');
+          return;
+        }
+      }
+
+      // Reset camera ready state
+      setIsCameraReady(false);
+      
+      // Add small delay for Android (helps with initialization)
+      if (Platform.OS === 'android') {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      console.log('Opening camera modal...');
+      setShowCameraModal(true);
+    } catch (error) {
+      console.error('Error opening camera:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
   };
 
+  // Update handleCapturePhoto function:
   const handleCapturePhoto = async () => {
+    console.log('Attempting to capture photo...');
+    
     if (!cameraRef.current) {
+      console.error('Camera ref is null');
       Alert.alert('Error', 'Camera not ready');
       return;
     }
 
+    if (!isCameraReady) {
+      console.warn('Camera not ready yet');
+      Alert.alert('Please wait', 'Camera is still initializing');
+      return;
+    }
+
     try {
+      console.log('Taking picture...');
+      
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
         base64: false,
+        skipProcessing: Platform.OS === 'android',
       });
 
-      if (photo) {
+      console.log('Photo captured:', photo?.uri);
+
+      if (photo && photo.uri) {
         // Extract file extension (usually jpg for camera photos)
         const uriParts = photo.uri.split('.');
         const fileExtension = uriParts[uriParts.length - 1].toLowerCase() || 'jpg';
+
+        console.log('Photo file extension:', fileExtension);
 
         // Add captured photo to selected images
         const capturedImage = {
@@ -404,12 +442,34 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           fileExtension,
         };
 
-        setSelectedImages([...selectedImages, capturedImage]);
-        setShowCameraModal(false);
+        setSelectedImages(prev => [...prev, capturedImage]);
+        
+        // Close modal with slight delay
+        setTimeout(() => {
+          setShowCameraModal(false);
+          setIsCameraReady(false);
+        }, 100);
+        
+        console.log('Photo added to selected images');
       }
     } catch (error) {
       console.error('Error capturing photo:', error);
-      Alert.alert('Error', 'Failed to capture photo');
+      Alert.alert('Error', 'Failed to capture photo. Please try again.');
+    }
+  };
+
+  // Update handleCameraReady function:
+  const handleCameraReady = () => {
+    console.log('Camera is ready - onCameraReady callback fired');
+    // Add small delay for Android stability
+    if (Platform.OS === 'android') {
+      setTimeout(() => {
+        setIsCameraReady(true);
+        console.log('Camera ready state set to true (Android)');
+      }, 200);
+    } else {
+      setIsCameraReady(true);
+      console.log('Camera ready state set to true (iOS)');
     }
   };
 
@@ -1327,21 +1387,34 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       <Modal
         visible={showCameraModal}
         animationType="slide"
-        onRequestClose={() => setShowCameraModal(false)}
+        onRequestClose={() => {
+          console.log('Camera modal closing...');
+          setShowCameraModal(false);
+          setIsCameraReady(false);
+        }}
       >
         <View className="flex-1 bg-black">
           {cameraPermission?.granted ? (
             <>
               <CameraView
                 ref={cameraRef}
-                className="flex-1"
+                style={{ flex: 1 }} // Use inline style for better compatibility
                 facing={facing}
+                onCameraReady={handleCameraReady}
+                onMountError={(error) => {
+                  console.error('Camera mount error:', error);
+                  Alert.alert('Camera Error', 'Failed to initialize camera. Please try again.');
+                  setShowCameraModal(false);
+                }}
               >
-                <View className="flex-1 bg-transparent justify-end pb-8">
+                <View className="flex-1 bg-transparent">
                   {/* Top controls */}
                   <View className="flex-row justify-between items-center px-4 pt-12">
                     <TouchableOpacity
-                      onPress={() => setShowCameraModal(false)}
+                      onPress={() => {
+                        setShowCameraModal(false);
+                        setIsCameraReady(false);
+                      }}
                       className="bg-black/50 rounded-full p-3"
                     >
                       <Ionicons name="close" size={24} color="#fff" />
@@ -1349,21 +1422,35 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     <TouchableOpacity
                       onPress={toggleCameraFacing}
                       className="bg-black/50 rounded-full p-3"
+                      disabled={!isCameraReady}
                     >
                       <Ionicons name="camera-reverse-outline" size={24} color="#fff" />
                     </TouchableOpacity>
                   </View>
 
+                  {/* Camera ready indicator */}
+                  {!isCameraReady && (
+                    <View className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                      <ActivityIndicator size="large" color="#fff" />
+                      <Text className="text-white text-sm mt-2">Initializing camera...</Text>
+                    </View>
+                  )}
+
                   {/* Bottom controls */}
-                  <View className="items-center">
+                  <View className="absolute bottom-0 left-0 right-0 items-center pb-8">
                     <TouchableOpacity
                       onPress={handleCapturePhoto}
-                      className="bg-white rounded-full p-4 mb-4"
+                      disabled={!isCameraReady}
+                      className={`rounded-full p-4 mb-4 ${
+                        isCameraReady ? 'bg-white' : 'bg-white/50'
+                      }`}
                       style={{ width: 72, height: 72 }}
                     >
                       <View className="flex-1 bg-white rounded-full border-4 border-slate-300" />
                     </TouchableOpacity>
-                    <Text className="text-white text-sm mb-2">Tap to capture</Text>
+                    <Text className="text-white text-sm mb-2">
+                      {isCameraReady ? 'Tap to capture' : 'Preparing camera...'}
+                    </Text>
                   </View>
                 </View>
               </CameraView>
@@ -1389,7 +1476,10 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 <Text className="text-white font-semibold">Grant Permission</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setShowCameraModal(false)}
+                onPress={() => {
+                  setShowCameraModal(false);
+                  setIsCameraReady(false);
+                }}
                 className="mt-4"
               >
                 <Text className="text-slate-400">Cancel</Text>
