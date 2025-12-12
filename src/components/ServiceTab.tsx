@@ -82,6 +82,9 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [facing, setFacing] = useState<CameraType>('back');
   const [isCameraReady, setIsCameraReady] = useState(false);
 
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
+  const [previewVideoUri, setPreviewVideoUri] = useState<string | null>(null);
+
   // Fetch existing data on mount
   useEffect(() => {
     const fetchData = async () => {
@@ -328,26 +331,89 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes,
-        allowsMultipleSelection: selectedMediaType === 'IMAGE', // Allow multiple selection only for images
-        allowsEditing: false, // Disable editing when selecting multiple
-        quality: selectedMediaType === 'IMAGE' ? 0.8 : 0.7, // Slightly lower quality for videos
-        videoMaxDuration: 60, // Max 60 seconds for videos
+        allowsMultipleSelection: selectedMediaType === 'IMAGE',
+        allowsEditing: false,
+        quality: selectedMediaType === 'IMAGE' ? 0.8 : 0.7,
+        videoMaxDuration: 120, // Max 2 minutes (120 seconds) - increased from 60
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newSelectedImages = result.assets.map(asset => {
-          // Extract file extension from URI
-          const uriParts = asset.uri.split('.');
-          const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+        // Validate videos before adding
+        for (const asset of result.assets) {
+          if (asset.type === 'video') {
+            // Check file size (max 50MB for videos)
+            if (asset.fileSize && asset.fileSize > 50 * 1024 * 1024) {
+              Alert.alert(
+                'Video Too Large',
+                'Please select a video smaller than 50MB. Your video is ' + 
+                Math.round(asset.fileSize / (1024 * 1024)) + 'MB.',
+                [{ text: 'OK' }]
+              );
+              continue; // Skip this video
+            }
 
-          return {
-            uri: asset.uri,
-            type: asset.type === 'video' ? 'VIDEO' as const : 'IMAGE' as const,
-            fileExtension,
-          };
-        });
+            // Check duration (max 2 minutes)
+            if (asset.duration && asset.duration > 120) {
+              Alert.alert(
+                'Video Too Long',
+                'Please select a video shorter than 2 minutes. Your video is ' + 
+                Math.round(asset.duration) + ' seconds.',
+                [{ text: 'OK' }]
+              );
+              continue; // Skip this video
+            }
 
-        setSelectedImages(prev => [...prev, ...newSelectedImages]);
+            // Warn if video is large (over 20MB)
+            if (asset.fileSize && asset.fileSize > 20 * 1024 * 1024) {
+              Alert.alert(
+                'Large Video',
+                'This video is ' + Math.round(asset.fileSize / (1024 * 1024)) + 
+                'MB and may take some time to upload.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Continue',
+                    onPress: () => {
+                      const uriParts = asset.uri.split('.');
+                      const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+                      setSelectedImages(prev => [...prev, {
+                        uri: asset.uri,
+                        type: 'VIDEO',
+                        fileExtension,
+                      }]);
+                    }
+                  }
+                ]
+              );
+              continue;
+            }
+          }
+        }
+
+        // Add validated media
+        const newSelectedImages = result.assets
+          .filter(asset => {
+            // Filter out videos that exceeded limits
+            if (asset.type === 'video') {
+              const exceededSize = asset.fileSize && asset.fileSize > 50 * 1024 * 1024;
+              const exceededDuration = asset.duration && asset.duration > 120;
+              return !exceededSize && !exceededDuration;
+            }
+            return true;
+          })
+          .map(asset => {
+            const uriParts = asset.uri.split('.');
+            const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+            return {
+              uri: asset.uri,
+              type: asset.type === 'video' ? 'VIDEO' as const : 'IMAGE' as const,
+              fileExtension,
+            };
+          });
+
+        if (newSelectedImages.length > 0) {
+          setSelectedImages(prev => [...prev, ...newSelectedImages]);
+        }
       }
     } catch (error) {
       console.error('Error picking media:', error);
@@ -1090,49 +1156,57 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               <View key={image.id} className="w-1/2 p-1">
                 <View className="bg-white rounded-xl overflow-hidden shadow-sm">
                   {/* Media Preview with Delete Button */}
-                  <View className="bg-slate-200 h-32 items-center justify-center relative">
-                    {image.image_url ? (
-                      image.media_type === 'VIDEO' ? (
-                        <Video
-                          source={{ uri: image.image_url }}
-                          className="w-full h-full"
-                          resizeMode={ResizeMode.COVER}
-                          shouldPlay={false}
-                          useNativeControls
-                        />
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => setExpandedImage(image.image_url)}
-                          activeOpacity={0.8}
-                          className="w-full h-full"
-                        >
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      if (image.media_type === 'VIDEO') {
+                        setPreviewVideoUri(image.image_url);
+                        setShowVideoPreview(true);
+                      } else {
+                        setExpandedImage(image.image_url);
+                      }
+                    }}
+                    disabled={!image.image_url}
+                  >
+                    <View className="bg-slate-200 h-32 items-center justify-center relative">
+                      {image.image_url ? (
+                        image.media_type === 'VIDEO' ? (
+                          <View className="w-full h-full bg-slate-800 items-center justify-center">
+                            {/* Video Icon */}
+                            <Ionicons name="videocam" size={48} color="#64748b" />
+                            {/* Play Icon Overlay */}
+                            <View className="absolute inset-0 items-center justify-center">
+                              <View className="bg-white/90 rounded-full p-3">
+                                <Ionicons name="play" size={32} color="#000" />
+                              </View>
+                            </View>
+                            {/* Video Label */}
+                            <View className="absolute top-2 left-2 bg-red-500 rounded px-2 py-1">
+                              <Text className="text-white text-xs font-bold">VIDEO</Text>
+                            </View>
+                          </View>
+                        ) : (
                           <Image
                             source={{ uri: image.image_url }}
                             className="w-full h-full"
                             resizeMode="cover"
                           />
+                        )
+                      ) : (
+                        <Ionicons name={image.media_type === 'VIDEO' ? 'videocam' : 'image'} size={48} color="#94a3b8" />
+                      )}
+                      {/* Show delete button only for newly added media and report not submitted */}
+                      {image.isNew && !isHistoryJob && !hasSubmittedReport && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteImage(image.id)}
+                          className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
+                          style={{ width: 28, height: 28 }}
+                        >
+                          <Ionicons name="trash" size={18} color="#fff" />
                         </TouchableOpacity>
-                      )
-                    ) : (
-                      <Ionicons name={image.media_type === 'VIDEO' ? 'videocam' : 'image'} size={48} color="#94a3b8" />
-                    )}
-                    {/* Media type badge */}
-                    {image.media_type === 'VIDEO' && image.image_url && (
-                      <View className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-1">
-                        <Ionicons name="play" size={12} color="#fff" />
-                      </View>
-                    )}
-                    {/* Show delete button only for newly added media and report not submitted */}
-                    {image.isNew && !isHistoryJob && !hasSubmittedReport && (
-                      <TouchableOpacity
-                        onPress={() => handleDeleteImage(image.id)}
-                        className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
-                        style={{ width: 28, height: 28 }}
-                      >
-                        <Ionicons name="trash" size={18} color="#fff" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                      )}
+                    </View>
+                  </TouchableOpacity>
                   {/* Description and DateTime */}
                   <View className="p-3">
                     <Text className="text-xs text-slate-700 mb-2" numberOfLines={2}>
@@ -1185,17 +1259,19 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
         onRequestClose={() => setShowImageModal(false)}
       >
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white rounded-t-3xl p-6" style={{ maxHeight: '80%' }}>
-            <View className="flex-row justify-between items-center mb-6">
+          <View className="bg-white rounded-t-3xl" style={{ maxHeight: '85%' }}>
+            {/* Header */}
+            <View className="flex-row justify-between items-center p-6 border-b border-slate-200">
               <Text className="text-xl font-bold text-slate-800">Upload Media</Text>
               <TouchableOpacity onPress={() => setShowImageModal(false)}>
                 <Ionicons name="close" size={28} color="#64748b" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              scrollEventThrottle={16}
-              bounces={true}
+            <ScrollView 
+              className="flex-1"
+              contentContainerStyle={{ padding: 24 }}
+              showsVerticalScrollIndicator={false}
             >
               {/* Media Type Selector */}
               <Text className="text-sm font-semibold text-slate-700 mb-2">Media Type</Text>
@@ -1225,87 +1301,113 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               </View>
 
               {/* Media Source Selection */}
-              <View className="mb-4">
-                <Text className="text-sm font-semibold text-slate-700 mb-2">Select Source</Text>
-                <View className="flex-row gap-2">
+              <Text className="text-sm font-semibold text-slate-700 mb-2">Select Source</Text>
+              <View className="flex-row gap-2 mb-4">
+                <TouchableOpacity
+                  onPress={handlePickMedia}
+                  className="flex-1 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center py-4"
+                >
+                  <Ionicons name="images-outline" size={24} color="#64748b" />
+                  <Text className="text-slate-600 text-sm mt-2 text-center">
+                    {selectedMediaType === 'IMAGE' ? 'From Album' : 'From Library'}
+                  </Text>
+                </TouchableOpacity>
+                {selectedMediaType === 'IMAGE' && (
                   <TouchableOpacity
-                    onPress={handlePickMedia}
+                    onPress={handleOpenCamera}
                     className="flex-1 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center py-4"
                   >
-                    <Ionicons name="images-outline" size={24} color="#64748b" />
-                    <Text className="text-slate-600 text-sm mt-2 text-center">
-                      {selectedMediaType === 'IMAGE' ? 'From Album' : 'From Library'}
-                    </Text>
+                    <Ionicons name="camera-outline" size={24} color="#64748b" />
+                    <Text className="text-slate-600 text-sm mt-2 text-center">Take Photo</Text>
                   </TouchableOpacity>
-                  {selectedMediaType === 'IMAGE' && (
-                    <TouchableOpacity
-                      onPress={handleOpenCamera}
-                      className="flex-1 bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl items-center justify-center py-4"
-                    >
-                      <Ionicons name="camera-outline" size={24} color="#64748b" />
-                      <Text className="text-slate-600 text-sm mt-2 text-center">Take Photo</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
+                )}
               </View>
 
-              {/* Selected Images Preview */}
+              {/* Selected Media Preview */}
               {selectedImages.length > 0 && (
-                <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
+                <View className="mb-4">
                   <Text className="text-sm font-semibold text-slate-700 mb-3">
-                    Selected ({selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'})
+                    Selected ({selectedImages.length} {selectedImages.length === 1 ? 'item' : 'items'})
                   </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="flex-row"
-                    nestedScrollEnabled={true}
-                    scrollEventThrottle={16}
-                    bounces={true}
-                  >
-                    {selectedImages.map((selectedImage, index) => (
-                      <View key={index} className="mr-2 relative">
-                        {selectedImage.type === 'VIDEO' ? (
-                          <Video
-                            source={{ uri: selectedImage.uri }}
-                            style={{ width: 120, height: 120, borderRadius: 8 }}
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay={false}
-                            useNativeControls
-                          />
-                        ) : (
-                          <Image
-                            source={{ uri: selectedImage.uri }}
-                            style={{ width: 120, height: 120, borderRadius: 8 }}
-                            resizeMode="cover"
-                          />
-                        )}
-                        <TouchableOpacity
-                          onPress={() => {
-                            setSelectedImages(selectedImages.filter((_, i) => i !== index));
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
-                          style={{ width: 24, height: 24 }}
-                        >
-                          <Ionicons name="close" size={12} color="#fff" />
-                        </TouchableOpacity>
-                        <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-1">
-                          <Text className="text-white text-xs font-semibold">{index + 1}</Text>
+                  <View className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      nestedScrollEnabled={true}
+                      contentContainerStyle={{ paddingVertical: 4 }}
+                    >
+                      {selectedImages.map((selectedImage, index) => (
+                        <View key={index} className="mr-3" style={{ width: 120 }}>
+                          <TouchableOpacity 
+                            activeOpacity={0.7}
+                            onPress={() => {
+                              if (selectedImage.type === 'VIDEO') {
+                                setPreviewVideoUri(selectedImage.uri);
+                                setShowVideoPreview(true);
+                              }
+                            }}
+                          >
+                            <View className="relative">
+                              {selectedImage.type === 'VIDEO' ? (
+                                <View 
+                                  className="bg-slate-800 rounded-lg items-center justify-center" 
+                                  style={{ width: 120, height: 120 }}
+                                >
+                                  {/* Video Icon Placeholder */}
+                                  <Ionicons name="videocam" size={40} color="#64748b" />
+                                  
+                                  {/* Video Play Icon Overlay */}
+                                  <View className="absolute inset-0 items-center justify-center">
+                                    <View className="bg-white/90 rounded-full p-3">
+                                      <Ionicons name="play" size={24} color="#000" />
+                                    </View>
+                                  </View>
+                                  
+                                  {/* Video Label */}
+                                  <View className="absolute top-2 left-2 bg-red-500 rounded px-2 py-1">
+                                    <Text className="text-white text-xs font-bold">VIDEO</Text>
+                                  </View>
+                                </View>
+                              ) : (
+                                <View className="bg-slate-200 rounded-lg overflow-hidden" style={{ width: 120, height: 120 }}>
+                                  <Image
+                                    source={{ uri: selectedImage.uri }}
+                                    style={{ width: '100%', height: '100%' }}
+                                    resizeMode="cover"
+                                  />
+                                </View>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                          {/* Remove Button */}
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedImages(selectedImages.filter((_, i) => i !== index));
+                            }}
+                            className="absolute -top-2 -right-2 bg-red-500 rounded-full shadow-lg"
+                            style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Ionicons name="close" size={16} color="#fff" />
+                          </TouchableOpacity>
+                          {/* Index Badge */}
+                          <View className="absolute bottom-2 right-2 bg-black/70 rounded-full px-2 py-1">
+                            <Text className="text-white text-xs font-semibold">{index + 1}</Text>
+                          </View>
                         </View>
-                      </View>
-                    ))}
-                  </ScrollView>
+                      ))}
+                    </ScrollView>
+                  </View>
                 </View>
               )}
 
               {/* Description */}
               <Text className="text-sm font-semibold text-slate-700 mb-2">
-                Description {selectedImages.length > 1 && `(applies to all ${selectedImages.length} images)`}
+                Description {selectedImages.length > 1 && `(applies to all ${selectedImages.length} items)`}
               </Text>
               <TextInput
-                className="border border-slate-300 rounded-lg px-4 py-3 mb-4"
+                className="border border-slate-300 rounded-lg px-4 py-3 mb-6"
                 placeholder={selectedImages.length > 1
-                  ? `Enter description for all ${selectedImages.length} images`
+                  ? `Enter description for all ${selectedImages.length} items`
                   : `Enter ${selectedMediaType.toLowerCase()} description`}
                 value={imageDescription}
                 onChangeText={setImageDescription}
@@ -1337,7 +1439,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 >
                   <Ionicons name="add-circle" size={20} color="#fff" />
                   <Text className="text-white font-medium ml-2">
-                    Add {selectedImages.length > 1 ? `${selectedImages.length} Images` : 'Media'}
+                    Add {selectedImages.length > 1 ? `${selectedImages.length} Items` : 'Media'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1486,6 +1588,53 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               </TouchableOpacity>
             </View>
           )}
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showVideoPreview}
+        animationType="fade"
+        transparent={false}
+        onRequestClose={() => {
+          setShowVideoPreview(false);
+          setPreviewVideoUri(null);
+        }}
+      >
+        <View className="flex-1 bg-black">
+          {/* Header */}
+          <View className="flex-row justify-between items-center px-4 pt-12 pb-4 bg-black/90">
+            <Text className="text-white text-lg font-semibold">Video Preview</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setShowVideoPreview(false);
+                setPreviewVideoUri(null);
+              }}
+              className="bg-white/20 rounded-full p-2"
+            >
+              <Ionicons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Video Player */}
+          <View className="flex-1 items-center justify-center">
+            {previewVideoUri && (
+              <Video
+                source={{ uri: previewVideoUri }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay={true}
+                useNativeControls={true}
+                isLooping={false}
+              />
+            )}
+          </View>
+
+          {/* Instructions */}
+          <View className="px-6 py-4 bg-black/90">
+            <Text className="text-white/70 text-sm text-center">
+              Tap the close button to return to media selection
+            </Text>
+          </View>
         </View>
       </Modal>
     </View>

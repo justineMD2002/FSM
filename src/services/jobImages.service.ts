@@ -19,43 +19,112 @@ const SERVICE_IMAGES_BUCKET = 'job_service_media'; // Will be renamed to job_ser
  * @param contentType - MIME type of the media (e.g., 'image/png', 'video/mp4')
  * @returns ApiResponse with public URL of uploaded media
  */
-export const uploadServiceMedia = async (
-  uri: string,
-  fileName: string,
-  contentType: string
-): Promise<ApiResponse<string>> => {
-  try {
-    // Use the same approach as signatures - convert to ArrayBuffer
-    // This works reliably on both web and mobile
-    const base64Data = await uriToBase64(uri);
-    const arrayBuffer = decode(base64Data);
-
-    const { data, error } = await supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .upload(fileName, arrayBuffer, {
-        contentType,
-        upsert: false,
-      });
-
-    if (error) {
+  export const uploadServiceMedia = async (
+    uri: string,
+    fileName: string,
+    contentType: string
+  ): Promise<ApiResponse<string>> => {
+    try {
+    const isVideo = contentType.startsWith('video/');
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    
+    // Check if file exists before accessing size property
+    if (!fileInfo.exists) {
       return {
         data: null,
         error: {
-          message: error.message,
-          details: error,
+          message: 'File does not exist',
+          details: { uri },
         },
       };
     }
+    
+    const fileSize = fileInfo.size || 0;
+    
+    const LARGE_FILE_THRESHOLD = 5 * 1024 * 1024; // 5MB
+    
+    if (isVideo || fileSize > LARGE_FILE_THRESHOLD) {
+      // Use FormData for React Native (works better on mobile)
+      const formData = new FormData();
+      formData.append('file', {
+        uri: uri,
+        type: contentType,
+        name: fileName,
+      } as any);
 
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .getPublicUrl(data.path);
+      // Get upload URL from Supabase
+      const { data: uploadData, error: urlError } = await supabase.storage
+        .from(SERVICE_IMAGES_BUCKET)
+        .createSignedUploadUrl(fileName);
 
-    return {
-      data: publicUrlData.publicUrl,
-      error: null,
-    };
+      if (urlError) {
+        return {
+          data: null,
+          error: {
+            message: urlError.message,
+            details: urlError,
+          },
+        };
+      }
+
+      // Upload using the signed URL
+      const uploadResponse = await fetch(uploadData.signedUrl, {
+        method: 'PUT',
+        body: formData,
+        headers: {
+          'Content-Type': contentType,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        return {
+          data: null,
+          error: {
+            message: `Upload failed with status ${uploadResponse.status}`,
+          },
+        };
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(SERVICE_IMAGES_BUCKET)
+        .getPublicUrl(fileName);
+
+      return {
+        data: publicUrlData.publicUrl,
+        error: null,
+      };
+    } else {
+      // Keep existing approach for small images
+      const base64Data = await uriToBase64(uri);
+      const arrayBuffer = decode(base64Data);
+
+      const { data, error } = await supabase.storage
+        .from(SERVICE_IMAGES_BUCKET)
+        .upload(fileName, arrayBuffer, {
+          contentType,
+          upsert: false,
+        });
+
+      if (error) {
+        return {
+          data: null,
+          error: {
+            message: error.message,
+            details: error,
+          },
+        };
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(SERVICE_IMAGES_BUCKET)
+        .getPublicUrl(data.path);
+
+      return {
+        data: publicUrlData.publicUrl,
+        error: null,
+      };
+    }
   } catch (error: any) {
     return {
       data: null,
