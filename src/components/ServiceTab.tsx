@@ -1173,7 +1173,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
           {submitting ? (
             <>
               <ActivityIndicator size="small" color="#fff" />
-              <Text className="text-white font-semibold text-lg ml-2">Submitting...</Text>
+              <Text className="text-white font-semibold text-lg ml-2">Submitting, please wait...</Text>
             </>
           ) : hasSubmittedReport ? (
             <>
