@@ -1270,7 +1270,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               {selectedImages.length > 0 && (
                 <View className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4">
                   <Text className="text-sm font-semibold text-slate-700 mb-3">
-                    Selected ({selectedImages.length} {selectedImages.length === 1 ? 'image' : 'images'})
+                    Selected ({selectedImages.length} {selectedImages.length === 1 ? (selectedMediaType === 'VIDEO' ? 'video' : 'image') : 'items'})
                   </Text>
                   <ScrollView
                     horizontal
@@ -1283,13 +1283,27 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     {selectedImages.map((selectedImage, index) => (
                       <View key={index} className="mr-2 relative">
                         {selectedImage.type === 'VIDEO' ? (
-                          <Video
-                            source={{ uri: selectedImage.uri }}
-                            style={{ width: 120, height: 120, borderRadius: 8 }}
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay={false}
-                            useNativeControls
-                          />
+                          <View className="relative" style={{ width: 120, height: 120 }}>
+                            <Video
+                              source={{ uri: selectedImage.uri }}
+                              style={{ width: 120, height: 120, borderRadius: 8 }}
+                              resizeMode={ResizeMode.COVER}
+                              shouldPlay={false}
+                              usePoster={true}
+                              posterSource={{ uri: selectedImage.uri }}
+                              posterStyle={{ resizeMode: 'cover' }}
+                            />
+                            {/* Play icon overlay */}
+                            <View className="absolute inset-0 items-center justify-center">
+                              <View className="bg-black/50 rounded-full p-2">
+                                <Ionicons name="play" size={24} color="#fff" />
+                              </View>
+                            </View>
+                            {/* Video badge */}
+                            <View className="absolute bottom-2 left-2 bg-black/70 rounded px-2 py-1">
+                              <Text className="text-white text-xs font-semibold">VIDEO</Text>
+                            </View>
+                          </View>
                         ) : (
                           <Image
                             source={{ uri: selectedImage.uri }}
@@ -1306,7 +1320,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                         >
                           <Ionicons name="close" size={12} color="#fff" />
                         </TouchableOpacity>
-                        <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-1">
+                        <View className="absolute top-1 left-1 bg-black/60 rounded-full px-2 py-1">
                           <Text className="text-white text-xs font-semibold">{index + 1}</Text>
                         </View>
                       </View>
