@@ -10,10 +10,11 @@ import { Platform } from 'react-native';
  */
 
 const TABLE_NAME = 'job_media';
-const SERVICE_IMAGES_BUCKET = 'job_service_media'; // Will be renamed to job_service_media
+const SERVICE_IMAGES_BUCKET = 'job_service_media';
 
 /**
  * Upload a service media file (image or video) to Supabase Storage
+ * Optimized for large video files - uses direct file upload without base64 conversion
  * @param uri - URI of the media file (local file path)
  * @param fileName - File name for the uploaded media
  * @param contentType - MIME type of the media (e.g., 'image/png', 'video/mp4')
@@ -25,37 +26,107 @@ export const uploadServiceMedia = async (
   contentType: string
 ): Promise<ApiResponse<string>> => {
   try {
-    // Use the same approach as signatures - convert to ArrayBuffer
-    // This works reliably on both web and mobile
-    const base64Data = await uriToBase64(uri);
-    const arrayBuffer = decode(base64Data);
+    // For videos, use direct file upload to avoid memory issues
+    const isVideo = contentType.startsWith('video/');
+    
+    if (Platform.OS === 'web') {
+      // Web: Use fetch to get blob directly
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      const { data, error } = await supabase.storage
+        .from(SERVICE_IMAGES_BUCKET)
+        .upload(fileName, blob, {
+          contentType,
+          upsert: false,
+        });
 
-    const { data, error } = await supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .upload(fileName, arrayBuffer, {
-        contentType,
-        upsert: false,
-      });
+      if (error) {
+        return {
+          data: null,
+          error: {
+            message: error.message,
+            details: error,
+          },
+        };
+      }
 
-    if (error) {
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from(SERVICE_IMAGES_BUCKET)
+        .getPublicUrl(data.path);
+
       return {
-        data: null,
-        error: {
-          message: error.message,
-          details: error,
-        },
+        data: publicUrlData.publicUrl,
+        error: null,
       };
+    } else {
+      // Mobile: Use optimized approach based on file type
+      if (isVideo) {
+        // For videos: Use FileSystem upload directly (avoids memory issues)
+        const uploadUrl = await getUploadUrl(fileName, contentType);
+        
+        if (!uploadUrl) {
+          throw new Error('Failed to get upload URL');
+        }
+
+        // Use FileSystem.uploadAsync for efficient large file uploads
+        const uploadResult = await FileSystem.uploadAsync(uploadUrl, uri, {
+          httpMethod: 'PUT',
+          headers: {
+            'Content-Type': contentType,
+          },
+          uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        });
+
+        if (uploadResult.status !== 200) {
+          throw new Error(`Upload failed with status ${uploadResult.status}`);
+        }
+
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from(SERVICE_IMAGES_BUCKET)
+          .getPublicUrl(fileName);
+
+        return {
+          data: publicUrlData.publicUrl,
+          error: null,
+        };
+      } else {
+        // For images: Use base64 approach (works well for smaller files)
+        const base64Data = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const arrayBuffer = decode(base64Data);
+
+        const { data, error } = await supabase.storage
+          .from(SERVICE_IMAGES_BUCKET)
+          .upload(fileName, arrayBuffer, {
+            contentType,
+            upsert: false,
+          });
+
+        if (error) {
+          return {
+            data: null,
+            error: {
+              message: error.message,
+              details: error,
+            },
+          };
+        }
+
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from(SERVICE_IMAGES_BUCKET)
+          .getPublicUrl(data.path);
+
+        return {
+          data: publicUrlData.publicUrl,
+          error: null,
+        };
+      }
     }
-
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from(SERVICE_IMAGES_BUCKET)
-      .getPublicUrl(data.path);
-
-    return {
-      data: publicUrlData.publicUrl,
-      error: null,
-    };
   } catch (error: any) {
     return {
       data: null,
@@ -68,8 +139,34 @@ export const uploadServiceMedia = async (
 };
 
 /**
+ * Get a signed upload URL from Supabase Storage
+ * This allows direct file upload without loading entire file into memory
+ */
+const getUploadUrl = async (
+  fileName: string,
+  contentType: string
+): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.storage
+      .from(SERVICE_IMAGES_BUCKET)
+      .createSignedUploadUrl(fileName);
+
+    if (error || !data) {
+      console.error('Error getting upload URL:', error);
+      return null;
+    }
+
+    return data.signedUrl;
+  } catch (error) {
+    console.error('Error in getUploadUrl:', error);
+    return null;
+  }
+};
+
+/**
  * Convert URI to base64 string
  * Works on both web and mobile without using blob
+ * @deprecated - Only used for image uploads now
  */
 const uriToBase64 = async (uri: string): Promise<string> => {
   if (Platform.OS === 'web') {
@@ -307,6 +404,7 @@ export const deleteJobImage = async (
 
 /**
  * Upload media (image or video) to storage and create database record
+ * Optimized for large files - videos use direct upload, images use base64
  * @param jobId - Job ID
  * @param technicianJobId - Technician job ID (optional)
  * @param uri - URI of the media file (local file path)
@@ -337,7 +435,9 @@ export const uploadMediaAndCreateRecord = async (
       contentType = `image/${fileExtension === 'jpg' ? 'jpeg' : fileExtension}`;
     }
 
-    // Upload media to storage
+    console.log(`Uploading ${mediaType}: ${fileName} (${contentType})`);
+
+    // Upload media to storage (optimized for file type)
     const uploadResult = await uploadServiceMedia(uri, fileName, contentType);
 
     if (uploadResult.error || !uploadResult.data) {
@@ -348,6 +448,8 @@ export const uploadMediaAndCreateRecord = async (
         },
       };
     }
+
+    console.log(`${mediaType} uploaded successfully:`, uploadResult.data);
 
     // Create database record
     const imageRecord: Omit<JobImage, 'id' | 'created_at' | 'updated_at' | 'deleted_at'> = {
