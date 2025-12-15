@@ -52,6 +52,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   const [isClockedIn, setIsClockedIn] = useState(false);
   const [isOnBreak, setIsOnBreak] = useState(false);
 
+  const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
+
   // Task form states
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
@@ -1093,13 +1095,27 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                   <View className="bg-slate-200 h-32 items-center justify-center relative">
                     {image.image_url ? (
                       image.media_type === 'VIDEO' ? (
-                        <Video
-                          source={{ uri: image.image_url }}
+                        <TouchableOpacity
+                          onPress={() => setExpandedVideo(image.image_url)}
+                          activeOpacity={0.8}
                           className="w-full h-full"
-                          resizeMode={ResizeMode.COVER}
-                          shouldPlay={false}
-                          useNativeControls
-                        />
+                        >
+                          <Video
+                            source={{ uri: image.image_url }}
+                            className="w-full h-full"
+                            resizeMode={ResizeMode.COVER}
+                            shouldPlay={false}
+                            usePoster={true}
+                            posterSource={{ uri: image.image_url }}
+                            posterStyle={{ resizeMode: 'cover' }}
+                          />
+                          {/* Play button overlay */}
+                          <View className="absolute inset-0 items-center justify-center">
+                            <View className="bg-black/50 rounded-full p-3">
+                              <Ionicons name="play" size={32} color="#fff" />
+                            </View>
+                          </View>
+                        </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
                           onPress={() => setExpandedImage(image.image_url)}
@@ -1118,8 +1134,9 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     )}
                     {/* Media type badge */}
                     {image.media_type === 'VIDEO' && image.image_url && (
-                      <View className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-1">
-                        <Ionicons name="play" size={12} color="#fff" />
+                      <View className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-1 flex-row items-center">
+                        <Ionicons name="videocam" size={12} color="#fff" />
+                        <Text className="text-white text-xs ml-1 font-semibold">VIDEO</Text>
                       </View>
                     )}
                     {/* Show delete button only for newly added media and report not submitted */}
@@ -1484,6 +1501,40 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               >
                 <Text className="text-slate-400">Cancel</Text>
               </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      <Modal
+        visible={expandedVideo !== null}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setExpandedVideo(null)}
+      >
+        <View className="flex-1 bg-black">
+          {/* Close button */}
+          <TouchableOpacity
+            className="absolute top-12 right-4 z-10 bg-white/20 rounded-full p-2"
+            onPress={() => setExpandedVideo(null)}
+          >
+            <Ionicons name="close" size={32} color="#ffffff" />
+          </TouchableOpacity>
+
+          {/* Full-size video */}
+          {expandedVideo && (
+            <View className="flex-1 justify-center items-center px-6">
+              <Video
+                source={{ uri: expandedVideo }}
+                style={{
+                  width: Dimensions.get('window').width,
+                  height: Dimensions.get('window').height * 0.7,
+                }}
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay={true}
+                useNativeControls={true}
+                isLooping={false}
+              />
             </View>
           )}
         </View>
