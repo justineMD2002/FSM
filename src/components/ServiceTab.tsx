@@ -689,7 +689,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             <Ionicons name="clipboard-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Tasks</Text>
           </View>
-          {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
+          {!isHistoryJob && !hasSubmittedReport && isJobStarted && !submitting && (
             <TouchableOpacity
               onPress={() => setShowTaskForm(!showTaskForm)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -775,8 +775,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     {task.is_required ? 'Required' : 'Optional'}
                   </Text> */}
                 </View>
-                {/* Show delete button only for newly added tasks and report not submitted */}
-                {task.isNew && !isHistoryJob && !hasSubmittedReport && (
+                {/* Show delete button only for newly added tasks, report not submitted, and not actively submitting */}
+                {task.isNew && !isHistoryJob && !hasSubmittedReport && !submitting && (
                   <TouchableOpacity
                     onPress={() => handleDeleteTask(task.id)}
                     className="ml-3 bg-red-500 rounded-full p-2"
@@ -797,7 +797,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             <Ionicons name="flag-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Follow Ups</Text>
           </View>
-          {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
+          {!isHistoryJob && !hasSubmittedReport && isJobStarted && !submitting && (
             <TouchableOpacity
               onPress={() => setShowFollowUpForm(!showFollowUpForm)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -1001,8 +1001,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                         </Text>
                       </View>
                     </View>
-                    {/* Show edit and delete buttons only for newly added followups and report not submitted */}
-                    {followUp.isNew && !isHistoryJob && !hasSubmittedReport && (
+                    {/* Show edit and delete buttons only for newly added followups, report not submitted, and not actively submitting */}
+                    {followUp.isNew && !isHistoryJob && !hasSubmittedReport && !submitting && (
                       <View className="flex-row">
                         <TouchableOpacity
                           onPress={() => handleEditFollowUp(followUp)}
@@ -1070,7 +1070,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
             <Ionicons name="videocam-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Media</Text>
           </View>
-          {!isHistoryJob && !hasSubmittedReport && isJobStarted && (
+          {!isHistoryJob && !hasSubmittedReport && isJobStarted && !submitting && (
             <TouchableOpacity
               onPress={() => setShowImageModal(true)}
               className="w-8 h-8 rounded-full bg-[#0092ce] items-center justify-center"
@@ -1134,8 +1134,8 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                     ) : (
                       <Ionicons name={image.media_type === 'VIDEO' ? 'videocam' : 'image'} size={48} color="#94a3b8" />
                     )}
-                    {/* Show delete button only for newly added media and report not submitted */}
-                    {image.isNew && !isHistoryJob && !hasSubmittedReport && (
+                    {/* Show delete button only for newly added media, report not submitted, and not actively submitting */}
+                    {image.isNew && !isHistoryJob && !hasSubmittedReport && !submitting && (
                       <TouchableOpacity
                         onPress={() => handleDeleteImage(image.id)}
                         className="absolute top-2 right-2 bg-red-500 rounded-full p-1"
@@ -1303,7 +1303,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                           <Image
                             source={{ uri: selectedImage.uri }}
                             style={{ width: 120, height: 120, borderRadius: 8 }}
-                            resizeMode="cover"
+                            resizeMode={ResizeMode.COVER}
                           />
                         )}
                         <TouchableOpacity
