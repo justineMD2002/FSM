@@ -1100,20 +1100,22 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                           activeOpacity={0.8}
                           className="w-full h-full"
                         >
-                          <Video
+                          {/* Use Image as thumbnail for videos - more reliable */}
+                          <Image
                             source={{ uri: image.image_url }}
                             className="w-full h-full"
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay={false}
-                            usePoster={true}
-                            posterSource={{ uri: image.image_url }}
-                            posterStyle={{ resizeMode: 'cover' }}
+                            resizeMode="cover"
                           />
                           {/* Play button overlay */}
-                          <View className="absolute inset-0 items-center justify-center">
-                            <View className="bg-black/50 rounded-full p-3">
+                          <View className="absolute inset-0 items-center justify-center bg-black/20">
+                            <View className="bg-black/60 rounded-full p-3">
                               <Ionicons name="play" size={32} color="#fff" />
                             </View>
+                          </View>
+                          {/* Video badge */}
+                          <View className="absolute top-2 left-2 bg-black/70 rounded-full px-3 py-1 flex-row items-center">
+                            <Ionicons name="videocam" size={14} color="#fff" />
+                            <Text className="text-white text-xs ml-1 font-semibold">VIDEO</Text>
                           </View>
                         </TouchableOpacity>
                       ) : (
@@ -1131,13 +1133,6 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                       )
                     ) : (
                       <Ionicons name={image.media_type === 'VIDEO' ? 'videocam' : 'image'} size={48} color="#94a3b8" />
-                    )}
-                    {/* Media type badge */}
-                    {image.media_type === 'VIDEO' && image.image_url && (
-                      <View className="absolute top-2 left-2 bg-black/60 rounded-full px-2 py-1 flex-row items-center">
-                        <Ionicons name="videocam" size={12} color="#fff" />
-                        <Text className="text-white text-xs ml-1 font-semibold">VIDEO</Text>
-                      </View>
                     )}
                     {/* Show delete button only for newly added media and report not submitted */}
                     {image.isNew && !isHistoryJob && !hasSubmittedReport && (
