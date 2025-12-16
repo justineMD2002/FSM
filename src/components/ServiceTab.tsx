@@ -567,52 +567,78 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
       // Save new tasks to backend
       const newTasks = tasks.filter(task => task.isNew);
-      for (const task of newTasks) {
-        const { id, isNew, ...taskData } = task; // Remove temporary fields
-        const result = await createJobTask(taskData);
-        if (result.error) {
-          console.error('Error creating task:', result.error);
-          Alert.alert('Error', `Failed to save task: ${result.error.message}`);
-          return;
+      if (newTasks.length > 0) {
+        for (const task of newTasks) {
+          const { id, isNew, ...taskData } = task; // Remove temporary fields
+          const result = await createJobTask(taskData);
+          if (result.error) {
+            console.error('Error creating task:', result.error);
+            Alert.alert('Error', `Failed to save task: ${result.error.message}`);
+            return;
+          }
         }
+
+        // Mark tasks as saved by removing isNew flag
+        setTasks(prevTasks => prevTasks.map(task =>
+          task.isNew ? { ...task, isNew: false } : task
+        ));
+
+        console.log(`Successfully saved ${newTasks.length} tasks`);
       }
 
       // Save new followups to backend
       const newFollowUps = followUps.filter(followUp => followUp.isNew);
-      for (const followUp of newFollowUps) {
-        const { id, isNew, ...followUpData } = followUp; // Remove temporary fields
-        const result = await createFollowup(followUpData);
-        if (result.error) {
-          console.error('Error creating followup:', result.error);
-          Alert.alert('Error', `Failed to save followup: ${result.error.message}`);
-          return;
+      if (newFollowUps.length > 0) {
+        for (const followUp of newFollowUps) {
+          const { id, isNew, ...followUpData } = followUp; // Remove temporary fields
+          const result = await createFollowup(followUpData);
+          if (result.error) {
+            console.error('Error creating followup:', result.error);
+            Alert.alert('Error', `Failed to save followup: ${result.error.message}`);
+            return;
+          }
         }
+
+        // Mark followups as saved by removing isNew flag
+        setFollowUps(prevFollowUps => prevFollowUps.map(followUp =>
+          followUp.isNew ? { ...followUp, isNew: false } : followUp
+        ));
+
+        console.log(`Successfully saved ${newFollowUps.length} followups`);
       }
 
       // Upload new media (images/videos) to backend and save to database
       const newImages = images.filter(image => image.isNew);
+      if (newImages.length > 0) {
+        for (const image of newImages) {
+          if (image.localUri) {
+            const mediaType = image.media_type || 'IMAGE';
+            const fileExtension = image.fileExtension || 'png';
 
-      for (const image of newImages) {
-        if (image.localUri) {
-          const mediaType = image.media_type || 'IMAGE';
-          const fileExtension = image.fileExtension || 'png';
-
-          const result = await uploadMediaAndCreateRecord(
-            jobId,
-            null, // technician_job_id - can be set if needed
-            image.localUri, // Pass the local URI instead of base64
-            image.description,
-            user.id,
-            mediaType,
-            fileExtension
-          );
-          if (result.error) {
-            console.error(`Error uploading ${mediaType}:`, result.error);
-            Alert.alert('Error', `Failed to upload ${mediaType}: ${result.error.message}`);
-            return;
+            const result = await uploadMediaAndCreateRecord(
+              jobId,
+              null, // technician_job_id - can be set if needed
+              image.localUri, // Pass the local URI instead of base64
+              image.description,
+              user.id,
+              mediaType,
+              fileExtension
+            );
+            if (result.error) {
+              console.error(`Error uploading ${mediaType}:`, result.error);
+              Alert.alert('Error', `Failed to upload ${mediaType}: ${result.error.message}`);
+              return;
+            }
+            console.log(`${mediaType} uploaded and saved successfully:`, result.data);
           }
-          console.log(`${mediaType} uploaded and saved successfully:`, result.data);
         }
+
+        // Mark images as saved by removing isNew flag
+        setImages(prevImages => prevImages.map(image =>
+          image.isNew ? { ...image, isNew: false } : image
+        ));
+
+        console.log(`Successfully uploaded ${newImages.length} media files`);
       }
 
       // Update service report submission status in technician_jobs table
