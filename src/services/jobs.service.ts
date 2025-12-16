@@ -90,6 +90,7 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     time,
     endDate,
     endTime,
+    scheduledStart: dbJob.scheduled_start,
     customer: dbJob.customer?.customer_name || 'Unknown Customer',
     customerId: dbJob.customer_id,
     // Use location_name with country_name and zip_code if available

@@ -181,18 +181,27 @@ export default function HomeScreen() {
     }
   };
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch =
-      job.jobName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.customer.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredJobs = jobs
+    .filter(job => {
+      const matchesSearch =
+        job.jobName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.customer.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesDate = isJobInDateRange(job.date);
+      const matchesDate = isJobInDateRange(job.date);
 
-    const matchesStatus = statusFilters.length === 0 || statusFilters.includes(job.status);
+      const matchesStatus = statusFilters.length === 0 || statusFilters.includes(job.status);
 
-    return matchesSearch && matchesDate && matchesStatus;
-  });
+      return matchesSearch && matchesDate && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by scheduled start time (ascending - earliest first)
+      if (!a.scheduledStart && !b.scheduledStart) return 0;
+      if (!a.scheduledStart) return 1; // Put jobs without scheduled time at the end
+      if (!b.scheduledStart) return -1;
+
+      return new Date(a.scheduledStart).getTime() - new Date(b.scheduledStart).getTime();
+    });
 
   const hasActiveFilters = dateFilter !== 'ALL' || (activeTab === 'HISTORY' && statusFilters.length > 0);
 

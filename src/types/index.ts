@@ -90,6 +90,7 @@ export interface Job {
   time: string;
   endDate?: string;
   endTime?: string;
+  scheduledStart: string | null; // ISO datetime string for sorting
   customer: string;
   customerId: string; // Add customer ID for lookups
   address: string;
