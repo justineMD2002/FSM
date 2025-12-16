@@ -3,35 +3,126 @@ import { ApiResponse, JobImage } from '@/types';
 import { decode } from 'base64-arraybuffer';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
+import { Image, Video } from 'react-native-compressor';
 
 /**
  * Job Images Service
  * Handles job service media (images and videos) uploads and metadata storage
+ * Now with automatic compression for images and videos
  */
 
 const TABLE_NAME = 'job_media';
 const SERVICE_IMAGES_BUCKET = 'job_service_media';
 
+// Compression settings
+const IMAGE_COMPRESSION_OPTIONS = {
+  compressionMethod: 'auto' as const,
+  maxWidth: 1920,
+  maxHeight: 1920,
+  quality: 0.8, // 80% quality
+};
+
+const VIDEO_COMPRESSION_OPTIONS = {
+  compressionMethod: 'auto' as const,
+  maxSize: 1920, // Max width/height
+  minimumFileSizeForCompress: 0, // Compress all videos
+};
+
+/**
+ * Compress an image before upload
+ * @param uri - Original image URI
+ * @returns Compressed image URI
+ */
+const compressImage = async (uri: string): Promise<string> => {
+  try {
+    console.log('Compressing image...');
+    const compressedUri = await Image.compress(uri, IMAGE_COMPRESSION_OPTIONS);
+    
+    // Get file sizes for logging
+    const originalInfo = await FileSystem.getInfoAsync(uri);
+    const compressedInfo = await FileSystem.getInfoAsync(compressedUri);
+    
+    if (originalInfo.exists && compressedInfo.exists) {
+      const originalSize = (originalInfo.size / 1024 / 1024).toFixed(2);
+      const compressedSize = (compressedInfo.size / 1024 / 1024).toFixed(2);
+      const savings = (((originalInfo.size - compressedInfo.size) / originalInfo.size) * 100).toFixed(1);
+      console.log(`Image compressed: ${originalSize}MB → ${compressedSize}MB (${savings}% reduction)`);
+    }
+    
+    return compressedUri;
+  } catch (error) {
+    console.error('Error compressing image:', error);
+    // Return original URI if compression fails
+    return uri;
+  }
+};
+
+/**
+ * Compress a video before upload
+ * @param uri - Original video URI
+ * @returns Compressed video URI
+ */
+const compressVideo = async (uri: string): Promise<string> => {
+  try {
+    console.log('Compressing video (this may take a moment)...');
+    const compressedUri = await Video.compress(
+      uri,
+      VIDEO_COMPRESSION_OPTIONS,
+      (progress) => {
+        console.log(`Video compression progress: ${(progress * 100).toFixed(0)}%`);
+      }
+    );
+    
+    // Get file sizes for logging
+    const originalInfo = await FileSystem.getInfoAsync(uri);
+    const compressedInfo = await FileSystem.getInfoAsync(compressedUri);
+    
+    if (originalInfo.exists && compressedInfo.exists) {
+      const originalSize = (originalInfo.size / 1024 / 1024).toFixed(2);
+      const compressedSize = (compressedInfo.size / 1024 / 1024).toFixed(2);
+      const savings = (((originalInfo.size - compressedInfo.size) / originalInfo.size) * 100).toFixed(1);
+      console.log(`Video compressed: ${originalSize}MB → ${compressedSize}MB (${savings}% reduction)`);
+    }
+    
+    return compressedUri;
+  } catch (error) {
+    console.error('Error compressing video:', error);
+    // Return original URI if compression fails
+    return uri;
+  }
+};
+
 /**
  * Upload a service media file (image or video) to Supabase Storage
- * Optimized for large video files - uses direct file upload without base64 conversion
+ * Automatically compresses media before upload
  * @param uri - URI of the media file (local file path)
  * @param fileName - File name for the uploaded media
  * @param contentType - MIME type of the media (e.g., 'image/png', 'video/mp4')
+ * @param shouldCompress - Whether to compress the media (default: true)
  * @returns ApiResponse with public URL of uploaded media
  */
 export const uploadServiceMedia = async (
   uri: string,
   fileName: string,
-  contentType: string
+  contentType: string,
+  shouldCompress: boolean = true
 ): Promise<ApiResponse<string>> => {
   try {
-    // For videos, use direct file upload to avoid memory issues
+    let uploadUri = uri;
     const isVideo = contentType.startsWith('video/');
+    
+    // Compress media if on mobile and compression is enabled
+    if (shouldCompress && Platform.OS !== 'web') {
+      if (isVideo) {
+        uploadUri = await compressVideo(uri);
+      } else {
+        uploadUri = await compressImage(uri);
+      }
+    }
     
     if (Platform.OS === 'web') {
       // Web: Use fetch to get blob directly
-      const response = await fetch(uri);
+      const response = await fetch(uploadUri);
       const blob = await response.blob();
       
       const { data, error } = await supabase.storage
@@ -71,7 +162,7 @@ export const uploadServiceMedia = async (
         }
 
         // Use FileSystem.uploadAsync for efficient large file uploads
-        const uploadResult = await FileSystem.uploadAsync(uploadUrl, uri, {
+        const uploadResult = await FileSystem.uploadAsync(uploadUrl, uploadUri, {
           httpMethod: 'PUT',
           headers: {
             'Content-Type': contentType,
@@ -94,7 +185,7 @@ export const uploadServiceMedia = async (
         };
       } else {
         // For images: Use base64 approach (works well for smaller files)
-        const base64Data = await FileSystem.readAsStringAsync(uri, {
+        const base64Data = await FileSystem.readAsStringAsync(uploadUri, {
           encoding: FileSystem.EncodingType.Base64,
         });
         const arrayBuffer = decode(base64Data);
@@ -404,7 +495,7 @@ export const deleteJobImage = async (
 
 /**
  * Upload media (image or video) to storage and create database record
- * Optimized for large files - videos use direct upload, images use base64
+ * Automatically compresses media before upload for optimal storage and bandwidth
  * @param jobId - Job ID
  * @param technicianJobId - Technician job ID (optional)
  * @param uri - URI of the media file (local file path)
@@ -412,6 +503,7 @@ export const deleteJobImage = async (
  * @param createdBy - User ID who created the media
  * @param mediaType - Type of media ('IMAGE' or 'VIDEO')
  * @param fileExtension - File extension (e.g., 'png', 'jpg', 'mp4', 'mov')
+ * @param shouldCompress - Whether to compress the media (default: true)
  * @returns ApiResponse with created job image record
  */
 export const uploadMediaAndCreateRecord = async (
@@ -421,7 +513,8 @@ export const uploadMediaAndCreateRecord = async (
   description: string | null,
   createdBy: string,
   mediaType: 'IMAGE' | 'VIDEO',
-  fileExtension: string = 'png'
+  fileExtension: string = 'png',
+  shouldCompress: boolean = true
 ): Promise<ApiResponse<JobImage>> => {
   try {
     // Generate unique file name
@@ -437,8 +530,8 @@ export const uploadMediaAndCreateRecord = async (
 
     console.log(`Uploading ${mediaType}: ${fileName} (${contentType})`);
 
-    // Upload media to storage (optimized for file type)
-    const uploadResult = await uploadServiceMedia(uri, fileName, contentType);
+    // Upload media to storage (with automatic compression)
+    const uploadResult = await uploadServiceMedia(uri, fileName, contentType, shouldCompress);
 
     if (uploadResult.error || !uploadResult.data) {
       return {
