@@ -337,19 +337,51 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const newSelectedImages = result.assets.map(asset => {
-          // Extract file extension from URI
-          const uriParts = asset.uri.split('.');
-          const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+        // Maximum file size: 50MB in bytes
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-          return {
-            uri: asset.uri,
-            type: asset.type === 'video' ? 'VIDEO' as const : 'IMAGE' as const,
-            fileExtension,
-          };
+        // Filter assets by file size and collect oversized files
+        const validAssets: typeof result.assets = [];
+        const oversizedFiles: string[] = [];
+
+        result.assets.forEach((asset, index) => {
+          const fileSize = asset.fileSize || 0;
+          const fileSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+
+          if (fileSize > MAX_FILE_SIZE) {
+            const fileName = asset.fileName || `File ${index + 1}`;
+            oversizedFiles.push(`${fileName} (${fileSizeMB}MB)`);
+          } else {
+            validAssets.push(asset);
+          }
         });
 
-        setSelectedImages(prev => [...prev, ...newSelectedImages]);
+        // Show error if any files exceed the size limit
+        if (oversizedFiles.length > 0) {
+          const filesList = oversizedFiles.join('\n');
+          Alert.alert(
+            'File Size Limit Exceeded',
+            `The following file(s) exceed the 50MB limit and cannot be uploaded:\n\n${filesList}\n\nPlease select smaller files.`,
+            [{ text: 'OK' }]
+          );
+        }
+
+        // Only add valid assets
+        if (validAssets.length > 0) {
+          const newSelectedImages = validAssets.map(asset => {
+            // Extract file extension from URI
+            const uriParts = asset.uri.split('.');
+            const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+
+            return {
+              uri: asset.uri,
+              type: asset.type === 'video' ? 'VIDEO' as const : 'IMAGE' as const,
+              fileExtension,
+            };
+          });
+
+          setSelectedImages(prev => [...prev, ...newSelectedImages]);
+        }
       }
     } catch (error) {
       console.error('Error picking media:', error);
@@ -1065,7 +1097,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
 
       {/* Media Section */}
       <View className="mb-6">
-        <View className="flex-row justify-between items-center mb-4">
+        <View className="flex-row justify-between items-center mb-2">
           <View className="flex-row items-center">
             <Ionicons name="videocam-outline" size={24} color="#0092ce" />
             <Text className="text-lg font-semibold text-slate-800 ml-2">Media</Text>
@@ -1078,6 +1110,10 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
               <Ionicons name="add" size={20} color="#fff" />
             </TouchableOpacity>
           )}
+        </View>
+        <View className="flex-row items-center mb-4">
+          <Ionicons name="information-circle-outline" size={16} color="#64748b" />
+          <Text className="text-xs text-slate-600 ml-1">Maximum file size: 50MB per file</Text>
         </View>
 
         {/* Media List */}
