@@ -188,7 +188,7 @@ export default function HomeScreen() {
         job.jobCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
         job.customer.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const matchesDate = isJobInDateRange(job.date);
+      const matchesDate = job.scheduledStart ? isJobInDateRange(job.scheduledStart) : true;
 
       const matchesStatus = statusFilters.length === 0 || statusFilters.includes(job.status);
 
