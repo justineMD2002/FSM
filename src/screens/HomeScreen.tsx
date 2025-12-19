@@ -150,8 +150,11 @@ export default function HomeScreen() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const job = new Date(jobDate);
-    job.setHours(0, 0, 0, 0);
+    // Parse date string to avoid timezone issues
+    // Extract just the date part (YYYY-MM-DD) from datetime strings
+    const datePart = jobDate.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const job = new Date(year, month - 1, day); // Create date in local timezone (month is 0-indexed)
 
     switch (dateFilter) {
       case 'TODAY':
@@ -162,6 +165,7 @@ export default function HomeScreen() {
         weekStart.setDate(today.getDate() - today.getDay());
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999); // Set to end of day for consistency
         return job >= weekStart && job <= weekEnd;
 
       case 'THIS_MONTH':
