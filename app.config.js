@@ -69,6 +69,5 @@ export default {
         projectId: "a86bd2c3-2ea7-47ca-9212-ff9797afe239"
       }
     },
-    owner: "keanusksk"
   }
 };
