@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
+import HtmlJobDescription from './HtmlJobDescription';
 
 export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: () => void; isHistoryTab?: boolean }) => {
   // Get display status based on which tab is active
@@ -110,7 +111,14 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
             {job.notes && (
               <View className="flex-row items-start mt-2">
                 <Ionicons name="clipboard-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-                <Text className="text-sm text-slate-600 ml-2 flex-1">{job.notes}</Text>
+                <View className="ml-2 flex-1">
+                  <HtmlJobDescription
+                    content={job.notes}
+                    maxLines={2}
+                    textClassName="text-sm text-slate-600"
+                    variant="card"
+                  />
+                </View>
               </View>
             )}
 
