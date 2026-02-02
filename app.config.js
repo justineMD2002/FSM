@@ -4,7 +4,7 @@ export default {
   expo: {
     name: "FSM",
     slug: "sas-fsm",
-    owner: "keanusksk",
+    owner: "keanusksks-organization",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/SAS-LOGO.png",
