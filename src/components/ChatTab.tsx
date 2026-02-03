@@ -127,7 +127,7 @@ export default function ChatTab({ jobId, technicianJobId }: ChatTabProps) {
     // Get the actual sender's name from the message data
     const senderName = message.sender_type === 'TECHNICIAN'
       ? (message.technician_job?.technician?.full_name || 'Technician')
-      : 'Admin';
+      : (message.admin?.full_name || 'Admin');
 
     const displayName = isCurrentUser ? 'You' : senderName;
 

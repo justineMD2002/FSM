@@ -259,6 +259,7 @@ export interface JobTechnicianAdminMessage {
   id: string;
   job_id: string;
   technician_job_id: string;
+  admin_id: string | null;
   sender_type: 'TECHNICIAN' | 'ADMIN';
   message: string | null; // For pure text messages
   message_text: string | null; // For image captions/descriptions
@@ -271,6 +272,9 @@ export interface JobTechnicianAdminMessage {
     technician?: {
       full_name: string;
     };
+  };
+  admin?: {
+    full_name: string;
   };
 }
 
