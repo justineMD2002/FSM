@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal, Image, Alert, ActivityIndicator, Platform, Pressable, Dimensions, AppState } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -174,6 +174,16 @@ export default function ProfileScreen() {
     };
   }, [currentAttendance, isOnBreak, totalBreakTime]);
 
+  // Re-check attendance (and auto clock-out if needed) when app returns to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active' && user) {
+        fetchAttendanceData();
+      }
+    });
+    return () => subscription.remove();
+  }, [user]);
+
   const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
@@ -215,6 +225,57 @@ export default function ProfileScreen() {
         .order('clock_in', { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // Auto clock-out if the active session is from a previous day
+      if (activeAttendance) {
+        const clockInDate = new Date(activeAttendance.clock_in);
+        const today = new Date();
+        const isFromPreviousDay =
+          clockInDate.getFullYear() < today.getFullYear() ||
+          clockInDate.getMonth() < today.getMonth() ||
+          clockInDate.getDate() < today.getDate();
+
+        if (isFromPreviousDay) {
+          // Set clock_out to 11:59:59 PM of the clock_in day
+          const endOfDay = new Date(clockInDate);
+          endOfDay.setHours(23, 59, 59, 0);
+          const clockInTime = clockInDate.getTime();
+          const durationMinutes = Math.floor((endOfDay.getTime() - clockInTime) / (1000 * 60));
+
+          await supabase
+            .from('attendance')
+            .update({
+              clock_out: endOfDay.toISOString(),
+              duration_minutes: durationMinutes,
+              is_break: false,
+            })
+            .eq('id', activeAttendance.id);
+
+          // Refetch after auto clock-out — no active session now
+          const { data: refreshedAttendance } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('technician_id', techData.id)
+            .is('clock_out', null)
+            .order('clock_in', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          setCurrentAttendance(refreshedAttendance);
+          setIsOnBreak(false);
+          setBreakStartTime(null);
+          setTotalBreakTime(0);
+
+          // Update lastClockOut display
+          const clockOutDate = new Date(endOfDay);
+          setLastClockOut(clockOutDate.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }));
+          return;
+        }
+      }
 
       setCurrentAttendance(activeAttendance);
 

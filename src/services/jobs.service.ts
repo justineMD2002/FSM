@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase';
 import { JobDB, Job, ApiResponse } from '@/types';
-import { stripHtmlTags, formatLocationAddress } from '@/utils';
 
 /**
  * Jobs Service
@@ -97,7 +96,7 @@ export const transformJobToUI = (dbJob: JobDB): Job => {
     address,
     addressNotes: addressNotes.length > 0 ? addressNotes : undefined,
     locationName: dbJob.location?.location_name || null,
-    notes: stripHtmlTags(dbJob.description) || '',
+    notes: dbJob.description || '',
     providerName: assignedTechnicians.length > 0 ? assignedTechnicians[0] : 'Unassigned',
     status: uiStatus,
     priority: dbJob.priority,

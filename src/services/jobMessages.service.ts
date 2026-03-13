@@ -25,6 +25,9 @@ export const getMessagesByJobId = async (
           technician:technician_id (
             full_name
           )
+        ),
+        admin:admin_id (
+          full_name
         )
       `)
       .eq('job_id', jobId)

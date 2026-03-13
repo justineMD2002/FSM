@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
 import { useJobTechnicians, useCustomerEquipments, useCustomerContacts } from '@/hooks';
 import TechnicianStatusBadge from './TechnicianStatusBadge';
+import HtmlJobDescription from './HtmlJobDescription';
 
 interface DetailsTabProps {
   job: Job;
@@ -152,7 +153,12 @@ export default function DetailsTab({ job, jobId, customerId, statusColor, canSta
             {job.notes && (
               <View className="mb-4">
                 <Text className="text-xs text-slate-500 mb-1">DESCRIPTION</Text>
-                <Text className="text-sm text-slate-700">{job.notes}</Text>
+                <HtmlJobDescription
+                  content={job.notes}
+                  maxLines={5}
+                  textClassName="text-sm text-slate-700"
+                  variant="details"
+                />
               </View>
             )}
 

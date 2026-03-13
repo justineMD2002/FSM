@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Job } from '@/types';
+import HtmlJobDescription from './HtmlJobDescription';
 import { useState } from 'react';
 
 export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: () => void; isHistoryTab?: boolean }) => {
@@ -143,28 +144,16 @@ export const JobCard = ({ job, onPress, isHistoryTab }: { job: Job; onPress?: ()
 
             {/* Job Description */}
             {job.notes && (
-              <View className="mt-2">
-                <View className="flex-row items-start">
-                  <Ionicons name="clipboard-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
-                  <Text
-                    className="text-sm text-slate-600 ml-2 flex-1"
-                    numberOfLines={3}
-                    onTextLayout={(e) => {
-                      setIsDescriptionTruncated(e.nativeEvent.lines.length > 3);
-                    }}
-                  >
-                    {job.notes}
-                  </Text>
+              <View className="flex-row items-start mt-2">
+                <Ionicons name="clipboard-outline" size={16} color="#64748b" style={{ marginTop: 2 }} />
+                <View className="ml-2 flex-1">
+                  <HtmlJobDescription
+                    content={job.notes}
+                    maxLines={2}
+                    textClassName="text-sm text-slate-600"
+                    variant="card"
+                  />
                 </View>
-                {isDescriptionTruncated && (
-                  <TouchableOpacity
-                    onPress={onPress}
-                    className="ml-6 mt-1"
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-xs text-[#0092ce] font-medium">Show more</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             )}
           </View>
