@@ -18,3 +18,4 @@ export { useLocationTracking } from './useLocationTracking';
 export { useAppUpdates } from './useAppUpdates';
 export { useInactivityLogout } from './useInactivityLogout';
 export { useAutoClockOut } from './useAutoClockOut';
+export { useSessionTimeout } from './useSessionTimeout';

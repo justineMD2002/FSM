@@ -9,7 +9,7 @@ import FooterNav from '@/components/FooterNav';
 import { Tab } from '@/enums';
 import { useNavigationStore } from '@/store';
 import CustomersScreen from './CustomersScreen';
-import { useInactivityLogout } from '@/hooks';
+import { useInactivityLogout, useSessionTimeout } from '@/hooks';
 
 interface TabConfig {
   title: string;
@@ -22,6 +22,8 @@ export default function MainScreen() {
 
   // Setup auto-logout after 1 hour of inactivity
   const { resetTimer } = useInactivityLogout(60 * 60 * 1000); // 1 hour
+  // Setup auto-logout 24 hours after login
+  useSessionTimeout();
 
   const tabConfig: Record<Tab, TabConfig> = {
     [Tab.HOME]: {
