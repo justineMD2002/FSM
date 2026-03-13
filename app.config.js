@@ -5,7 +5,7 @@ export default {
     name: "SAS: Field Service Management",
     slug: "sas-fsm",
     owner: "keanusksks-organization",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/adaptive-icon.png",
     userInterfaceStyle: "light",
