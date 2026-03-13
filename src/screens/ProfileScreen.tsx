@@ -772,7 +772,7 @@ export default function ProfileScreen() {
         >
           <View className="flex-row items-center flex-1">
             <Ionicons name="code-download-outline" size={20} color="#0092ce" />
-            <Text className="text-slate-800 text-base ml-3">App Version</Text>
+            <Text className="text-slate-800 text-base ml-3">Update Now</Text>
           </View>
           <View className="flex-row items-center">
             {checkingUpdate ? (
