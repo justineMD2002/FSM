@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { JobDB, Job, ApiResponse } from '@/types';
+import { formatLocationAddress } from '@/utils/stringUtils';
 
 /**
  * Jobs Service

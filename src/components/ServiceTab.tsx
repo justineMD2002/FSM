@@ -508,7 +508,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
   };
 
   const toggleCameraFacing = () => {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
+    setFacing((current: any) => (current === 'back' ? 'front' : 'back'));
   };
 
   const handleAddImage = () => {
@@ -1489,7 +1489,7 @@ export default function ServiceTab({ jobId, technicianJobId, onSubmit, isHistory
                 style={{ flex: 1 }} // Use inline style for better compatibility
                 facing={facing}
                 onCameraReady={handleCameraReady}
-                onMountError={(error) => {
+                onMountError={(error: any) => {
                   console.error('Camera mount error:', error);
                   Alert.alert('Camera Error', 'Failed to initialize camera. Please try again.');
                   setShowCameraModal(false);
